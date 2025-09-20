@@ -1,47 +1,123 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Figtree', sans-serif;
+            background-color: #F8F4F0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+        .login-card {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+        .logo {
+            width: 150px;
+            margin-bottom: 2rem;
+        }
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #4C342C;
+            font-weight: 600;
+        }
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            color: #333;
+        }
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
-            </label>
-        </div>
+        .form-group input:focus {
+            outline: none;
+            border-color: #4C342C;
+            box-shadow: 0 0 0 2px rgba(76, 52, 44, 0.2);
+        }
 
-        <div class="flex items-center justify-end mt-4">
+        .button-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #4C342C;
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .button-primary:hover {
+            background-color: #6a493f;
+        }
+
+        .forgot-password {
+            margin-top: 1rem;
+            display: block;
+            color: #4C342C;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
+        <h2 style="color: #4C342C; margin-bottom: 2rem;">Iniciar Sesión</h2>
+
+        <form method="POST" action="{{ route('login') }}">
+            @csrf
+
+            <div class="form-group">
+                <label for="email">Correo Electrónico</label>
+                <input type="email" id="email" name="email" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; justify-content: flex-start;">
+                <input type="checkbox" name="remember" id="remember" style="width: auto; margin-right: 0.5rem;">
+                <label for="remember" style="margin: 0; font-weight: 400;">Recordarme</label>
+            </div>
+
+            <button type="submit" class="button-primary">Iniciar Sesión</button>
+
             @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
+                <a href="{{ route('password.request') }}" class="forgot-password">¿Olvidaste tu contraseña?</a>
             @endif
+        </form>
+    </div>
+</body>
+</html>
 
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
