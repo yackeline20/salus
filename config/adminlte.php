@@ -63,23 +63,22 @@ return [
     ],
 
     /*
-    |--------------------------------------------------------------------------
-    | Preloader Animation
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Preloader Animation
+|--------------------------------------------------------------------------
+*/
 
-    'preloader' => [
-        'enabled' => true,
-        'mode' => 'fullscreen',
-        'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'AdminLTE Preloader Image',
-            'effect' => 'animation__shake',
-            'width' => 60,
-            'height' => 60,
-        ],
+'preloader' => [
+    'enabled' => false,  // CAMBIO: de true a false
+    'mode' => 'fullscreen',
+    'img' => [
+        'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
+        'alt' => 'AdminLTE Preloader Image',
+        'effect' => 'animation__shake',
+        'width' => 60,
+        'height' => 60,
     ],
-
+],
     /*
     |--------------------------------------------------------------------------
     | User Menu
@@ -198,48 +197,38 @@ return [
     | Menu Items
     |--------------------------------------------------------------------------
     */
+'menu' => [
+    // Navbar items:
+    [
+        'type' => 'navbar-search',
+        'text' => 'search',
+        'topnav_right' => true,
+    ],
+    [
+        'type' => 'fullscreen-widget',
+        'topnav_right' => true,
+    ],
+    // SOLO este elemento del usuario (SIN el bloque de Log Out)
+    [
+        'text' => 'Orlando Vasquez',
+        'topnav_right' => true,
+        'icon' => 'fas fa-user-circle',
+        'url' => '#',
+        'classes' => 'font-weight-bold',
+    ],
 
-    'menu' => [
-        // Navbar items:
-        [
-            'type' => 'navbar-search',
-            'text' => 'search',
-            'topnav_right' => true,
-        ],
-        [
-            'type' => 'fullscreen-widget',
-            'topnav_right' => true,
-        ],
-        // Navbar item para mostrar el nombre del usuario (separado).
-        [
-            'text' => 'Orlando Vasquez', // Reemplaza con el nombre de usuario dinámico
-            'topnav_right' => true,
-            'icon' => 'fas fa-user-circle',
-            'url' => '#',
-            'classes' => 'font-weight-bold', // Para que se vea igual que el nombre.
-        ],
-        // Navbar item para cerrar sesión (separado).
-        [
-            'text' => 'Log Out',
-            'icon' => 'fas fa-fw fa-power-off',
-            'url' => 'logout',
-            'classes' => 'btn-outline-danger',
-            'topnav_right' => true,
-            'onclick' => 'event.preventDefault(); document.getElementById("logout-form").submit();',
-        ],
+    // Sidebar items:
+    [
+        'type' => 'sidebar-menu-search',
+        'text' => 'search',
+    ],
 
-        // Sidebar items:
-        [
-            'type' => 'sidebar-menu-search',
-            'text' => 'search',
-        ],
-
-        //dashboard
-        [
-            'text' => 'Dashboard',
-            'route' => 'dashboard',
-            'icon' => 'fas fa-tachometer-alt',
-        ],
+    //dashboard
+    [
+        'text' => 'Dashboard',
+        'route' => 'dashboard',
+        'icon' => 'fas fa-tachometer-alt',
+    ],
 
 
         // Facturación
