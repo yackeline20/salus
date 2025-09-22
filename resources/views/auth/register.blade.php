@@ -116,7 +116,7 @@
 <body>
     <div class="register-card">
         <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
-        
+
         @if(session('success'))
             <div class="success-message">
                 <h3 style="margin: 0 0 0.5rem 0; color: #166534;">¡Registro Exitoso!</h3>
@@ -155,7 +155,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="password_confirmation">Confirmar Contraseña</label>
+                    <label for="password_confirmation">Confirmar la Contraseña</label>
                     <input type="password" id="password_confirmation" name="password_confirmation" required>
                 </div>
 
