@@ -11,11 +11,11 @@
         <!-- Header Welcome -->
         <div class="welcome-header">
             <div class="welcome-content">
-                <h1>¡Bienvenida, Dra. Carol Calderón!</h1>
+                <h1>¡Bienvenido/a, {{ Auth::user()->name }}!</h1>
                 <p>Aquí tienes un resumen de las actividades del día en tu clínica estética.</p>
             </div>
             <div class="welcome-date">
-                <span class="date">Lunes, 28 de Julio 2025</span>
+                <span class="date">{{ now()->locale('es')->isoFormat('dddd, D [de] MMMM YYYY') }}</span>
             </div>
         </div>
 

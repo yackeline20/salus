@@ -51,6 +51,7 @@
             border-radius: 0.5rem;
             font-size: 1rem;
             color: #333;
+            box-sizing: border-box;
         }
 
         .form-group input:focus {
@@ -74,38 +75,97 @@
         .button-primary:hover {
             background-color: #6a493f;
         }
+
+        .error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        .success-message {
+            background-color: #dcfce7;
+            border: 1px solid #16a34a;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .button-secondary {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #6b7280;
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .button-secondary:hover {
+            background-color: #4b5563;
+        }
     </style>
 </head>
 <body>
     <div class="register-card">
         <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
-        <h2 style="color: #4C342C; margin-bottom: 2rem;">Registrarse</h2>
-
-        <form method="POST" action="{{ route('register') }}">
-            @csrf
-
-            <div class="form-group">
-                <label for="name">Nombre</label>
-                <input type="text" id="name" name="name" required autofocus>
+        
+        @if(session('success'))
+            <div class="success-message">
+                <h3 style="margin: 0 0 0.5rem 0; color: #166534;">¡Registro Exitoso!</h3>
+                <p style="margin: 0;">Tu cuenta ha sido creada correctamente.</p>
             </div>
+            <a href="{{ route('login') }}" class="button-primary">Ir a Iniciar Sesión</a>
+            <a href="{{ route('register') }}" class="button-secondary">Registrar Otra Cuenta</a>
+        @else
+            <h2 style="color: #4C342C; margin-bottom: 2rem;">Registrarse</h2>
 
-            <div class="form-group">
-                <label for="email">Correo Electrónico</label>
-                <input type="email" id="email" name="email" required>
-            </div>
+            <form method="POST" action="{{ route('register') }}">
+                @csrf
 
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" required>
-            </div>
+                <div class="form-group">
+                    <label for="name">Nombre</label>
+                    <input type="text" id="name" name="name" value="{{ old('name') }}" required autofocus>
+                    @error('name')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
 
-            <div class="form-group">
-                <label for="password_confirmation">Confirmar Contraseña</label>
-                <input type="password" id="password_confirmation" name="password_confirmation" required>
-            </div>
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" name="email" value="{{ old('email') }}" required>
+                    @error('email')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
 
-            <button type="submit" class="button-primary">Registrarse</button>
-        </form>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required>
+                    @error('password')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="password_confirmation">Confirmar Contraseña</label>
+                    <input type="password" id="password_confirmation" name="password_confirmation" required>
+                </div>
+
+                <button type="submit" class="button-primary">Registrarse</button>
+            </form>
+
+            <p style="margin-top: 1rem; font-size: 0.875rem;">
+                ¿Ya tienes cuenta? <a href="{{ route('login') }}" style="color: #4C342C; text-decoration: none;">Inicia sesión aquí</a>
+            </p>
+        @endif
     </div>
 </body>
 </html>

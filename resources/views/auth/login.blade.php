@@ -51,6 +51,7 @@
             border-radius: 0.5rem;
             font-size: 1rem;
             color: #333;
+            box-sizing: border-box;
         }
 
         .form-group input:focus {
@@ -75,16 +76,11 @@
             background-color: #6a493f;
         }
 
-        .forgot-password {
-            margin-top: 1rem;
-            display: block;
-            color: #4C342C;
-            text-decoration: none;
+        .error {
+            color: #dc2626;
             font-size: 0.875rem;
-        }
-
-        .forgot-password:hover {
-            text-decoration: underline;
+            margin-top: 0.25rem;
+            display: block;
         }
     </style>
 </head>
@@ -98,12 +94,18 @@
 
             <div class="form-group">
                 <label for="email">Correo Electrónico</label>
-                <input type="email" id="email" name="email" required autofocus>
+                <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus>
+                @error('email')
+                    <span class="error">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label for="password">Contraseña</label>
                 <input type="password" id="password" name="password" required>
+                @error('password')
+                    <span class="error">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="form-group" style="display: flex; align-items: center; justify-content: flex-start;">
@@ -113,11 +115,10 @@
 
             <button type="submit" class="button-primary">Iniciar Sesión</button>
 
-            @if (Route::has('password.request'))
-                <a href="{{ route('password.request') }}" class="forgot-password">¿Olvidaste tu contraseña?</a>
-            @endif
+            <p style="margin-top: 1rem; font-size: 0.875rem;">
+                ¿No tienes cuenta? <a href="{{ route('register') }}" style="color: #4C342C; text-decoration: none;">Regístrate aquí</a>
+            </p>
         </form>
     </div>
 </body>
 </html>
-

@@ -48,14 +48,15 @@
                         </x-dropdown-link>
 
                         <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" style="padding: 0; margin: 0;">
                             @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
+                            <button type="submit" 
+                                    style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 16px; margin: 4px 8px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: left; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);"
+                                    onmouseover="this.style.background='linear-gradient(135deg, #ff5252, #e73c7e)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'; this.style.transform='translateY(-1px)';"
+                                    onmouseout="this.style.background='linear-gradient(135deg, #ff6b6b, #ee5a6f)'; this.style.boxShadow='0 2px 8px rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(0)';">
+                                <span style="font-size: 16px; display: flex; align-items: center;">⏻</span>
+                                <span>{{ __('Log Out') }}</span>
+                            </button>
                         </form>
                     </x-slot>
                 </x-dropdown>
@@ -102,15 +103,15 @@
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
+                <!-- Authentication para móvil -->
+                <form method="POST" action="{{ route('logout') }}" style="padding: 0; margin: 0;">
                     @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
+                    <button type="submit" 
+                            style="display: flex; align-items: center; gap: 8px; width: calc(100% - 32px); margin: 8px 16px; padding: 10px 16px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: left; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);"
+                            onclick="event.preventDefault(); this.closest('form').submit();">
+                        <span style="font-size: 16px; display: flex; align-items: center;">⏻</span>
+                        <span>{{ __('Log Out') }}</span>
+                    </button>
                 </form>
             </div>
         </div>

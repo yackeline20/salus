@@ -85,7 +85,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'usermenu_enabled' => false,
+    'usermenu_enabled' => true,
     'usermenu_header' => false,
     'usermenu_header_class' => 'bg-primary',
     'usermenu_image' => false,
@@ -207,14 +207,6 @@ return [
     [
         'type' => 'fullscreen-widget',
         'topnav_right' => true,
-    ],
-    // SOLO este elemento del usuario (SIN el bloque de Log Out)
-    [
-        'text' => 'Orlando Vasquez',
-        'topnav_right' => true,
-        'icon' => 'fas fa-user-circle',
-        'url' => '#',
-        'classes' => 'font-weight-bold',
     ],
 
     // Sidebar items:
@@ -401,5 +393,4 @@ return [
 
     'livewire' => false,
 ];
-
 
