@@ -115,23 +115,29 @@
 
             <div class="admin-button">
                  <a href="{{ route('admin.login') }}" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl">
-                    Administrador
-                </a>
+                     Administrador
+                 </a>
             </div>
         </div>
 
         <div class="social-container">
             <div class="social-item">
-                <img src="{{ asset('images/facebook_logo.jpg') }}" alt="Logo de Facebook" class="social-icon">
-                <span class="text-gray-600 text-lg">Salus HN</span>
+                <a href="https://www.facebook.com/share/1YN3bMQJwf/" title="Visita nuestra página de Facebook" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="{{ asset('images/facebook_logo.jpg') }}" alt="Logo de Facebook" class="social-icon">
+                    <span class="text-gray-600 text-lg">Salus HN</span>
+                </a>
             </div>
             <div class="social-item">
-                <img src="{{ asset('images/instagram_logo.jpg') }}" alt="Logo de Instagram" class="social-icon">
-                <span class="text-gray-600 text-lg">@salus_hnd</span>
+                <a href="https://www.instagram.com/salus_hnd?igsh=bndmcmdibjQ3amww" title="Visita nuestro perfil de Instagram" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="{{ asset('images/instagram_logo.jpg') }}" alt="Logo de Instagram" class="social-icon">
+                    <span class="text-gray-600 text-lg">@salus_hnd</span>
+                </a>
             </div>
             <div class="social-item">
-                <img src="{{ asset('images/whatsapp_logo.jpg') }}" alt="Logo de WhatsApp" class="social-icon">
-                <span class="text-gray-600 text-lg">8949-7619</span>
+                <a href="https://wa.me/50489497619" title="Chatea con nosotros en WhatsApp" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="{{ asset('images/whatsapp_logo.jpg') }}" alt="Logo de WhatsApp" class="social-icon">
+                    <span class="text-gray-600 text-lg">8949-7619</span>
+                </a>
             </div>
         </div>
     </body>
