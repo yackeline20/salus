@@ -88,14 +88,27 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="employee_name">Nombre Completo</label>
-                            <input type="text" class="form-control custom-input" id="employee_name" name="employee_name" placeholder="Nombre completo del empleado" required>
+                            <input type="text" 
+                                   class="form-control custom-input" 
+                                   id="employee_name" 
+                                   name="employee_name" 
+                                   placeholder="Nombre completo del empleado" 
+                                   maxlength="100"
+                                   pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+"
+                                   required>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="email">Correo Electrónico</label>
-                            <input type="email" class="form-control custom-input" id="email" name="email" placeholder="correo@ejemplo.com" required>
+                            <input type="email" 
+                                   class="form-control custom-input" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="correo@ejemplo.com" 
+                                   maxlength="255"
+                                   required>
                         </div>
                     </div>
 
@@ -113,14 +126,23 @@
                             <input type="text" 
                                    id="customDepartment" 
                                    class="form-control custom-input custom-department-input mt-2" 
-                                   placeholder="Escriba el nombre del departamento">
+                                   placeholder="Escriba el nombre del departamento"
+                                   maxlength="50"
+                                   pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+">
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="position">Cargo</label>
-                            <input type="text" class="form-control custom-input" id="position" name="position" placeholder="Ej: Enfermera, Recepcionista, etc." required>
+                            <input type="text" 
+                                   class="form-control custom-input" 
+                                   id="position" 
+                                   name="position" 
+                                   placeholder="Ej: Enfermera, Recepcionista, etc." 
+                                   maxlength="80"
+                                   pattern="[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+"
+                                   required>
                         </div>
                     </div>
 
@@ -398,6 +420,38 @@
             display: block;
         }
 
+        /* Estilos de validación */
+        .custom-input.is-invalid {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+        }
+        
+        .custom-input.is-valid {
+            border-color: #28a745 !important;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1) !important;
+        }
+        
+        .field-error {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Botón Salus */
         .btn-salus {
             background: linear-gradient(135deg, #c9a876, #d4b896);
@@ -668,6 +722,245 @@
 
 @section('js')
     <script>
+        // VALIDACIONES DE SEGURIDAD - INICIO
+        function validateName(input) {
+            const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+            return nameRegex.test(input.trim());
+        }
+
+        function validateEmail(email) {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return emailRegex.test(email.trim());
+        }
+
+        function validatePosition(input) {
+            const positionRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+$/;
+            return positionRegex.test(input.trim());
+        }
+
+        function sanitizeInput(input, type) {
+            switch(type) {
+                case 'name':
+                    return input.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
+                case 'email':
+                    return input.replace(/[^a-zA-Z0-9._%+-@]/g, '');
+                case 'position':
+                    return input.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '');
+                default:
+                    return input;
+            }
+        }
+
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const existingError = field.parentNode.querySelector('.field-error');
+            
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            field.classList.add('is-invalid');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            
+            field.parentNode.appendChild(errorDiv);
+        }
+
+        function removeFieldError(fieldId) {
+            const field = document.getElementById(fieldId);
+            const errorDiv = field.parentNode.querySelector('.field-error');
+            
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+            
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        }
+
+        function validateLength(input, minLength = 2, maxLength = 100) {
+            const trimmed = input.trim();
+            return trimmed.length >= minLength && trimmed.length <= maxLength;
+        }
+
+        // Event listeners para validación en tiempo real
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameField = document.getElementById('employee_name');
+            const emailField = document.getElementById('email');
+            const positionField = document.getElementById('position');
+            const customDepartmentField = document.getElementById('customDepartment');
+
+            // Validación para campo de nombre
+            if (nameField) {
+                nameField.addEventListener('input', function() {
+                    const originalValue = this.value;
+                    const sanitizedValue = sanitizeInput(originalValue, 'name');
+                    
+                    if (originalValue !== sanitizedValue) {
+                        this.value = sanitizedValue;
+                    }
+                    
+                    if (this.value.trim()) {
+                        if (!validateName(this.value)) {
+                            showFieldError('employee_name', 'El nombre solo puede contener letras, espacios y acentos');
+                        } else if (!validateLength(this.value, 2, 100)) {
+                            showFieldError('employee_name', 'El nombre debe tener entre 2 y 100 caracteres');
+                        } else {
+                            removeFieldError('employee_name');
+                        }
+                    } else {
+                        removeFieldError('employee_name');
+                    }
+                });
+
+                nameField.addEventListener('blur', function() {
+                    if (this.value.trim() && !validateName(this.value)) {
+                        showFieldError('employee_name', 'Por favor ingrese un nombre válido');
+                    }
+                });
+            }
+
+            // Validación para campo de email
+            if (emailField) {
+                emailField.addEventListener('input', function() {
+                    const originalValue = this.value;
+                    const sanitizedValue = sanitizeInput(originalValue, 'email');
+                    
+                    if (originalValue !== sanitizedValue) {
+                        this.value = sanitizedValue;
+                    }
+                    
+                    if (this.value.trim()) {
+                        if (!validateEmail(this.value)) {
+                            showFieldError('email', 'Por favor ingrese un email válido');
+                        } else {
+                            removeFieldError('email');
+                        }
+                    } else {
+                        removeFieldError('email');
+                    }
+                });
+
+                emailField.addEventListener('blur', function() {
+                    if (this.value.trim() && !validateEmail(this.value)) {
+                        showFieldError('email', 'El formato del email no es válido');
+                    }
+                });
+            }
+
+            // VALIDACIÓN MEJORADA PARA CAMPO DE CARGO
+            if (positionField) {
+                positionField.addEventListener('input', function() {
+                    const originalValue = this.value;
+                    
+                    // Sanitización más estricta para cargos profesionales
+                    let sanitizedValue = originalValue
+                        .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '') // Remover caracteres especiales
+                        .replace(/\s+/g, ' ') // Reemplazar múltiples espacios con uno solo
+                        .replace(/^[\s.'\-()\/]+/, '') // Remover caracteres especiales al inicio
+                        .replace(/[\s.'\-()\/]+$/, ''); // Remover caracteres especiales al final
+                    
+                    // Limitar caracteres consecutivos
+                    sanitizedValue = sanitizedValue.replace(/[.'\-()\/]{2,}/g, match => match[0]);
+                    
+                    if (originalValue !== sanitizedValue) {
+                        this.value = sanitizedValue;
+                    }
+                    
+                    if (this.value.trim()) {
+                        const trimmedValue = this.value.trim();
+                        
+                        // Validaciones específicas para cargos
+                        if (trimmedValue.length < 2) {
+                            showFieldError('position', 'El cargo debe tener al menos 2 caracteres');
+                        } else if (trimmedValue.length > 80) {
+                            showFieldError('position', 'El cargo no puede exceder 80 caracteres');
+                        } else if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+$/.test(trimmedValue)) {
+                            showFieldError('position', 'El cargo contiene caracteres no permitidos');
+                        } else if (/^[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(trimmedValue)) {
+                            showFieldError('position', 'El cargo debe comenzar con una letra');
+                        } else if (/[.'\-()\/]{3,}/.test(trimmedValue)) {
+                            showFieldError('position', 'Demasiados caracteres especiales consecutivos');
+                        } else if (trimmedValue.split(' ').some(word => word.length > 30)) {
+                            showFieldError('position', 'Las palabras del cargo son demasiado largas');
+                        } else {
+                            removeFieldError('position');
+                        }
+                    } else {
+                        removeFieldError('position');
+                    }
+                });
+
+                positionField.addEventListener('blur', function() {
+                    const trimmedValue = this.value.trim();
+                    if (trimmedValue) {
+                        if (!validatePosition(trimmedValue) || !validateLength(trimmedValue, 2, 80)) {
+                            showFieldError('position', 'Por favor ingrese un cargo profesional válido');
+                        } else {
+                            removeFieldError('position');
+                        }
+                    }
+                });
+
+                // Prevenir paste de contenido malicioso
+                positionField.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+                    const sanitizedData = pasteData
+                        .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '')
+                        .substring(0, 80);
+                    
+                    this.value = sanitizedData;
+                    this.dispatchEvent(new Event('input'));
+                });
+
+                // Prevenir arrastrar y soltar
+                positionField.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                });
+            }
+
+            // Validación para departamento personalizado
+            if (customDepartmentField) {
+                customDepartmentField.addEventListener('input', function() {
+                    const originalValue = this.value;
+                    const sanitizedValue = sanitizeInput(originalValue, 'name');
+                    
+                    if (originalValue !== sanitizedValue) {
+                        this.value = sanitizedValue;
+                    }
+                    
+                    if (this.value.trim()) {
+                        if (!validateName(this.value)) {
+                            showFieldError('customDepartment', 'El departamento solo puede contener letras y espacios');
+                        } else if (!validateLength(this.value, 2, 50)) {
+                            showFieldError('customDepartment', 'El departamento debe tener entre 2 y 50 caracteres');
+                        } else {
+                            removeFieldError('customDepartment');
+                        }
+                    } else {
+                        removeFieldError('customDepartment');
+                    }
+                });
+            }
+
+            // Manejar departamento personalizado
+            document.getElementById('department').addEventListener('change', function() {
+                const customInput = document.getElementById('customDepartment');
+                if (this.value === 'otro') {
+                    customInput.classList.add('show');
+                    customInput.required = true;
+                } else {
+                    customInput.classList.remove('show');
+                    customInput.required = false;
+                    customInput.value = '';
+                }
+            });
+        });
+        // VALIDACIONES DE SEGURIDAD - FIN
+
         // Datos de ejemplo de empleados
         let employees = [
             {
@@ -715,19 +1008,6 @@
                 status: 'active'
             }
         ];
-
-        // Manejar departamento personalizado
-        document.getElementById('department').addEventListener('change', function() {
-            const customInput = document.getElementById('customDepartment');
-            if (this.value === 'otro') {
-                customInput.classList.add('show');
-                customInput.required = true;
-            } else {
-                customInput.classList.remove('show');
-                customInput.required = false;
-                customInput.value = '';
-            }
-        });
 
         // Función para obtener iniciales
         function getInitials(name) {
@@ -797,7 +1077,7 @@
                             <p><i class="fas fa-calendar mr-1"></i> Desde ${new Date(employee.hire_date).toLocaleDateString()}</p>
                         </div>
                         <div class="employee-commission">
-                            <div class="commission-amount">$${employee.commissions.toLocaleString()}</div>
+                            <div class="commission-amount">${employee.commissions.toLocaleString()}</div>
                             <div class="commission-label">Comisiones</div>
                         </div>
                     </div>
@@ -963,10 +1243,61 @@
             }, 3000);
         }
 
-        // Manejar envío del formulario de empleado
+        // Manejar envío del formulario de empleado CON VALIDACIONES
         document.getElementById('employeeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            let isValid = true;
+            
+            // Validar nombre
+            const name = document.getElementById('employee_name').value.trim();
+            if (!name) {
+                showFieldError('employee_name', 'El nombre es requerido');
+                isValid = false;
+            } else if (!validateName(name) || !validateLength(name, 2, 100)) {
+                showFieldError('employee_name', 'Por favor ingrese un nombre válido (2-100 caracteres, solo letras y espacios)');
+                isValid = false;
+            }
+            
+            // Validar email
+            const email = document.getElementById('email').value.trim();
+            if (!email) {
+                showFieldError('email', 'El email es requerido');
+                isValid = false;
+            } else if (!validateEmail(email)) {
+                showFieldError('email', 'Por favor ingrese un email válido');
+                isValid = false;
+            }
+            
+            // Validar cargo
+            const position = document.getElementById('position').value.trim();
+            if (!position) {
+                showFieldError('position', 'El cargo es requerido');
+                isValid = false;
+            } else if (!validatePosition(position) || !validateLength(position, 2, 80)) {
+                showFieldError('position', 'Por favor ingrese un cargo válido (2-80 caracteres)');
+                isValid = false;
+            }
+            
+            // Validar departamento personalizado si está visible
+            const customDepartmentField = document.getElementById('customDepartment');
+            if (customDepartmentField.classList.contains('show')) {
+                const customDept = customDepartmentField.value.trim();
+                if (!customDept) {
+                    showFieldError('customDepartment', 'Debe especificar el departamento');
+                    isValid = false;
+                } else if (!validateName(customDept) || !validateLength(customDept, 2, 50)) {
+                    showFieldError('customDepartment', 'Por favor ingrese un departamento válido (2-50 caracteres, solo letras)');
+                    isValid = false;
+                }
+            }
+            
+            if (!isValid) {
+                showNotification('Por favor corrija los errores en el formulario', 'error');
+                return false;
+            }
+            
+            // Si todo está válido, procesar el formulario
             const departmentSelect = document.getElementById('department');
             const customDepartment = document.getElementById('customDepartment');
             
@@ -976,10 +1307,10 @@
             
             const newEmployee = {
                 id: employees.length + 1,
-                name: document.getElementById('employee_name').value,
-                email: document.getElementById('email').value,
+                name: name,
+                email: email,
                 department: departmentValue,
-                position: document.getElementById('position').value,
+                position: position,
                 hire_date: document.getElementById('hire_date').value,
                 salary: parseFloat(document.getElementById('salary').value),
                 commissions: 0,
@@ -995,6 +1326,12 @@
             
             this.reset();
             customDepartment.classList.remove('show');
+            
+            // Limpiar validaciones
+            document.querySelectorAll('.field-error').forEach(error => error.remove());
+            document.querySelectorAll('.is-valid, .is-invalid').forEach(field => {
+                field.classList.remove('is-valid', 'is-invalid');
+            });
         });
 
         // Manejar envío del formulario de comisión
