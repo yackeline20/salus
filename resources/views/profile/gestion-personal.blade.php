@@ -15,8 +15,8 @@
                 <p>Administra tu equipo de trabajo y las comisiones del personal de manera eficiente.</p>
             </div>
             <div class="welcome-date">
-                <span class="date">{{ now()->format('l, d \d\e F Y') }}</span>
-                <span class="time">{{ now()->format('H:i') }}</span>
+                <span class="date" id="currentDate">{{ now()->format('l, d \d\e F Y') }}</span>
+                <span class="time" id="currentTime">{{ now()->format('H:i') }}</span>
             </div>
         </div>
 
@@ -263,7 +263,18 @@
             padding-bottom: 20px !important;
         }
 
-        /* Header de bienvenida */
+        /* Header de bienvenida con animación */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .welcome-header {
             background: linear-gradient(135deg, #c9a876 0%, #d4b896 100%);
             border-radius: 20px;
@@ -273,6 +284,7 @@
             align-items: center;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(201, 168, 118, 0.2);
+            animation: fadeInDown 0.8s ease-out;
         }
 
         .welcome-content h1 {
@@ -680,6 +692,232 @@
             margin-bottom: 20px;
         }
 
+        /* Modal de confirmación */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .modal-body {
+            color: #6b7280;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Notificación mejorada */
+        .notification-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 300px;
+            animation: notificationPop 0.4s ease-out;
+        }
+
+        @keyframes notificationPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .notification-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .notification-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .notification-message {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        /* Formulario de edición */
+        .edit-form-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .edit-form-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .edit-form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .edit-form-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-edit-form {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .welcome-header {
@@ -722,7 +960,67 @@
 
 @section('js')
     <script>
-        // VALIDACIONES DE SEGURIDAD - INICIO
+        // ========== ACTUALIZACIÓN AUTOMÁTICA DE FECHA Y HORA ==========
+        function updateDateTime() {
+            const now = new Date();
+            
+            // Configuración para fecha en español
+            const optionsDate = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            
+            // Formatear fecha en español para Honduras
+            let dateString = now.toLocaleDateString('es-HN', optionsDate);
+            
+            // Capitalizar el primer carácter del día de la semana
+            dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+            
+            // Formatear hora en formato 12 horas con AM/PM
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            // Convertir a formato 12 horas
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Si es 0, mostrar 12
+            const hoursString = hours.toString().padStart(2, '0');
+            
+            const timeString = `${hoursString}:${minutes} ${ampm}`;
+            
+            // Actualizar elementos en el DOM
+            const dateElement = document.getElementById('currentDate');
+            const timeElement = document.getElementById('currentTime');
+            
+            if (dateElement) {
+                dateElement.textContent = dateString;
+            }
+            
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+        
+        // Inicializar actualización de fecha y hora al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            
+            // Actualizar cada minuto
+            setInterval(updateDateTime, 60000);
+            
+            // Sincronizar con el inicio del próximo minuto
+            const now = new Date();
+            const secondsUntilNextMinute = 60 - now.getSeconds();
+            
+            setTimeout(function() {
+                updateDateTime();
+                setInterval(updateDateTime, 60000);
+            }, secondsUntilNextMinute * 1000);
+        });
+
+        // ========== VALIDACIONES DE SEGURIDAD ==========
         function validateName(input) {
             const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
             return nameRegex.test(input.trim());
@@ -1124,122 +1422,212 @@
             }
         }
 
-        // Editar empleado
+        // Editar empleado con formulario mejorado
         function editEmployee(id) {
             const employee = employees.find(e => e.id === id);
             if (!employee) return;
 
-            // Mostrar formulario de edición (simplificado para el ejemplo)
-            const newName = prompt('Nuevo nombre:', employee.name);
-            const newPosition = prompt('Nuevo cargo:', employee.position);
+            // Crear overlay y formulario de edición
+            const editOverlay = document.createElement('div');
+            editOverlay.className = 'edit-form-overlay';
             
-            if (newName && newPosition) {
-                employee.name = newName;
-                employee.position = newPosition;
-                renderEmployees();
-                
-                showNotification('Empleado actualizado exitosamente', 'success');
-            }
-        }
-
-        // Eliminar empleado
-        function deleteEmployee(id) {
-            // Usar SweetAlert2 si está disponible
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: '¿Está seguro?',
-                    text: "Esta acción no se puede deshacer",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#c9a876',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        employees = employees.filter(e => e.id !== id);
-                        renderEmployees();
-                        updateCommissionSelect();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Eliminado',
-                            text: 'El empleado ha sido eliminado',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    }
-                });
-            } else {
-                if (confirm('¿Está seguro de que desea eliminar este empleado?')) {
-                    employees = employees.filter(e => e.id !== id);
-                    renderEmployees();
-                    updateCommissionSelect();
-                    showNotification('Empleado eliminado exitosamente', 'success');
-                }
-            }
-        }
-
-        // Función para mostrar notificaciones
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 80px;
-                right: 20px;
-                background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
-                color: white;
-                padding: 15px 25px;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                z-index: 1000;
-                animation: slideIn 0.3s ease-out;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                max-width: 350px;
+            editOverlay.innerHTML = `
+                <div class="edit-form-container">
+                    <div class="edit-form-header">
+                        <div class="edit-form-title">
+                            <i class="fas fa-user-edit" style="color: #c9a876;"></i>
+                            Editar Empleado
+                        </div>
+                        <button class="close-edit-form" onclick="this.closest('.edit-form-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="editEmployeeForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Nombre Completo</label>
+                                    <input type="text" class="form-control custom-input" id="edit_name" value="${employee.name}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" class="form-control custom-input" id="edit_email" value="${employee.email}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Departamento</label>
+                                    <select class="form-control custom-input" id="edit_department" required>
+                                        <option value="administracion" ${employee.department === 'administracion' ? 'selected' : ''}>Administración</option>
+                                        <option value="enfermeria" ${employee.department === 'enfermeria' ? 'selected' : ''}>Enfermería</option>
+                                        <option value="recepcion" ${employee.department === 'recepcion' ? 'selected' : ''}>Recepción</option>
+                                        <option value="limpieza" ${employee.department === 'limpieza' ? 'selected' : ''}>Limpieza</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Cargo</label>
+                                    <input type="text" class="form-control custom-input" id="edit_position" value="${employee.position}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Salario Base</label>
+                                    <input type="number" class="form-control custom-input" id="edit_salary" value="${employee.salary}" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Estado</label>
+                                    <select class="form-control custom-input" id="edit_status" required>
+                                        <option value="active" ${employee.status === 'active' ? 'selected' : ''}>Activo</option>
+                                        <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Inactivo</option>
+                                        <option value="vacation" ${employee.status === 'vacation' ? 'selected' : ''}>Vacaciones</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.edit-form-overlay').remove()">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-salus">
+                                <i class="fas fa-save mr-2"></i>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
             `;
             
+            document.body.appendChild(editOverlay);
+            
+            // Manejar el envío del formulario
+            document.getElementById('editEmployeeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Actualizar datos del empleado
+                employee.name = document.getElementById('edit_name').value;
+                employee.email = document.getElementById('edit_email').value;
+                employee.department = document.getElementById('edit_department').value;
+                employee.position = document.getElementById('edit_position').value;
+                employee.salary = parseFloat(document.getElementById('edit_salary').value);
+                employee.status = document.getElementById('edit_status').value;
+                
+                renderEmployees();
+                updateCommissionSelect();
+                
+                // Remover el formulario
+                editOverlay.remove();
+                
+                // Mostrar notificación de éxito
+                showNotification('Empleado actualizado', 'Los datos se han actualizado exitosamente', 'success');
+            });
+            
+            // Cerrar al hacer clic fuera del formulario
+            editOverlay.addEventListener('click', function(e) {
+                if (e.target === editOverlay) {
+                    editOverlay.remove();
+                }
+            });
+        }
+
+        // Eliminar empleado con modal personalizado
+        function deleteEmployee(id) {
+            const employee = employees.find(e => e.id === id);
+            if (!employee) return;
+            
+            // Crear modal de confirmación
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="modal-title">Confirmar Eliminación</div>
+                    </div>
+                    
+                    <div class="modal-body">
+                        ¿Está seguro de que desea eliminar a <strong>${employee.name}</strong> del sistema?
+                        <br><br>
+                        Esta acción no se puede deshacer y se perderán todos los datos asociados a este empleado.
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="modal-btn modal-btn-cancel" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button class="modal-btn modal-btn-confirm" id="confirmDelete">
+                            Sí, eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            // Manejar confirmación
+            document.getElementById('confirmDelete').addEventListener('click', function() {
+                employees = employees.filter(e => e.id !== id);
+                renderEmployees();
+                updateCommissionSelect();
+                
+                modalOverlay.remove();
+                
+                // Mostrar notificación de éxito
+                showNotification('Empleado eliminado', `${employee.name} ha sido eliminado del sistema`, 'success');
+            });
+            
+            // Cerrar al hacer clic fuera del modal
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) {
+                    modalOverlay.remove();
+                }
+            });
+        }
+
+        // Función mejorada para mostrar notificaciones
+        function showNotification(title, message, type = 'success') {
+            // Remover notificación anterior si existe
+            const existingNotification = document.querySelector('.notification-toast');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = 'notification-toast';
+            
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                ${message}
+                <div class="notification-icon notification-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
             `;
             
             document.body.appendChild(notification);
             
-            // Animación CSS
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-                @keyframes slideOut {
-                    from {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                    to {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                }
-            `;
-            if (!document.head.querySelector('style[data-notification]')) {
-                style.setAttribute('data-notification', 'true');
-                document.head.appendChild(style);
-            }
-            
+            // Auto-remover después de 3 segundos
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease-out';
+                notification.style.animation = 'notificationPop 0.4s ease-out reverse';
                 setTimeout(() => {
                     notification.remove();
-                }, 300);
+                }, 400);
             }, 3000);
         }
 
@@ -1293,7 +1681,7 @@
             }
             
             if (!isValid) {
-                showNotification('Por favor corrija los errores en el formulario', 'error');
+                showNotification('Error en el formulario', 'Por favor corrija los errores antes de continuar', 'error');
                 return false;
             }
             
@@ -1322,7 +1710,7 @@
             updateCommissionSelect();
             
             // Notificación de éxito
-            showNotification('¡Empleado agregado exitosamente!', 'success');
+            showNotification('Empleado agregado', '¡El empleado se ha registrado exitosamente!', 'success');
             
             this.reset();
             customDepartment.classList.remove('show');
@@ -1349,7 +1737,7 @@
                 renderEmployees();
                 
                 // Notificación de éxito
-                showNotification(`Comisión de ${amount.toFixed(2)} agregada a ${employee.name}`, 'success');
+                showNotification('Comisión registrada', `Se agregó una comisión de ${amount.toFixed(2)} a ${employee.name}`, 'success');
                 
                 this.reset();
             }
