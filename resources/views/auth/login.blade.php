@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -84,6 +85,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="login-card">
         <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
@@ -116,9 +118,11 @@
             <button type="submit" class="button-primary">Iniciar Sesión</button>
 
             <p style="margin-top: 1rem; font-size: 0.875rem;">
-                ¿No tienes cuenta? <a href="{{ route('register') }}" style="color: #4C342C; text-decoration: none;">Regístrate aquí</a>
+                ¿No tienes cuenta? <a href="{{ route('register.persona') }}"
+                    style="color: #4C342C; text-decoration: none;">Regístrate aquí</a>
             </p>
         </form>
     </div>
 </body>
+
 </html>

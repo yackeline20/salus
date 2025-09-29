@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AuthController; // ← FALTABA ESTA LÍNEA
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\RegisteredPersonaController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\CitasController;
 use App\Http\Controllers\ReportesController;
@@ -10,59 +13,88 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 
-// Redirigir la página principal al login
+// Ruta raíz - Redirige según el estado de autenticación
 Route::get('/', function () {
-    return redirect('/login');
+    if (Auth::check()) {
+        return redirect('/dashboard');
+    }
+    return view('welcome');
 });
 
-// Rutas de autenticación personalizada
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+// ========================================
+// RUTAS DE PRUEBA (TEMPORALES)
+// ========================================
+Route::get('/test-register-success', function() {
+    return view('auth.register-persona')->with([
+        'success' => true,
+        'nombre' => 'Test',
+        'apellido' => 'Usuario',
+        'correo' => 'test@test.com'
+    ]);
+});
+
+// ========================================
+// RUTAS DE AUTENTICACIÓN CON PERSONAS
+// ========================================
+
+// Login con correo (tabla correo)
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+// Registro de personas
+Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
+Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
+
+// ========================================
+// MANTENER RUTAS ANTIGUAS (OPCIONAL)
+// ========================================
+
+// Registro antiguo con users (mantener por compatibilidad si lo necesitas)
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Ruta de admin
+// ========================================
+// RUTA DE ADMIN (SIN CAMBIOS)
+// ========================================
 Route::get('/admin/login', function () {
     return view('admin.login');
 })->name('admin.login');
 Route::post('/admin/login', [AdminController::class, 'login'])->name('admin.login.post');
 
-// Rutas protegidas (requieren autenticación)
+// ========================================
+// RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN)
+// ========================================
 Route::middleware('auth')->group(function () {
+    // Dashboard principal
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Módulos del sistema
     Route::get('/citas', [CitasController::class, 'index'])->name('citas');
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario');
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes');
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal');
+
+    // Facturación
     Route::get('/factura', function () {
         return view('factura');
     })->name('factura');
     Route::get('/factura/crear', function () {
         return view('factura-crear');
     })->name('factura.crear');
+
+    // Servicios
     Route::get('/servicios', function () {
         return view('gestion-servicios');
     })->name('servicios');
+
+    // Perfil de usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Ruta raíz - Solo redirige si está autenticado
-Route::get('/', function () {
-    // Si el usuario está autenticado, va al dashboard
-    if (Auth::check()) {
-        return redirect('/dashboard');
-    }
-    // Si NO está autenticado, muestra la página de bienvenida/login
-    return view('welcome'); // o la vista que tengas
-});
-
-// Rutas de autenticación (NO las toques)
-require __DIR__.'/auth.php';
-
-// Ruta del dashboard (ya existente, NO la cambies)
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// ========================================
+// RUTAS DE AUTENTICACIÓN PREDETERMINADAS (SI LAS NECESITAS)
+// ========================================
+require __DIR__ . '/auth.php';
