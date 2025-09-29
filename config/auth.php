@@ -15,7 +15,7 @@ return [
 
     'defaults' => [
         'guard' => 'web',
-        'passwords' => 'correos', // Cambiado de 'users' a 'correos'
+        'passwords' => 'personas', // Cambiado a 'personas'
     ],
 
     /*
@@ -38,7 +38,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'correos', // Cambiado de 'users' a 'correos'
+            'provider' => 'personas', // Cambiado a 'personas'
         ],
     ],
 
@@ -66,16 +66,17 @@ return [
             'model' => App\Models\User::class,
         ],
 
-        // Nuevo provider para correos
+        // Nuevo provider para personas (CORREGIDO)
+        'personas' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Persona::class,
+        ],
+
+        // Provider para correos (mantenlo si lo usas en otro lugar)
         'correos' => [
             'driver' => 'eloquent',
             'model' => App\Models\Correo::class,
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*
@@ -106,10 +107,18 @@ return [
             'throttle' => 60,
         ],
 
-        // Nueva configuración para correos
+        // Nueva configuración para personas
+        'personas' => [
+            'provider' => 'personas',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // Configuración para correos
         'correos' => [
             'provider' => 'correos',
-            'table' => 'password_reset_tokens', // Puedes usar la misma tabla o crear una nueva
+            'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

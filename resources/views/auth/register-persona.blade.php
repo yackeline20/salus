@@ -188,7 +188,7 @@
                     Ya puedes acceder a tu dashboard.
                 </p>
             </div>
-            <a href="{{ route('dashboard') }}" class="button-primary">Ingresar al Dashboard</a>
+            <a href="{{ route('dashboard') }}" class="button-primary">Ingresar</a>
             <a href="{{ url('/register-persona') }}" class="button-secondary">Registrar Otra Cuenta</a>
         @else
             @if(session('error'))
@@ -364,16 +364,6 @@
             </p>
         @endif
     </div>
-
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            console.log('Formulario enviado');
-            const formData = new FormData(this);
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value);
-            }
-        });
-    </script>
 </body>
 
 </html>

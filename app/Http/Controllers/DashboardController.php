@@ -9,23 +9,22 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Obtener el usuario autenticado (será del modelo Correo)
-        $usuario = Auth::user();
+        // Obtener el usuario autenticado (ahora será del modelo Persona)
+        $persona = Auth::user();
 
-        // Verificar que el usuario esté autenticado y tenga una persona asociada
-        if (!$usuario || !$usuario->persona) {
+        // Verificar que el usuario esté autenticado
+        if (!$persona) {
             return redirect()->route('login')->with('error', 'Sesión inválida');
         }
 
-        // Obtener datos de la persona
-        $persona = $usuario->persona;
+        // Obtener el correo principal de la persona
+        $correo = $persona->getCorreoPrincipal();
 
         // Pasar datos a la vista
         return view('dashboard', [
-            'usuario' => $usuario,
             'persona' => $persona,
             'nombre_completo' => $persona->getNombreCompleto(),
-            'correo' => $usuario->Correo
+            'correo' => $correo ? $correo->Correo : 'Sin correo'
         ]);
     }
 }

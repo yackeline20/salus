@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class Persona extends Model
+class Persona extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $table = 'persona';
     protected $primaryKey = 'Cod_Persona';
@@ -23,6 +24,19 @@ class Persona extends Model
     ];
 
     protected $hidden = ['Password'];
+
+    // IMPORTANTE: Laravel busca 'password' por defecto, debemos decirle que use 'Password'
+    public function getAuthPassword()
+    {
+        return $this->Password;
+    }
+
+    // IMPORTANTE: Laravel busca 'email' por defecto para algunas operaciones
+    public function getEmailForPasswordReset()
+    {
+        $correo = $this->getCorreoPrincipal();
+        return $correo ? $correo->Correo : null;
+    }
 
     // Relaciones
     public function correos()

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,25 +28,32 @@ class AuthenticatedSessionController extends Controller
     {
         // Validación personalizada para correo
         $request->validate([
-            'email' => 'required|email', // Mantén el nombre 'email' para compatibilidad con tu vista
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
         // Buscar el correo en la tabla correo
         $correoModel = Correo::where('Correo', $request->email)->first();
 
-        if ($correoModel && Hash::check($request->password, $correoModel->persona->Password)) {
-            // Login exitoso
-            Auth::login($correoModel, $request->filled('remember'));
-            $request->session()->regenerate();
-
-            return redirect()->intended('/dashboard');
+        // Verificar que existe el correo y tiene persona asociada
+        if (!$correoModel || !$correoModel->persona) {
+            return back()->withErrors([
+                'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+            ])->onlyInput('email');
         }
 
-        // Login fallido
-        return back()->withErrors([
-            'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
-        ])->onlyInput('email');
+        // Verificar la contraseña
+        if (!Hash::check($request->password, $correoModel->persona->Password)) {
+            return back()->withErrors([
+                'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+            ])->onlyInput('email');
+        }
+
+        // Login exitoso - Hacer login con la PERSONA (no con el correo)
+        Auth::login($correoModel->persona, $request->filled('remember'));
+        $request->session()->regenerate();
+
+        return redirect()->intended('/dashboard');
     }
 
     /**

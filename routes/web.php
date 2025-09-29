@@ -22,15 +22,15 @@ Route::get('/', function () {
 });
 
 // ========================================
-// RUTAS DE PRUEBA (TEMPORALES)
+// RUTA DE PRUEBA (TEMPORAL)
 // ========================================
 Route::get('/test-register-success', function() {
-    return view('auth.register-persona')->with([
-        'success' => true,
-        'nombre' => 'Test',
-        'apellido' => 'Usuario',
-        'correo' => 'test@test.com'
-    ]);
+    session()->flash('success', true);
+    session()->flash('nombre', 'Test');
+    session()->flash('apellido', 'Usuario');
+    session()->flash('correo', 'test@test.com');
+
+    return view('auth.register-persona');
 });
 
 // ========================================
