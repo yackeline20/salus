@@ -599,6 +599,13 @@
             border-radius: 10px;
             border: 1px solid #e5e7eb;
             min-width: 120px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .employee-commission:hover {
+            background: #f0fdf4;
+            border-color: #10b981;
         }
 
         .commission-amount {
@@ -918,6 +925,199 @@
             transition: color 0.3s;
         }
 
+        /* ESTILOS PARA EL SISTEMA DE COMISIONES */
+        .commissions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .commissions-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .commissions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .commissions-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-commissions {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: color 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-commissions:hover {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .total-commissions {
+            background: linear-gradient(135deg, #c9a876, #d4b896);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .total-amount {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .total-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .commissions-list {
+            margin-top: 20px;
+        }
+
+        .commission-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s;
+        }
+
+        .commission-item:hover {
+            background: #f5efe6;
+            transform: translateX(5px);
+        }
+
+        .commission-header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .commission-amount-display {
+            font-size: 24px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .commission-date {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .commission-details {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .commission-type-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .commission-description {
+            color: #6b7280;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .commission-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-edit-commission {
+            padding: 6px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-edit-commission:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-delete-commission {
+            padding: 6px 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-delete-commission:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .no-commissions {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .no-commissions i {
+            font-size: 60px;
+            opacity: 0.3;
+            margin-bottom: 15px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .welcome-header {
@@ -954,6 +1154,12 @@
             .stats-card {
                 margin-bottom: 15px;
             }
+
+            .commission-header-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
         }
     </style>
 @stop
@@ -964,7 +1170,6 @@
         function updateDateTime() {
             const now = new Date();
             
-            // Configuración para fecha en español
             const optionsDate = { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -972,52 +1177,29 @@
                 day: 'numeric' 
             };
             
-            // Formatear fecha en español para Honduras
             let dateString = now.toLocaleDateString('es-HN', optionsDate);
-            
-            // Capitalizar el primer carácter del día de la semana
             dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
             
-            // Formatear hora en formato 12 horas con AM/PM
             let hours = now.getHours();
             const minutes = now.getMinutes().toString().padStart(2, '0');
             const ampm = hours >= 12 ? 'PM' : 'AM';
             
-            // Convertir a formato 12 horas
             hours = hours % 12;
-            hours = hours ? hours : 12; // Si es 0, mostrar 12
+            hours = hours ? hours : 12;
             const hoursString = hours.toString().padStart(2, '0');
             
             const timeString = `${hoursString}:${minutes} ${ampm}`;
             
-            // Actualizar elementos en el DOM
             const dateElement = document.getElementById('currentDate');
             const timeElement = document.getElementById('currentTime');
             
-            if (dateElement) {
-                dateElement.textContent = dateString;
-            }
-            
-            if (timeElement) {
-                timeElement.textContent = timeString;
-            }
+            if (dateElement) dateElement.textContent = dateString;
+            if (timeElement) timeElement.textContent = timeString;
         }
         
-        // Inicializar actualización de fecha y hora al cargar
         document.addEventListener('DOMContentLoaded', function() {
             updateDateTime();
-            
-            // Actualizar cada minuto
             setInterval(updateDateTime, 60000);
-            
-            // Sincronizar con el inicio del próximo minuto
-            const now = new Date();
-            const secondsUntilNextMinute = 60 - now.getSeconds();
-            
-            setTimeout(function() {
-                updateDateTime();
-                setInterval(updateDateTime, 60000);
-            }, secondsUntilNextMinute * 1000);
         });
 
         // ========== VALIDACIONES DE SEGURIDAD ==========
@@ -1053,9 +1235,7 @@
             const field = document.getElementById(fieldId);
             const existingError = field.parentNode.querySelector('.field-error');
             
-            if (existingError) {
-                existingError.remove();
-            }
+            if (existingError) existingError.remove();
             
             field.classList.add('is-invalid');
             
@@ -1070,9 +1250,7 @@
             const field = document.getElementById(fieldId);
             const errorDiv = field.parentNode.querySelector('.field-error');
             
-            if (errorDiv) {
-                errorDiv.remove();
-            }
+            if (errorDiv) errorDiv.remove();
             
             field.classList.remove('is-invalid');
             field.classList.add('is-valid');
@@ -1090,15 +1268,12 @@
             const positionField = document.getElementById('position');
             const customDepartmentField = document.getElementById('customDepartment');
 
-            // Validación para campo de nombre
             if (nameField) {
                 nameField.addEventListener('input', function() {
                     const originalValue = this.value;
                     const sanitizedValue = sanitizeInput(originalValue, 'name');
                     
-                    if (originalValue !== sanitizedValue) {
-                        this.value = sanitizedValue;
-                    }
+                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
                     
                     if (this.value.trim()) {
                         if (!validateName(this.value)) {
@@ -1112,23 +1287,14 @@
                         removeFieldError('employee_name');
                     }
                 });
-
-                nameField.addEventListener('blur', function() {
-                    if (this.value.trim() && !validateName(this.value)) {
-                        showFieldError('employee_name', 'Por favor ingrese un nombre válido');
-                    }
-                });
             }
 
-            // Validación para campo de email
             if (emailField) {
                 emailField.addEventListener('input', function() {
                     const originalValue = this.value;
                     const sanitizedValue = sanitizeInput(originalValue, 'email');
                     
-                    if (originalValue !== sanitizedValue) {
-                        this.value = sanitizedValue;
-                    }
+                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
                     
                     if (this.value.trim()) {
                         if (!validateEmail(this.value)) {
@@ -1140,49 +1306,31 @@
                         removeFieldError('email');
                     }
                 });
-
-                emailField.addEventListener('blur', function() {
-                    if (this.value.trim() && !validateEmail(this.value)) {
-                        showFieldError('email', 'El formato del email no es válido');
-                    }
-                });
             }
 
-            // VALIDACIÓN MEJORADA PARA CAMPO DE CARGO
             if (positionField) {
                 positionField.addEventListener('input', function() {
                     const originalValue = this.value;
                     
-                    // Sanitización más estricta para cargos profesionales
                     let sanitizedValue = originalValue
-                        .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '') // Remover caracteres especiales
-                        .replace(/\s+/g, ' ') // Reemplazar múltiples espacios con uno solo
-                        .replace(/^[\s.'\-()\/]+/, '') // Remover caracteres especiales al inicio
-                        .replace(/[\s.'\-()\/]+$/, ''); // Remover caracteres especiales al final
+                        .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '')
+                        .replace(/\s+/g, ' ')
+                        .replace(/^[\s.'\-()\/]+/, '')
+                        .replace(/[\s.'\-()\/]+$/, '');
                     
-                    // Limitar caracteres consecutivos
                     sanitizedValue = sanitizedValue.replace(/[.'\-()\/]{2,}/g, match => match[0]);
                     
-                    if (originalValue !== sanitizedValue) {
-                        this.value = sanitizedValue;
-                    }
+                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
                     
                     if (this.value.trim()) {
                         const trimmedValue = this.value.trim();
                         
-                        // Validaciones específicas para cargos
                         if (trimmedValue.length < 2) {
                             showFieldError('position', 'El cargo debe tener al menos 2 caracteres');
                         } else if (trimmedValue.length > 80) {
                             showFieldError('position', 'El cargo no puede exceder 80 caracteres');
                         } else if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+$/.test(trimmedValue)) {
                             showFieldError('position', 'El cargo contiene caracteres no permitidos');
-                        } else if (/^[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]/.test(trimmedValue)) {
-                            showFieldError('position', 'El cargo debe comenzar con una letra');
-                        } else if (/[.'\-()\/]{3,}/.test(trimmedValue)) {
-                            showFieldError('position', 'Demasiados caracteres especiales consecutivos');
-                        } else if (trimmedValue.split(' ').some(word => word.length > 30)) {
-                            showFieldError('position', 'Las palabras del cargo son demasiado largas');
                         } else {
                             removeFieldError('position');
                         }
@@ -1190,45 +1338,14 @@
                         removeFieldError('position');
                     }
                 });
-
-                positionField.addEventListener('blur', function() {
-                    const trimmedValue = this.value.trim();
-                    if (trimmedValue) {
-                        if (!validatePosition(trimmedValue) || !validateLength(trimmedValue, 2, 80)) {
-                            showFieldError('position', 'Por favor ingrese un cargo profesional válido');
-                        } else {
-                            removeFieldError('position');
-                        }
-                    }
-                });
-
-                // Prevenir paste de contenido malicioso
-                positionField.addEventListener('paste', function(e) {
-                    e.preventDefault();
-                    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
-                    const sanitizedData = pasteData
-                        .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '')
-                        .substring(0, 80);
-                    
-                    this.value = sanitizedData;
-                    this.dispatchEvent(new Event('input'));
-                });
-
-                // Prevenir arrastrar y soltar
-                positionField.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                });
             }
 
-            // Validación para departamento personalizado
             if (customDepartmentField) {
                 customDepartmentField.addEventListener('input', function() {
                     const originalValue = this.value;
                     const sanitizedValue = sanitizeInput(originalValue, 'name');
                     
-                    if (originalValue !== sanitizedValue) {
-                        this.value = sanitizedValue;
-                    }
+                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
                     
                     if (this.value.trim()) {
                         if (!validateName(this.value)) {
@@ -1244,7 +1361,6 @@
                 });
             }
 
-            // Manejar departamento personalizado
             document.getElementById('department').addEventListener('change', function() {
                 const customInput = document.getElementById('customDepartment');
                 if (this.value === 'otro') {
@@ -1257,9 +1373,8 @@
                 }
             });
         });
-        // VALIDACIONES DE SEGURIDAD - FIN
 
-        // Datos de ejemplo de empleados
+        // ========== DATOS Y FUNCIONES PRINCIPALES ==========
         let employees = [
             {
                 id: 1,
@@ -1269,7 +1384,7 @@
                 position: 'Administradora',
                 hire_date: '2023-01-15',
                 salary: 30000,
-                commissions: 2850,
+                commissions: [],
                 status: 'active'
             },
             {
@@ -1280,7 +1395,7 @@
                 position: 'Enfermera Senior',
                 hire_date: '2022-06-10',
                 salary: 28000,
-                commissions: 1650,
+                commissions: [],
                 status: 'active'
             },
             {
@@ -1291,7 +1406,7 @@
                 position: 'Recepcionista',
                 hire_date: '2023-03-20',
                 salary: 22000,
-                commissions: 980,
+                commissions: [],
                 status: 'vacation'
             },
             {
@@ -1302,17 +1417,38 @@
                 position: 'Enfermera',
                 hire_date: '2023-07-01',
                 salary: 25000,
-                commissions: 1200,
+                commissions: [],
                 status: 'active'
             }
         ];
 
-        // Función para obtener iniciales
+        // Agregar comisiones de ejemplo
+        employees[0].commissions = [
+            {id: 1, amount: 850, type: 'venta', description: 'Venta de tratamiento facial', date: '2024-01-15'},
+            {id: 2, amount: 1200, type: 'bono', description: 'Bono por desempeño mensual', date: '2024-01-28'},
+            {id: 3, amount: 800, type: 'meta', description: 'Cumplimiento meta trimestral', date: '2024-02-05'}
+        ];
+
+        employees[1].commissions = [
+            {id: 1, amount: 650, type: 'venta', description: 'Venta de tratamiento corporal', date: '2024-01-20'},
+            {id: 2, amount: 1000, type: 'referido', description: 'Referido de 2 clientes nuevos', date: '2024-02-01'}
+        ];
+
+        employees[2].commissions = [
+            {id: 1, amount: 480, type: 'bono', description: 'Bono por excelente atención', date: '2024-01-25'},
+            {id: 2, amount: 500, type: 'meta', description: 'Meta de satisfacción cliente', date: '2024-02-10'}
+        ];
+
+        employees[3].commissions = [
+            {id: 1, amount: 1200, type: 'venta', description: 'Venta de paquete premium', date: '2024-02-03'}
+        ];
+
+        let commissionIdCounter = 10;
+
         function getInitials(name) {
             return name.split(' ').map(n => n[0]).join('').toUpperCase();
         }
 
-        // Función para formatear departamento
         function formatDepartment(dept) {
             const departments = {
                 'administracion': 'Administración',
@@ -1323,7 +1459,6 @@
             return departments[dept] || dept;
         }
 
-        // Función para obtener clase de estado
         function getStatusClass(status) {
             switch(status) {
                 case 'active': return 'status-active';
@@ -1333,7 +1468,6 @@
             }
         }
 
-        // Función para obtener texto de estado
         function getStatusText(status) {
             switch(status) {
                 case 'active': return 'Activo';
@@ -1343,7 +1477,242 @@
             }
         }
 
-        // Renderizar empleados
+        function getTotalCommissions(employee) {
+            return employee.commissions.reduce((sum, comm) => sum + comm.amount, 0);
+        }
+
+        function formatCommissionType(type) {
+            const types = {
+                'venta': 'Venta',
+                'bono': 'Bono',
+                'referido': 'Referido',
+                'meta': 'Meta',
+                'otro': 'Otro'
+            };
+            return types[type] || type;
+        }
+
+        // ========== VER COMISIONES DEL EMPLEADO ==========
+        function viewCommissions(employeeId) {
+            const employee = employees.find(e => e.id === employeeId);
+            if (!employee) return;
+
+            const total = getTotalCommissions(employee);
+
+            const modal = document.createElement('div');
+            modal.className = 'commissions-modal';
+            
+            modal.innerHTML = `
+                <div class="commissions-container">
+                    <div class="commissions-header">
+                        <div class="commissions-title">
+                            <i class="fas fa-money-bill-wave" style="color: #c9a876;"></i>
+                            Comisiones de ${employee.name}
+                        </div>
+                        <button class="close-commissions">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="total-commissions">
+                        <div class="total-amount">${total.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="total-label">Total de Comisiones</div>
+                    </div>
+                    
+                    <div class="commissions-list" id="commissionsListContainer">
+                        ${employee.commissions.length > 0 ? employee.commissions.map(comm => `
+                            <div class="commission-item">
+                                <div class="commission-header-info">
+                                    <div class="commission-amount-display">${comm.amount.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                    <div class="commission-date">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        ${new Date(comm.date).toLocaleDateString('es-HN')}
+                                    </div>
+                                </div>
+                                <div class="commission-details">
+                                    <span class="commission-type-badge">${formatCommissionType(comm.type)}</span>
+                                </div>
+                                ${comm.description ? `<div class="commission-description">${comm.description}</div>` : ''}
+                                <div class="commission-actions">
+                                    <button class="btn-edit-commission" onclick="editCommission(${employeeId}, ${comm.id})">
+                                        <i class="fas fa-edit mr-1"></i> Editar
+                                    </button>
+                                    <button class="btn-delete-commission" onclick="deleteCommission(${employeeId}, ${comm.id})">
+                                        <i class="fas fa-trash mr-1"></i> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('') : `
+                            <div class="no-commissions">
+                                <i class="fas fa-inbox"></i>
+                                <p>No hay comisiones registradas para este empleado</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.close-commissions').addEventListener('click', () => modal.remove());
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        // ========== EDITAR COMISIÓN ==========
+        function editCommission(employeeId, commissionId) {
+            const employee = employees.find(e => e.id === employeeId);
+            if (!employee) return;
+            
+            const commission = employee.commissions.find(c => c.id === commissionId);
+            if (!commission) return;
+
+            const editModal = document.createElement('div');
+            editModal.className = 'edit-form-overlay';
+            
+            editModal.innerHTML = `
+                <div class="edit-form-container">
+                    <div class="edit-form-header">
+                        <div class="edit-form-title">
+                            <i class="fas fa-edit" style="color: #c9a876;"></i>
+                            Editar Comisión
+                        </div>
+                        <button class="close-edit-form" onclick="this.closest('.edit-form-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="editCommissionForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Monto ($)</label>
+                                    <input type="number" class="form-control custom-input" id="edit_comm_amount" value="${commission.amount}" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Fecha</label>
+                                    <input type="date" class="form-control custom-input" id="edit_comm_date" value="${commission.date}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Tipo de Comisión</label>
+                                    <select class="form-control custom-input" id="edit_comm_type" required>
+                                        <option value="venta" ${commission.type === 'venta' ? 'selected' : ''}>Venta</option>
+                                        <option value="bono" ${commission.type === 'bono' ? 'selected' : ''}>Bono por desempeño</option>
+                                        <option value="referido" ${commission.type === 'referido' ? 'selected' : ''}>Referido</option>
+                                        <option value="meta" ${commission.type === 'meta' ? 'selected' : ''}>Cumplimiento de meta</option>
+                                        <option value="otro" ${commission.type === 'otro' ? 'selected' : ''}>Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>Descripción</label>
+                                    <textarea class="form-control custom-input" id="edit_comm_description" rows="3">${commission.description || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.edit-form-overlay').remove()">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-salus">
+                                <i class="fas fa-save mr-2"></i>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(editModal);
+            
+            document.getElementById('editCommissionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                commission.amount = parseFloat(document.getElementById('edit_comm_amount').value);
+                commission.date = document.getElementById('edit_comm_date').value;
+                commission.type = document.getElementById('edit_comm_type').value;
+                commission.description = document.getElementById('edit_comm_description').value;
+                
+                editModal.remove();
+                
+                document.querySelector('.commissions-modal').remove();
+                
+                renderEmployees();
+                
+                showNotification('Comisión actualizada', 'La comisión se ha actualizado exitosamente', 'success');
+            });
+            
+            editModal.addEventListener('click', (e) => {
+                if (e.target === editModal) editModal.remove();
+            });
+        }
+
+        // ========== ELIMINAR COMISIÓN ==========
+        function deleteCommission(employeeId, commissionId) {
+            const employee = employees.find(e => e.id === employeeId);
+            if (!employee) return;
+            
+            const commission = employee.commissions.find(c => c.id === commissionId);
+            if (!commission) return;
+
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            modalOverlay.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="modal-title">Confirmar Eliminación</div>
+                    </div>
+                    
+                    <div class="modal-body">
+                        ¿Está seguro de que desea eliminar esta comisión de <strong>${commission.amount.toFixed(2)}</strong>?
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="modal-btn modal-btn-cancel" onclick="this.closest('.modal-overlay').remove()">
+                            Cancelar
+                        </button>
+                        <button class="modal-btn modal-btn-confirm" id="confirmDeleteComm">
+                            Sí, eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            
+            document.getElementById('confirmDeleteComm').addEventListener('click', function() {
+                employee.commissions = employee.commissions.filter(c => c.id !== commissionId);
+                
+                modalOverlay.remove();
+                
+                document.querySelector('.commissions-modal').remove();
+                
+                renderEmployees();
+                
+                showNotification('Comisión eliminada', 'La comisión se ha eliminado del sistema', 'success');
+            });
+            
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) modalOverlay.remove();
+            });
+        }
+
+        // ========== RENDERIZAR EMPLEADOS ==========
         function renderEmployees(filter = 'todos') {
             const container = document.getElementById('employeesList');
             let filteredEmployees = employees;
@@ -1362,59 +1731,63 @@
                 return;
             }
 
-            container.innerHTML = filteredEmployees.map(employee => `
-                <div class="employee-item" data-id="${employee.id}">
-                    <div class="employee-info">
-                        <div class="employee-avatar">
-                            ${getInitials(employee.name)}
+            container.innerHTML = filteredEmployees.map(employee => {
+                const totalComm = getTotalCommissions(employee);
+                return `
+                    <div class="employee-item" data-id="${employee.id}">
+                        <div class="employee-info">
+                            <div class="employee-avatar">
+                                ${getInitials(employee.name)}
+                            </div>
+                            <div class="employee-details">
+                                <h4>${employee.name}</h4>
+                                <p><i class="fas fa-envelope mr-1"></i> ${employee.email}</p>
+                                <p><i class="fas fa-building mr-1"></i> ${formatDepartment(employee.department)} • ${employee.position}</p>
+                                <p><i class="fas fa-calendar mr-1"></i> Desde ${new Date(employee.hire_date).toLocaleDateString()}</p>
+                            </div>
+                            <div class="employee-commission" onclick="viewCommissions(${employee.id})" title="Ver todas las comisiones">
+                                <div class="commission-amount">${totalComm.toLocaleString()}</div>
+                                <div class="commission-label">Comisiones</div>
+                            </div>
                         </div>
-                        <div class="employee-details">
-                            <h4>${employee.name}</h4>
-                            <p><i class="fas fa-envelope mr-1"></i> ${employee.email}</p>
-                            <p><i class="fas fa-building mr-1"></i> ${formatDepartment(employee.department)} • ${employee.position}</p>
-                            <p><i class="fas fa-calendar mr-1"></i> Desde ${new Date(employee.hire_date).toLocaleDateString()}</p>
-                        </div>
-                        <div class="employee-commission">
-                            <div class="commission-amount">${employee.commissions.toLocaleString()}</div>
-                            <div class="commission-label">Comisiones</div>
+                        <div class="employee-controls">
+                            <button class="status-badge ${getStatusClass(employee.status)}">
+                                ${getStatusText(employee.status)}
+                            </button>
+                            <button class="action-btn commission-btn" onclick="addCommission(${employee.id})" title="Agregar Comisión">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="action-btn" onclick="viewCommissions(${employee.id})" title="Ver Comisiones" style="color: #10b981; border-color: #10b981;">
+                                <i class="fas fa-list-alt"></i>
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editEmployee(${employee.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteEmployee(${employee.id})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="employee-controls">
-                        <button class="status-badge ${getStatusClass(employee.status)}">
-                            ${getStatusText(employee.status)}
-                        </button>
-                        <button class="action-btn commission-btn" onclick="addCommission(${employee.id})" title="Agregar Comisión">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="action-btn edit-btn" onclick="editEmployee(${employee.id})" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn delete-btn" onclick="deleteEmployee(${employee.id})" title="Eliminar">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
-            // Actualizar select de comisiones
             updateCommissionSelect();
         }
 
-        // Actualizar select de empleados en comisiones
+        // ========== ACTUALIZAR SELECT DE COMISIONES ==========
         function updateCommissionSelect() {
             const select = document.getElementById('commission_employee');
             select.innerHTML = '<option value="">Seleccionar empleado</option>' +
                 employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
         }
 
-        // Agregar comisión
+        // ========== AGREGAR COMISIÓN ==========
         function addCommission(employeeId) {
             const employee = employees.find(e => e.id === employeeId);
             if (employee) {
                 document.getElementById('commission_employee').value = employeeId;
                 document.getElementById('commission_amount').focus();
                 
-                // Scroll suave a la sección de comisiones
                 document.querySelector('#commissionForm').closest('.appointment-card').scrollIntoView({
                     behavior: 'smooth',
                     block: 'center'
@@ -1422,12 +1795,11 @@
             }
         }
 
-        // Editar empleado con formulario mejorado
+        // ========== EDITAR EMPLEADO ==========
         function editEmployee(id) {
             const employee = employees.find(e => e.id === id);
             if (!employee) return;
 
-            // Crear overlay y formulario de edición
             const editOverlay = document.createElement('div');
             editOverlay.className = 'edit-form-overlay';
             
@@ -1512,11 +1884,9 @@
             
             document.body.appendChild(editOverlay);
             
-            // Manejar el envío del formulario
             document.getElementById('editEmployeeForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                // Actualizar datos del empleado
                 employee.name = document.getElementById('edit_name').value;
                 employee.email = document.getElementById('edit_email').value;
                 employee.department = document.getElementById('edit_department').value;
@@ -1527,14 +1897,11 @@
                 renderEmployees();
                 updateCommissionSelect();
                 
-                // Remover el formulario
                 editOverlay.remove();
                 
-                // Mostrar notificación de éxito
                 showNotification('Empleado actualizado', 'Los datos se han actualizado exitosamente', 'success');
             });
             
-            // Cerrar al hacer clic fuera del formulario
             editOverlay.addEventListener('click', function(e) {
                 if (e.target === editOverlay) {
                     editOverlay.remove();
@@ -1542,12 +1909,11 @@
             });
         }
 
-        // Eliminar empleado con modal personalizado
+        // ========== ELIMINAR EMPLEADO (MENSAJE CORTO) ==========
         function deleteEmployee(id) {
             const employee = employees.find(e => e.id === id);
             if (!employee) return;
             
-            // Crear modal de confirmación
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'modal-overlay';
             
@@ -1562,8 +1928,6 @@
                     
                     <div class="modal-body">
                         ¿Está seguro de que desea eliminar a <strong>${employee.name}</strong> del sistema?
-                        <br><br>
-                        Esta acción no se puede deshacer y se perderán todos los datos asociados a este empleado.
                     </div>
                     
                     <div class="modal-footer">
@@ -1579,7 +1943,6 @@
             
             document.body.appendChild(modalOverlay);
             
-            // Manejar confirmación
             document.getElementById('confirmDelete').addEventListener('click', function() {
                 employees = employees.filter(e => e.id !== id);
                 renderEmployees();
@@ -1587,11 +1950,9 @@
                 
                 modalOverlay.remove();
                 
-                // Mostrar notificación de éxito
                 showNotification('Empleado eliminado', `${employee.name} ha sido eliminado del sistema`, 'success');
             });
             
-            // Cerrar al hacer clic fuera del modal
             modalOverlay.addEventListener('click', function(e) {
                 if (e.target === modalOverlay) {
                     modalOverlay.remove();
@@ -1599,9 +1960,8 @@
             });
         }
 
-        // Función mejorada para mostrar notificaciones
+        // ========== MOSTRAR NOTIFICACIONES ==========
         function showNotification(title, message, type = 'success') {
-            // Remover notificación anterior si existe
             const existingNotification = document.querySelector('.notification-toast');
             if (existingNotification) {
                 existingNotification.remove();
@@ -1622,7 +1982,6 @@
             
             document.body.appendChild(notification);
             
-            // Auto-remover después de 3 segundos
             setTimeout(() => {
                 notification.style.animation = 'notificationPop 0.4s ease-out reverse';
                 setTimeout(() => {
@@ -1631,13 +1990,12 @@
             }, 3000);
         }
 
-        // Manejar envío del formulario de empleado CON VALIDACIONES
+        // ========== MANEJAR FORMULARIO DE EMPLEADO ==========
         document.getElementById('employeeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             let isValid = true;
             
-            // Validar nombre
             const name = document.getElementById('employee_name').value.trim();
             if (!name) {
                 showFieldError('employee_name', 'El nombre es requerido');
@@ -1647,7 +2005,6 @@
                 isValid = false;
             }
             
-            // Validar email
             const email = document.getElementById('email').value.trim();
             if (!email) {
                 showFieldError('email', 'El email es requerido');
@@ -1657,7 +2014,6 @@
                 isValid = false;
             }
             
-            // Validar cargo
             const position = document.getElementById('position').value.trim();
             if (!position) {
                 showFieldError('position', 'El cargo es requerido');
@@ -1667,7 +2023,6 @@
                 isValid = false;
             }
             
-            // Validar departamento personalizado si está visible
             const customDepartmentField = document.getElementById('customDepartment');
             if (customDepartmentField.classList.contains('show')) {
                 const customDept = customDepartmentField.value.trim();
@@ -1685,7 +2040,6 @@
                 return false;
             }
             
-            // Si todo está válido, procesar el formulario
             const departmentSelect = document.getElementById('department');
             const customDepartment = document.getElementById('customDepartment');
             
@@ -1701,7 +2055,7 @@
                 position: position,
                 hire_date: document.getElementById('hire_date').value,
                 salary: parseFloat(document.getElementById('salary').value),
-                commissions: 0,
+                commissions: [],
                 status: 'active'
             };
 
@@ -1709,20 +2063,18 @@
             renderEmployees();
             updateCommissionSelect();
             
-            // Notificación de éxito
             showNotification('Empleado agregado', '¡El empleado se ha registrado exitosamente!', 'success');
             
             this.reset();
             customDepartment.classList.remove('show');
             
-            // Limpiar validaciones
             document.querySelectorAll('.field-error').forEach(error => error.remove());
             document.querySelectorAll('.is-valid, .is-invalid').forEach(field => {
                 field.classList.remove('is-valid', 'is-invalid');
             });
         });
 
-        // Manejar envío del formulario de comisión
+        // ========== MANEJAR FORMULARIO DE COMISIÓN ==========
         document.getElementById('commissionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -1733,17 +2085,24 @@
             
             const employee = employees.find(e => e.id === employeeId);
             if (employee) {
-                employee.commissions += amount;
+                const newCommission = {
+                    id: ++commissionIdCounter,
+                    amount: amount,
+                    type: type,
+                    description: description,
+                    date: new Date().toISOString().split('T')[0]
+                };
+                
+                employee.commissions.push(newCommission);
                 renderEmployees();
                 
-                // Notificación de éxito
                 showNotification('Comisión registrada', `Se agregó una comisión de ${amount.toFixed(2)} a ${employee.name}`, 'success');
                 
                 this.reset();
             }
         });
 
-        // Manejar filtros
+        // ========== MANEJAR FILTROS ==========
         const filterTabs = document.querySelectorAll('.filter-tab');
         filterTabs.forEach(tab => {
             tab.addEventListener('click', function() {
@@ -1755,7 +2114,7 @@
             });
         });
 
-        // Renderizar empleados iniciales
+        // ========== RENDERIZAR EMPLEADOS INICIALES ==========
         renderEmployees();
         updateCommissionSelect();
     </script>

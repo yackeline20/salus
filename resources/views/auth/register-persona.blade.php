@@ -171,6 +171,37 @@
         .phone-group .numero {
             flex: 1;
         }
+
+        /* Estilos mejorados para el campo de fecha */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.5);
+        }
+
+        input[type="date"] {
+            position: relative;
+        }
+
+        .date-info {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .validation-message {
+            font-size: 0.75rem;
+            color: #dc2626;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .validation-message.show {
+            display: block;
+        }
+
+        input.invalid {
+            border-color: #dc2626;
+        }
     </style>
 </head>
 
@@ -208,8 +239,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Nombre">Nombre</label>
-                        <input type="text" id="Nombre" name="Nombre" value="{{ old('Nombre') }}" required autofocus
-                            maxlength="25">
+                        <input type="text" id="Nombre" name="Nombre" value="{{ old('Nombre') }}" 
+                               required autofocus maxlength="25"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+"
+                               title="Solo se permiten letras y espacios">
+                        <span class="validation-message" id="nombre-error">Solo se permiten letras y espacios</span>
                         @error('Nombre')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -217,8 +251,11 @@
 
                     <div class="form-group">
                         <label for="Apellido">Apellido</label>
-                        <input type="text" id="Apellido" name="Apellido" value="{{ old('Apellido') }}" required
-                            maxlength="25">
+                        <input type="text" id="Apellido" name="Apellido" value="{{ old('Apellido') }}" 
+                               required maxlength="25"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+"
+                               title="Solo se permiten letras y espacios">
+                        <span class="validation-message" id="apellido-error">Solo se permiten letras y espacios</span>
                         @error('Apellido')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -228,7 +265,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="DNI">DNI / Cédula</label>
-                        <input type="text" id="DNI" name="DNI" value="{{ old('DNI') }}" required maxlength="25">
+                        <input type="text" id="DNI" name="DNI" value="{{ old('DNI') }}" 
+                               required maxlength="25"
+                               pattern="[0-9A-Za-z\-]+"
+                               title="Solo se permiten números, letras y guiones"
+                               placeholder="Ej: 0801-1990-12345">
+                        <span class="validation-message" id="dni-error">Formato inválido. Solo números, letras y guiones</span>
                         @error('DNI')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -237,7 +279,12 @@
                     <div class="form-group">
                         <label for="Fecha_Nacimiento">Fecha de Nacimiento</label>
                         <input type="date" id="Fecha_Nacimiento" name="Fecha_Nacimiento"
-                            value="{{ old('Fecha_Nacimiento') }}" required>
+                               value="{{ old('Fecha_Nacimiento') }}" 
+                               required
+                               min="1900-01-01"
+                               max="">
+                        <div class="date-info">Usa el calendario o escribe en formato DD/MM/AAAA</div>
+                        <span class="validation-message" id="fecha-error">Fecha inválida</span>
                         @error('Fecha_Nacimiento')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -259,7 +306,9 @@
 
                     <div class="form-group">
                         <label for="Password">Contraseña</label>
-                        <input type="password" id="Password" name="Password" required minlength="6">
+                        <input type="password" id="Password" name="Password" required minlength="6"
+                               placeholder="Mínimo 6 caracteres">
+                        <span class="validation-message" id="password-error">La contraseña debe tener al menos 6 caracteres</span>
                         @error('Password')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -272,7 +321,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Correo">Correo Electrónico</label>
-                        <input type="email" id="Correo" name="Correo" value="{{ old('Correo') }}" maxlength="25" required>
+                        <input type="email" id="Correo" name="Correo" value="{{ old('Correo') }}" 
+                               maxlength="50" required
+                               pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                               placeholder="ejemplo@correo.com">
+                        <span class="validation-message" id="correo-error">Formato de correo inválido</span>
                         @error('Correo')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -297,11 +350,16 @@
                     <div class="phone-group">
                         <div class="form-group cod-pais">
                             <input type="text" id="Cod_Pais" name="Cod_Pais" value="{{ old('Cod_Pais', '+504') }}"
-                                placeholder="+504" maxlength="10">
+                                   placeholder="+504" maxlength="10"
+                                   pattern="\+[0-9]+"
+                                   title="Formato: +504">
                         </div>
                         <div class="form-group numero">
-                            <input type="text" id="Numero" name="Numero" value="{{ old('Numero') }}"
-                                placeholder="Número de teléfono" maxlength="20">
+                            <input type="tel" id="Numero" name="Numero" value="{{ old('Numero') }}"
+                                   placeholder="Número de teléfono" maxlength="20"
+                                   pattern="[0-9\-\s]+"
+                                   title="Solo números, espacios y guiones">
+                            <span class="validation-message" id="telefono-error">Solo se permiten números</span>
                         </div>
                     </div>
                     @error('Numero')
@@ -364,6 +422,127 @@
             </p>
         @endif
     </div>
+
+    <script>
+        // Establecer fecha máxima (hoy) y mínima para el campo de fecha
+        document.addEventListener('DOMContentLoaded', function() {
+            const fechaNacimiento = document.getElementById('Fecha_Nacimiento');
+            const today = new Date();
+            const maxDate = today.toISOString().split('T')[0];
+            fechaNacimiento.setAttribute('max', maxDate);
+            
+            // Validación en tiempo real para nombre
+            document.getElementById('Nombre').addEventListener('input', function(e) {
+                const valor = e.target.value;
+                const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/;
+                
+                if (!regex.test(valor)) {
+                    e.target.value = valor.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
+                    e.target.classList.add('invalid');
+                    document.getElementById('nombre-error').classList.add('show');
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('nombre-error').classList.remove('show');
+                }
+            });
+            
+            // Validación en tiempo real para apellido
+            document.getElementById('Apellido').addEventListener('input', function(e) {
+                const valor = e.target.value;
+                const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/;
+                
+                if (!regex.test(valor)) {
+                    e.target.value = valor.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
+                    e.target.classList.add('invalid');
+                    document.getElementById('apellido-error').classList.add('show');
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('apellido-error').classList.remove('show');
+                }
+            });
+            
+            // Validación en tiempo real para DNI
+            document.getElementById('DNI').addEventListener('input', function(e) {
+                const valor = e.target.value;
+                const regex = /^[0-9A-Za-z\-]*$/;
+                
+                if (!regex.test(valor)) {
+                    e.target.value = valor.replace(/[^0-9A-Za-z\-]/g, '');
+                    e.target.classList.add('invalid');
+                    document.getElementById('dni-error').classList.add('show');
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('dni-error').classList.remove('show');
+                }
+            });
+            
+            // Validación para teléfono - solo números
+            document.getElementById('Numero').addEventListener('input', function(e) {
+                const valor = e.target.value;
+                const regex = /^[0-9\-\s]*$/;
+                
+                if (!regex.test(valor)) {
+                    e.target.value = valor.replace(/[^0-9\-\s]/g, '');
+                    e.target.classList.add('invalid');
+                    document.getElementById('telefono-error').classList.add('show');
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('telefono-error').classList.remove('show');
+                }
+            });
+            
+            // Validación para código de país
+            document.getElementById('Cod_Pais').addEventListener('input', function(e) {
+                const valor = e.target.value;
+                
+                // Asegurar que comience con +
+                if (valor.length > 0 && !valor.startsWith('+')) {
+                    e.target.value = '+' + valor.replace(/[^0-9]/g, '');
+                } else {
+                    e.target.value = valor.replace(/[^+0-9]/g, '');
+                }
+            });
+            
+            // Validación de contraseña
+            document.getElementById('Password').addEventListener('input', function(e) {
+                if (e.target.value.length < 6 && e.target.value.length > 0) {
+                    e.target.classList.add('invalid');
+                    document.getElementById('password-error').classList.add('show');
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('password-error').classList.remove('show');
+                }
+            });
+            
+            // Validación de correo electrónico
+            document.getElementById('Correo').addEventListener('blur', function(e) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(e.target.value) && e.target.value.length > 0) {
+                    e.target.classList.add('invalid');
+                    document.getElementById('correo-error').classList.add('show');
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('correo-error').classList.remove('show');
+                }
+            });
+            
+            // Validación de fecha
+            document.getElementById('Fecha_Nacimiento').addEventListener('change', function(e) {
+                const selectedDate = new Date(e.target.value);
+                const today = new Date();
+                const minDate = new Date('1900-01-01');
+                
+                if (selectedDate > today || selectedDate < minDate) {
+                    e.target.classList.add('invalid');
+                    document.getElementById('fecha-error').classList.add('show');
+                    e.target.value = '';
+                } else {
+                    e.target.classList.remove('invalid');
+                    document.getElementById('fecha-error').classList.remove('show');
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
