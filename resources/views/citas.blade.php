@@ -867,5 +867,37 @@
 
         // Renderizar citas iniciales
         renderAppointments();
+
+        // Actualizar reloj en tiempo real
+        function updateClock() {
+            const now = new Date();
+            
+            // Formatear fecha en español
+            const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            
+            const diaSemana = dias[now.getDay()];
+            const dia = now.getDate();
+            const mes = meses[now.getMonth()];
+            const año = now.getFullYear();
+            
+            const dateStr = `${diaSemana}, ${dia} de ${mes} ${año}`;
+            
+            // Formatear hora
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            
+            // Actualizar elementos del DOM
+            const dateElement = document.querySelector('.welcome-date .date');
+            const timeElement = document.querySelector('.welcome-date .time');
+            
+            if (dateElement) dateElement.textContent = dateStr;
+            if (timeElement) timeElement.textContent = timeStr;
+        }
+
+        // Actualizar inmediatamente y luego cada segundo
+        updateClock();
+        setInterval(updateClock, 1000);
     </script>
 @stop
