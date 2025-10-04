@@ -69,8 +69,19 @@ Route::middleware('auth')->group(function () {
     // Dashboard principal
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Módulos del sistema
+    // ========================================
+    // RUTAS DE CITAS - MODIFICADAS
+    // ========================================
+    // Vista principal de citas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas');
+    
+    // API para operaciones CRUD de citas
+    Route::get('/api/citas', [CitasController::class, 'getCitas'])->name('api.citas.get');
+    Route::post('/api/citas', [CitasController::class, 'storeCita'])->name('api.citas.store');
+    Route::put('/api/citas', [CitasController::class, 'updateCita'])->name('api.citas.update');
+    Route::delete('/api/citas', [CitasController::class, 'deleteCita'])->name('api.citas.delete');
+
+    // Módulos del sistema (sin cambios)
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario');
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes');
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal');
