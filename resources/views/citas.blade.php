@@ -108,9 +108,7 @@
                 </div>
             </div>
 
-            <div id="appointmentsList">
-                <!-- Las citas se mostrarán aquí dinámicamente -->
-            </div>
+            <div id="appointmentsList"></div>
         </div>
     </div>
 
@@ -132,16 +130,14 @@
 
 @section('css')
     <style>
-        /* Reset de algunos estilos de AdminLTE */
-        .content-wrapper {
+        .content-wrapper { 
             background: #f8f9fa !important;
         }
         
-        .content {
+        .content { 
             padding-bottom: 20px !important;
         }
 
-        /* Header de bienvenida */
         .welcome-header {
             background: linear-gradient(135deg, #c9a876 0%, #d4b896 100%);
             border-radius: 20px;
@@ -153,83 +149,21 @@
             box-shadow: 0 4px 15px rgba(201, 168, 118, 0.2);
         }
 
-        .welcome-content h1 {
-            color: white;
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
+        .welcome-content h1 { color: white; font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+        .welcome-content p { color: rgba(255, 255, 255, 0.9); font-size: 16px; margin: 0; }
+        .welcome-date { text-align: right; color: white; }
+        .welcome-date .date { display: block; font-size: 14px; opacity: 0.9; }
+        .welcome-date .time { display: block; font-size: 24px; font-weight: 600; margin-top: 5px; }
 
-        .welcome-content p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 16px;
-            margin: 0;
-        }
+        .appointment-card { background: white; border-radius: 20px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); padding: 30px; }
+        .appointment-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .appointment-header h2 { color: #2C3E50; font-size: 20px; font-weight: 600; margin: 0; }
 
-        .welcome-date {
-            text-align: right;
-            color: white;
-        }
+        .custom-input { border-radius: 10px; border: 1px solid #e0e0e0; padding: 10px 15px; transition: all 0.3s; }
+        .custom-input:focus { border-color: #c9a876; box-shadow: 0 0 0 3px rgba(201, 168, 118, 0.1); }
+        .custom-service-input { display: none; }
+        .custom-service-input.show { display: block; }
 
-        .welcome-date .date {
-            display: block;
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .welcome-date .time {
-            display: block;
-            font-size: 24px;
-            font-weight: 600;
-            margin-top: 5px;
-        }
-
-        /* Tarjeta de cita */
-        .appointment-card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            padding: 30px;
-        }
-
-        .appointment-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .appointment-header h2 {
-            color: #2C3E50;
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        /* Inputs personalizados */
-        .custom-input {
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            padding: 10px 15px;
-            transition: all 0.3s;
-        }
-
-        .custom-input:focus {
-            border-color: #c9a876;
-            box-shadow: 0 0 0 3px rgba(201, 168, 118, 0.1);
-        }
-
-        .custom-service-input {
-            display: none;
-        }
-
-        .custom-service-input.show {
-            display: block;
-        }
-
-        /* Botón Salus */
         .btn-salus {
             background: linear-gradient(135deg, #c9a876, #d4b896);
             color: white;
@@ -239,64 +173,26 @@
             font-weight: 500;
             transition: all 0.3s;
         }
+        .btn-salus:hover { color: white; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3); }
 
-        .btn-salus:hover {
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3);
-        }
-
-        /* Lista de citas */
-        .appointments-list {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        .appointments-list { 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); 
             padding: 30px;
         }
+        .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .list-header h2 { color: #2C3E50; font-size: 20px; font-weight: 600; margin: 0; }
 
-        .list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e5e7eb;
+        .filter-tabs { display: flex; gap: 8px; }
+        .filter-tab { padding: 8px 16px; background: #f3f4f6; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; color: #6b7280; font-size: 14px; }
+        .filter-tab.active { background: linear-gradient(135deg, #c9a876, #d4b896); color: white; }
+        .filter-tab:hover:not(.active) { background: #e5e7eb; }
+
+        #appointmentsList {
+            position: relative;
         }
 
-        .list-header h2 {
-            color: #2C3E50;
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        /* Tabs de filtro */
-        .filter-tabs {
-            display: flex;
-            gap: 8px;
-        }
-
-        .filter-tab {
-            padding: 8px 16px;
-            background: #f3f4f6;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .filter-tab.active {
-            background: linear-gradient(135deg, #c9a876, #d4b896);
-            color: white;
-        }
-
-        .filter-tab:hover:not(.active) {
-            background: #e5e7eb;
-        }
-
-        /* Items de cita */
         .appointment-item {
             display: flex;
             justify-content: space-between;
@@ -307,25 +203,18 @@
             background: #f8f9fa;
             transition: all 0.3s;
             border: 1px solid #e5e7eb;
+            position: relative;
+            z-index: 1;
         }
-
-        .appointment-item:hover {
-            background: #f5efe6;
-            transform: translateX(5px);
+        
+        .appointment-item:has(.status-options.show) {
+            z-index: 1000;
         }
+        
+        .appointment-item:hover { background: #f5efe6; transform: translateX(5px); }
+        .appointment-item.editing { background: #f5efe6; border: 1px solid #c9a876; }
 
-        .appointment-item.editing {
-            background: #f5efe6;
-            border: 1px solid #c9a876;
-        }
-
-        .appointment-info {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex: 1;
-        }
-
+        .appointment-info { display: flex; gap: 20px; align-items: center; flex: 1; }
         .appointment-time {
             display: flex;
             flex-direction: column;
@@ -336,75 +225,43 @@
             min-width: 80px;
             border: 1px solid #e5e7eb;
         }
+        .appointment-time .hour { font-size: 16px; font-weight: 600; color: #2C3E50; }
+        .appointment-time .date { font-size: 12px; color: #6b7280; margin-top: 2px; }
 
-        .appointment-time .hour {
-            font-size: 16px;
-            font-weight: 600;
-            color: #2C3E50;
-        }
+        .appointment-details { flex: 1; }
+        .appointment-details h4 { color: #2C3E50; font-size: 16px; margin-bottom: 5px; }
+        .appointment-details p { color: #6b7280; font-size: 14px; margin: 0; }
+        .appointment-details input { width: 100%; padding: 8px 12px; border: 1px solid #c9a876; border-radius: 6px; margin-bottom: 5px; }
 
-        .appointment-time .date {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 2px;
-        }
+        .edit-date-time { display: flex; gap: 10px; margin-bottom: 10px; }
+        .edit-date-time input { flex: 1; }
 
-        .appointment-details {
-            flex: 1;
-        }
-
-        .appointment-details h4 {
-            color: #2C3E50;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .appointment-details p {
-            color: #6b7280;
-            font-size: 14px;
-            margin: 0;
-        }
-
-        .appointment-details input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #c9a876;
-            border-radius: 6px;
-            margin-bottom: 5px;
-        }
-
-        /* Edición de fecha y hora */
-        .edit-date-time {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .edit-date-time input {
-            flex: 1;
-        }
-
-        /* Controles de cita */
-        .appointment-controls {
-            display: flex;
-            gap: 8px;
+        .appointment-controls { 
+            display: flex; 
+            gap: 8px; 
             align-items: center;
-        }
-
-        .status-dropdown {
             position: relative;
         }
-
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            min-width: 100px;
-            text-align: center;
+        
+        .status-dropdown { 
+            position: relative;
+        }
+        
+        .status-badge { 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            border: none; 
+            min-width: 100px; 
+            text-align: center; 
+        }
+        
+        .status-programada {
+            background: #dbeafe;
+            color: #1e40af;
         }
 
         .status-confirmed {
@@ -412,9 +269,9 @@
             color: #2d7a4e;
         }
 
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
+        .status-realizada {
+            background: #d1fae5;
+            color: #065f46;
         }
 
         .status-cancelled {
@@ -422,231 +279,82 @@
             color: #d32f2f;
         }
 
-        .status-options {
+        .status-options { 
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             right: 0;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-top: 5px;
-            display: none;
-            z-index: 10;
-            min-width: 150px;
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); 
+            display: none; 
+            z-index: 99999; 
+            min-width: 160px; 
             border: 1px solid #e5e7eb;
+            padding: 4px 0;
         }
-
-        .status-options.show {
-            display: block;
+        
+        .status-options.show { 
+            display: block; 
         }
-
-        .status-option {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: all 0.3s;
+        
+        .status-option { 
+            padding: 10px 16px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 14px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            color: #374151;
+        }
+        .status-option:hover { 
+            background: #f3f4f6;
+        }
+        .status-option i { 
+            width: 16px; 
             font-size: 14px;
         }
 
-        .status-option:hover {
-            background: #f5efe6;
-        }
+        .action-btn { padding: 8px 12px; background: transparent; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; color: #6b7280; transition: all 0.3s; }
+        .action-btn:hover { background: #f5efe6; border-color: #c9a876; }
+        .action-btn.save-btn { background: #10b981; color: white; border-color: #10b981; }
+        .action-btn.cancel-btn { background: #ef4444; color: white; border-color: #ef4444; }
+        .action-btn.delete-btn { color: #ef4444; border-color: #ef4444; }
+        .action-btn.reminder-btn { background: #c9a876; color: white; border-color: #c9a876; }
 
-        /* Botones de acción */
-        .action-btn {
-            padding: 8px 12px;
-            background: transparent;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            cursor: pointer;
-            color: #6b7280;
-            transition: all 0.3s;
-        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+        .empty-state i { font-size: 80px; opacity: 0.3; margin-bottom: 20px; }
 
-        .action-btn:hover {
-            background: #f5efe6;
-            border-color: #c9a876;
-        }
-
-        .action-btn.save-btn {
-            background: #10b981;
-            color: white;
-            border-color: #10b981;
-        }
-
-        .action-btn.cancel-btn {
-            background: #ef4444;
-            color: white;
-            border-color: #ef4444;
-        }
-
-        .action-btn.delete-btn {
-            color: #ef4444;
-            border-color: #ef4444;
-        }
-
-        .action-btn.reminder-btn {
-            background: #c9a876;
-            color: white;
-            border-color: #c9a876;
-        }
-
-        /* Estado vacío */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state i {
-            font-size: 80px;
-            opacity: 0.3;
-            margin-bottom: 20px;
-        }
-
-        /* Modal de confirmación personalizado */
-        .custom-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .custom-modal-overlay.show {
-            display: flex;
-        }
-
-        .custom-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 450px;
-            width: 90%;
-            text-align: center;
-            animation: modalSlideIn 0.3s ease-out;
-        }
+        .custom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 99999; justify-content: center; align-items: center; }
+        .custom-modal-overlay.show { display: flex; }
+        .custom-modal { background: white; border-radius: 20px; padding: 40px; max-width: 450px; width: 90%; text-align: center; animation: modalSlideIn 0.3s ease-out; }
 
         @keyframes modalSlideIn {
-            from {
-                transform: scale(0.9);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
-        .modal-icon {
-            width: 80px;
-            height: 80px;
-            background: #fee2e2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
+        .modal-icon { width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .modal-icon i { color: #dc2626; font-size: 40px; }
+        .custom-modal h3 { color: #2C3E50; font-size: 24px; font-weight: 600; margin-bottom: 15px; }
+        .custom-modal p { color: #6b7280; font-size: 16px; margin-bottom: 30px; }
 
-        .modal-icon i {
-            color: #dc2626;
-            font-size: 40px;
-        }
+        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .modal-btn { padding: 12px 30px; border-radius: 10px; border: none; font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.3s; }
+        .modal-btn-cancel { background: #f3f4f6; color: #6b7280; }
+        .modal-btn-cancel:hover { background: #e5e7eb; }
+        .modal-btn-confirm { background: #dc2626; color: white; }
+        .modal-btn-confirm:hover { background: #b91c1c; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
 
-        .custom-modal h3 {
-            color: #2C3E50;
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        .custom-modal p {
-            color: #6b7280;
-            font-size: 16px;
-            margin-bottom: 30px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .modal-btn {
-            padding: 12px 30px;
-            border-radius: 10px;
-            border: none;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .modal-btn-cancel {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-
-        .modal-btn-cancel:hover {
-            background: #e5e7eb;
-        }
-
-        .modal-btn-confirm {
-            background: #dc2626;
-            color: white;
-        }
-
-        .modal-btn-confirm:hover {
-            background: #b91c1c;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
-            .welcome-header {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .welcome-date {
-                margin-top: 20px;
-                text-align: center;
-            }
-
-            .list-header {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .filter-tabs {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .appointment-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-
-            .appointment-controls {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .status-badge {
-                width: 100%;
-            }
-
-            .edit-date-time {
-                flex-direction: column;
-            }
+            .welcome-header { flex-direction: column; text-align: center; }
+            .welcome-date { margin-top: 20px; text-align: center; }
+            .list-header { flex-direction: column; gap: 15px; }
+            .filter-tabs { width: 100%; justify-content: center; }
+            .appointment-info { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .appointment-controls { flex-direction: column; width: 100%; }
+            .status-badge { width: 100%; }
+            .edit-date-time { flex-direction: column; }
         }
     </style>
 @stop
@@ -654,6 +362,7 @@
 @section('js')
     <script>
         let appointments = [];
+        let currentFilter = 'todas';
 
         document.getElementById('service').addEventListener('change', function() {
             const customInput = document.getElementById('customService');
@@ -667,7 +376,66 @@
             }
         });
 
-        // POST - Crear cita
+        function showNotification(message, type = 'success') {
+            const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${bgColor};
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                z-index: 100000;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            notification.innerHTML = `<i class="fas fa-check-circle"></i>${message}`;
+            
+            const style = document.createElement('style');
+            style.textContent = `@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        function formatTime12Hour(time24) {
+            if (!time24) return '';
+            const [hours, minutes] = time24.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        }
+
+        function parseMySQLDate(fechaStr) {
+            if (!fechaStr) return null;
+            const parts = fechaStr.split('-');
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+
+        function getDateText(fechaObj) {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            const fecha = new Date(fechaObj);
+            fecha.setHours(0, 0, 0, 0);
+            
+            const diff = fecha.getTime() - hoy.getTime();
+            const daysDiff = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (daysDiff === 0) return 'Hoy';
+            if (daysDiff === 1) return 'Mañana';
+            
+            const opciones = { day: 'numeric', month: 'short' };
+            return fecha.toLocaleDateString('es-ES', opciones);
+        }
+
         document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -689,7 +457,7 @@
                 fechaCita: document.getElementById('date').value,
                 horaInicio: horaInicio + ':00',
                 horaFin: horaFinCompleta,
-                estadoCita: 'Pendiente',
+                estadoCita: 'Programada',
                 notasInternas: `Paciente: ${document.getElementById('patient').value} - Servicio: ${serviceValue} - ${document.getElementById('notes').value}`
             };
 
@@ -705,20 +473,17 @@
                 });
 
                 if (response.ok) {
-                    alert('¡Cita agendada exitosamente!');
+                    showNotification(`Cita agendada - ${document.getElementById('patient').value} registrado exitosamente`);
                     this.reset();
                     customService.classList.remove('show');
                     loadAppointments();
-                } else {
-                    throw new Error('Error al crear la cita');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al agendar la cita');
+                showNotification('Error al agendar la cita', 'error');
             }
         });
 
-        // GET - Cargar citas con TODOS los datos
         async function loadAppointments() {
             try {
                 const response = await fetch('/api/citas', {
@@ -729,21 +494,26 @@
                 if (response.ok) {
                     const citas = await response.json();
                     
-                    appointments = citas.map(cita => ({
-                        id: cita.Cod_Cita,
-                        codCita: cita.Cod_Cita,
-                        codCliente: cita.Cod_Cliente,
-                        codEmpleado: cita.Cod_Empleado,
-                        fechaCita: cita.Fecha_Cita,
-                        horaInicio: cita.Hora_Inicio,
-                        horaFin: cita.Hora_Fin,
-                        estadoCita: cita.Estado_Cita,
-                        patient: cita.Notas_Internas ? cita.Notas_Internas.split(' - ')[0].replace('Paciente: ', '') : 'Sin nombre',
-                        service: cita.Notas_Internas ? (cita.Notas_Internas.split(' - ')[1] || 'Sin servicio').replace('Servicio: ', '') : 'Sin servicio',
-                        time: cita.Hora_Inicio ? cita.Hora_Inicio.substring(0, 5) : '',
-                        date: formatearFecha(cita.Fecha_Cita),
-                        status: mapearEstado(cita.Estado_Cita)
-                    }));
+                    appointments = citas.map(cita => {
+                        const fechaObj = parseMySQLDate(cita.Fecha_Cita);
+                        
+                        return {
+                            id: cita.Cod_Cita,
+                            codCita: cita.Cod_Cita,
+                            codCliente: cita.Cod_Cliente,
+                            codEmpleado: cita.Cod_Empleado,
+                            fechaCita: cita.Fecha_Cita,
+                            fechaObj: fechaObj,
+                            horaInicio: cita.Hora_Inicio,
+                            horaFin: cita.Hora_Fin,
+                            estadoCita: cita.Estado_Cita,
+                            patient: cita.Notas_Internas ? cita.Notas_Internas.split(' - ')[0].replace('Paciente: ', '') : 'Sin nombre',
+                            service: cita.Notas_Internas ? (cita.Notas_Internas.split(' - ')[1] || 'Sin servicio').replace('Servicio: ', '') : 'Sin servicio',
+                            time: cita.Hora_Inicio ? formatTime12Hour(cita.Hora_Inicio.substring(0, 5)) : '',
+                            dateText: getDateText(fechaObj),
+                            status: mapearEstado(cita.Estado_Cita)
+                        };
+                    });
 
                     renderAppointments();
                 }
@@ -752,43 +522,60 @@
             }
         }
 
-        function formatearFecha(fecha) {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const fechaCita = new Date(fecha + 'T00:00:00');
-            
-            if (fechaCita.getTime() === hoy.getTime()) return 'Hoy';
-            
-            const mañana = new Date(hoy);
-            mañana.setDate(hoy.getDate() + 1);
-            if (fechaCita.getTime() === mañana.getTime()) return 'Mañana';
-            
-            const opciones = { day: 'numeric', month: 'short' };
-            return fechaCita.toLocaleDateString('es-ES', opciones);
+        function mapearEstado(estado) {
+            if (!estado) return 'programada';
+            const estadoLower = estado.toLowerCase();
+            if (estadoLower.includes('program')) return 'programada';
+            if (estadoLower.includes('confirm')) return 'confirmed';
+            if (estadoLower.includes('realiz')) return 'realizada';
+            if (estadoLower.includes('cancel')) return 'cancelled';
+            return 'programada';
         }
 
-        function mapearEstado(estado) {
-            if (!estado) return 'pending';
-            const estadoLower = estado.toLowerCase();
-            if (estadoLower.includes('confirm')) return 'confirmed';
-            if (estadoLower.includes('cancel')) return 'cancelled';
-            return 'pending';
+        function filterAppointments() {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+
+            return appointments.filter(appointment => {
+                if (!appointment.fechaObj) return false;
+                
+                const fechaCita = new Date(appointment.fechaObj);
+                fechaCita.setHours(0, 0, 0, 0);
+
+                switch(currentFilter) {
+                    case 'hoy':
+                        return fechaCita.getTime() === hoy.getTime();
+                    case 'proximas':
+                        return fechaCita.getTime() > hoy.getTime();
+                    case 'pasadas':
+                        return fechaCita.getTime() < hoy.getTime();
+                    default:
+                        return true;
+                }
+            });
         }
 
         function renderAppointments() {
             const container = document.getElementById('appointmentsList');
+            const filteredAppointments = filterAppointments();
             
-            if (appointments.length === 0) {
-                container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-alt"></i><p>No hay citas programadas</p></div>`;
+            if (filteredAppointments.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-alt"></i><p>No hay citas en esta categoría</p></div>`;
                 return;
             }
 
-            container.innerHTML = appointments.map(appointment => `
+            filteredAppointments.sort((a, b) => {
+                const fechaA = new Date(a.fechaObj);
+                const fechaB = new Date(b.fechaObj);
+                return fechaA - fechaB;
+            });
+
+            container.innerHTML = filteredAppointments.map(appointment => `
                 <div class="appointment-item" data-id="${appointment.id}">
                     <div class="appointment-info">
                         <div class="appointment-time">
                             <span class="hour">${appointment.time}</span>
-                            <span class="date">${appointment.date}</span>
+                            <span class="date">${appointment.dateText}</span>
                         </div>
                         <div class="appointment-details">
                             <h4>${appointment.patient}</h4>
@@ -801,9 +588,18 @@
                                 ${getStatusText(appointment.status)}
                             </button>
                             <div class="status-options" id="status-options-${appointment.id}">
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'confirmed')">✓ Confirmada</div>
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'pending')">⏱ Pendiente</div>
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'cancelled')">✗ Cancelada</div>
+                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'programada')">
+                                    <i class="fas fa-calendar-alt"></i> Programada
+                                </div>
+                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'confirmed')">
+                                    <i class="fas fa-check-circle"></i> Confirmada
+                                </div>
+                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'realizada')">
+                                    <i class="fas fa-check-double"></i> Realizada
+                                </div>
+                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'cancelled')">
+                                    <i class="fas fa-times-circle"></i> Cancelada
+                                </div>
                             </div>
                         </div>
                         <button class="action-btn reminder-btn" onclick="sendReminder(${appointment.id})" title="Enviar Recordatorio">
@@ -822,19 +618,21 @@
 
         function getStatusClass(status) {
             switch(status) {
+                case 'programada': return 'status-programada';
                 case 'confirmed': return 'status-confirmed';
-                case 'pending': return 'status-pending';
+                case 'realizada': return 'status-realizada';
                 case 'cancelled': return 'status-cancelled';
-                default: return 'status-pending';
+                default: return 'status-programada';
             }
         }
 
         function getStatusText(status) {
             switch(status) {
+                case 'programada': return 'Programada';
                 case 'confirmed': return 'Confirmada';
-                case 'pending': return 'Pendiente';
+                case 'realizada': return 'Realizada';
                 case 'cancelled': return 'Cancelada';
-                default: return 'Pendiente';
+                default: return 'Programada';
             }
         }
 
@@ -846,14 +644,15 @@
             dropdown.classList.toggle('show');
         }
 
-        // PUT - Cambiar estado con datos reales
         async function changeStatus(id, newStatus) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
 
             try {
-                const estadoCita = newStatus === 'confirmed' ? 'Confirmada' : 
-                                  newStatus === 'pending' ? 'Pendiente' : 'Cancelada';
+                let estadoCita = 'Programada';
+                if (newStatus === 'confirmed') estadoCita = 'Confirmada';
+                if (newStatus === 'realizada') estadoCita = 'Realizada';
+                if (newStatus === 'cancelled') estadoCita = 'Cancelada';
                 
                 const response = await fetch('/api/citas', {
                     method: 'PUT',
@@ -875,6 +674,7 @@
                 });
 
                 if (response.ok) {
+                    document.querySelectorAll('.status-options').forEach(d => d.classList.remove('show'));
                     loadAppointments();
                 }
             } catch (error) {
@@ -882,7 +682,6 @@
             }
         }
 
-        // Editar cita (con fecha y hora)
         function editAppointment(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
@@ -893,13 +692,15 @@
                 return;
             }
 
+            const time24 = appointment.horaInicio.substring(0, 5);
+
             item.classList.add('editing');
             item.querySelector('.appointment-details').innerHTML = `
                 <input type="text" value="${appointment.patient}" id="edit-patient-${id}" placeholder="Nombre del paciente" />
                 <input type="text" value="${appointment.service}" id="edit-service-${id}" placeholder="Servicio" />
                 <div class="edit-date-time">
                     <input type="date" value="${appointment.fechaCita}" id="edit-date-${id}" />
-                    <input type="time" value="${appointment.time}" id="edit-time-${id}" />
+                    <input type="time" value="${time24}" id="edit-time-${id}" />
                 </div>
             `;
 
@@ -909,7 +710,6 @@
             `;
         }
 
-        // PUT - Actualizar cita con datos reales (incluyendo fecha y hora)
         async function saveAppointment(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
@@ -944,16 +744,15 @@
                 });
 
                 if (response.ok) {
-                    alert('Cita actualizada exitosamente');
+                    showNotification(`Cita actualizada - ${newPatient} modificado exitosamente`);
                     loadAppointments();
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al actualizar la cita');
+                showNotification('Error al actualizar la cita', 'error');
             }
         }
 
-        // DELETE - Eliminar cita con modal personalizado
         async function deleteAppointment(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
@@ -980,35 +779,13 @@
 
                     if (response.ok) {
                         closeConfirmModal();
-                        
-                        const notification = document.createElement('div');
-                        notification.style.cssText = `
-                            position: fixed;
-                            bottom: 20px;
-                            right: 20px;
-                            background: #10b981;
-                            color: white;
-                            padding: 15px 25px;
-                            border-radius: 10px;
-                            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-                            z-index: 10000;
-                            display: flex;
-                            align-items: center;
-                            gap: 10px;
-                        `;
-                        notification.innerHTML = `
-                            <i class="fas fa-check-circle"></i>
-                            Cita eliminada - ${appointment.patient} ha sido eliminado del sistema
-                        `;
-                        document.body.appendChild(notification);
-                        
-                        setTimeout(() => notification.remove(), 3000);
+                        showNotification(`Cita eliminada - ${appointment.patient} ha sido eliminado del sistema`);
                         loadAppointments();
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     closeConfirmModal();
-                    alert('Error al eliminar la cita');
+                    showNotification('Error al eliminar la cita', 'error');
                 }
             };
         }
@@ -1020,7 +797,7 @@
         function sendReminder(id) {
             const appointment = appointments.find(a => a.id === id);
             if (appointment) {
-                alert(`Recordatorio enviado a ${appointment.patient}`);
+                showNotification(`Recordatorio enviado a ${appointment.patient}`, 'info');
             }
         }
 
@@ -1029,6 +806,8 @@
             tab.addEventListener('click', function() {
                 filterTabs.forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderAppointments();
             });
         });
 
@@ -1044,7 +823,12 @@
             const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
             
             const dateStr = `${dias[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]} ${now.getFullYear()}`;
-            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            const timeStr = `${hours}:${minutes} ${ampm}`;
             
             const dateElement = document.querySelector('.welcome-date .date');
             const timeElement = document.querySelector('.welcome-date .time');
