@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\RegisteredPersonaController;
+use App\Http\Controllers\Auth\RegisteredUsuarioController; // NUEVO
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -34,15 +35,23 @@ Route::get('/test-register-success', function() {
 });
 
 // ========================================
-// RUTAS DE AUTENTICACIÓN CON PERSONAS
+// RUTAS DE AUTENTICACIÓN
 // ========================================
 
-// Login con correo (tabla correo)
+// Login unificado (soporta email para personas y username para usuarios)
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-// Registro de personas
+// ========================================
+// REGISTRO DE USUARIOS (NUEVO)
+// ========================================
+Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])->name('register.usuario');
+Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
+
+// ========================================
+// REGISTRO DE PERSONAS (EXISTENTE)
+// ========================================
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
 
