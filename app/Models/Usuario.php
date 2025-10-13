@@ -7,17 +7,21 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+// Importaciones necesarias para las relaciones y la lógica de permisos
+use App\Models\Role;
+use App\Models\Acceso;
+use App\Models\Objeto;
+use App\Models\Empleado;
+use App\Models\Persona;
+
 class Usuario extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'usuarios';
     protected $primaryKey = 'Cod_Usuario';
-    public $timestamps = false; // La tabla usa Fecha_Registro personalizado
+    public $timestamps = false;
 
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
         'Cod_Persona',
         'Cod_Rol',
@@ -29,160 +33,154 @@ class Usuario extends Authenticatable
         'Fecha_Registro',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     */
     protected $hidden = [
         'Password',
         'remember_token',
     ];
 
-    /**
-     * CRÍTICO: Método para obtener el identificador único del usuario
-     * Laravel lo usa internamente para la autenticación
-     */
-    public function getAuthIdentifier()
-    {
-        return $this->Cod_Usuario;
-    }
+    // --- MÉTODOS CRÍTICOS DE AUTENTICACIÓN (Compatibilidad Laravel) ---
 
-    /**
-     * CRÍTICO: Método para obtener el nombre de la columna del identificador
-     * Esto le dice a Laravel qué columna usar como ID
-     */
-    public function getAuthIdentifierName()
-    {
-        return 'Cod_Usuario';
-    }
+    public function getAuthIdentifier() { return $this->Cod_Usuario; }
+    public function getAuthIdentifierName() { return 'Cod_Usuario'; }
+    public function getAuthPassword() { return $this->Password; }
+    public function getRememberToken() { return $this->remember_token; }
+    public function setRememberToken($value) { $this->remember_token = $value; }
+    public function getRememberTokenName() { return 'remember_token'; }
 
-    /**
-     * CRÍTICO: Método para obtener la contraseña
-     * Laravel busca 'password' por defecto, así que le indicamos usar 'Password'
-     */
-    public function getAuthPassword()
-    {
-        return $this->Password;
-    }
+    // --- RELACIONES PARA EL MÓDULO DE SEGURIDAD Y DATOS ---
 
-    /**
-     * CRÍTICO: Método para obtener el campo remember_token
-     */
-    public function getRememberToken()
-    {
-        return $this->remember_token;
-    }
-
-    /**
-     * CRÍTICO: Método para establecer el remember_token
-     */
-    public function setRememberToken($value)
-    {
-        $this->remember_token = $value;
-    }
-
-    /**
-     * CRÍTICO: Método para obtener el nombre de la columna remember_token
-     */
-    public function getRememberTokenName()
-    {
-        return 'remember_token';
-    }
-
-    /**
-     * Relación con persona (opcional, puede ser NULL)
-     */
+    /** Relación a Persona (datos personales) */
     public function persona()
     {
         return $this->belongsTo(Persona::class, 'Cod_Persona', 'Cod_Persona');
     }
 
-    /**
-     * Relación con rol (opcional, puede ser NULL)
-     */
+    /** Relación a Role (tipo de usuario) */
     public function rol()
     {
-        return $this->belongsTo(Rol::class, 'Cod_Rol', 'Cod_Rol');
+        return $this->belongsTo(Role::class, 'Cod_Rol', 'Cod_Rol');
+    }
+
+    /** Relación a Empleado (para staff como Esteticista o Recepcionista) */
+    public function empleado()
+    {
+        return $this->hasOne(Empleado::class, 'Cod_Persona', 'Cod_Persona');
+    }
+
+    // --- LÓGICA DEL MÓDULO DE SEGURIDAD (Permisos RBAC) ---
+
+    /**
+     * Verifica si el usuario tiene un rol específico (e.g., 'Administrador').
+     */
+    public function hasRole(string $roleName): bool
+    {
+        return $this->rol && $this->rol->Nombre_Rol === $roleName;
     }
 
     /**
-     * Scope para usuarios activos
+     * Verifica si el usuario tiene un permiso específico (select, insert, update, delete)
+     * para un Objeto (Citas, Inventario, etc.) consultando la tabla 'accesos'.
      */
+    public function hasPermission(string $action, string $objectName): bool
+    {
+        // 1. Acceso total para el Administrador
+        if ($this->hasRole('Administrador')) {
+            return true;
+        }
+
+        if (!$this->rol) {
+            return false;
+        }
+
+        // 2. Mapear la acción a la columna de la tabla 'accesos'
+        $columnMap = [
+            'select' => 'Permiso_Seleccionar', 'insert' => 'Permiso_Insertar',
+            'update' => 'Permiso_Actualizar', 'delete' => 'Permiso_Eliminar',
+        ];
+        $column = $columnMap[strtolower($action)] ?? null;
+
+        if (!$column) { return false; }
+
+        // 3. Obtener el Cod_Objeto
+        $objeto = Objeto::where('Nombre_Objeto', $objectName)->first();
+
+        if (!$objeto) { return false; }
+
+        // 4. Consultar la tabla 'accesos'
+        return Acceso::where('Cod_Rol', $this->Cod_Rol)
+                     ->where('Cod_Objeto', $objeto->Cod_Objeto)
+                     ->where($column, 1) // Debe estar activo (1)
+                     ->exists();
+    }
+
+
+    // --- SCOPE Y MÉTODOS DE COMPATIBILIDAD CON PERSONA (Modificados para datos reales) ---
+
     public function scopeActivos($query)
     {
         return $query->where('Indicador_Usuario_Activo', '1');
     }
 
-    /**
-     * MÉTODOS DE COMPATIBILIDAD CON PERSONA
-     * Estos métodos permiten que el Usuario funcione en vistas que esperan Persona
-     */
-    
-    /**
-     * Obtener el correo principal del usuario
-     * Como Usuario no tiene correos asociados directamente, retornamos null
-     */
+    /** Devuelve la colección de correos de la Persona o una colección vacía. */
+    public function correos()
+    {
+        return $this->persona ? $this->persona->correos : collect();
+    }
+
+    /** Devuelve la colección de teléfonos de la Persona o una colección vacía. */
+    public function telefonos()
+    {
+        return $this->persona ? $this->persona->telefonos : collect();
+    }
+
+    /** Devuelve la colección de direcciones de la Persona o una colección vacía. */
+    public function direcciones()
+    {
+        return $this->persona ? $this->persona->direcciones : collect();
+    }
+
+    /** Obtiene la dirección de correo principal de la Persona. */
     public function getCorreoPrincipal()
     {
-        return null;
+        // Asumiendo que persona()->correos()->first() devuelve el objeto Correo
+        return $this->persona && $this->persona->correos()->first()
+               ? $this->persona->correos()->first()->Direccion_Correo
+               : 'sin_correo@salus.com'; // Valor por defecto si no hay datos
     }
 
-    /**
-     * Obtener el teléfono principal del usuario
-     */
+    /** Obtiene el número de teléfono principal de la Persona. */
     public function getTelefonoPrincipal()
     {
-        return null;
+        return $this->persona && $this->persona->telefonos()->first()
+               ? $this->persona->telefonos()->first()->Numero_Telefono
+               : 'No Asignado';
     }
 
-    /**
-     * Obtener la dirección principal del usuario
-     */
+    /** Obtiene la dirección principal de la Persona. */
     public function getDireccionPrincipal()
     {
-        return null;
+        return $this->persona && $this->persona->direcciones()->first()
+               ? $this->persona->direcciones()->first()->Direccion_Completa
+               : 'Sin Dirección';
     }
 
-    /**
-     * Obtener nombre completo
-     * Para Usuario, usamos el Nombre_Usuario
-     */
+    /** Obtiene el Nombre Completo de la Persona. */
     public function getNombreCompleto()
     {
-        return $this->Nombre_Usuario;
+        return $this->persona
+               ? $this->persona->Nombre . ' ' . $this->persona->Apellido
+               : $this->Nombre_Usuario;
     }
 
-    /**
-     * Alias para compatibilidad - Laravel a veces busca 'name'
-     */
+    /** Alias para compatibilidad de nombre. */
     public function getNameAttribute()
     {
         return $this->Nombre_Usuario;
     }
 
-    /**
-     * Obtener email para reset de contraseña
-     * Como Usuario no tiene email asociado, retornamos null
-     */
+    /** Obtiene el email para reset de contraseña (usa el correo principal). */
     public function getEmailForPasswordReset()
     {
-        return null;
-    }
-
-    /**
-     * Relaciones vacías para compatibilidad con Persona
-     */
-    public function correos()
-    {
-        return collect(); // Colección vacía
-    }
-
-    public function telefonos()
-    {
-        return collect(); // Colección vacía
-    }
-
-    public function direcciones()
-    {
-        return collect(); // Colección vacía
+        return $this->getCorreoPrincipal();
     }
 }
