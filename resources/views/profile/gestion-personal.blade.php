@@ -208,7 +208,6 @@
                             <label for="commission_employee">Empleado</label>
                             <select class="form-control custom-input" id="commission_employee" name="commission_employee" required>
                                 <option value="">Seleccionar empleado</option>
-                                <!-- Se llenará dinámicamente -->
                             </select>
                         </div>
                     </div>
@@ -216,7 +215,7 @@
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="commission_amount">Monto ($)</label>
-                            <input type="number" class="form-control custom-input" id="commission_amount" name="commission_amount" placeholder="Ej: 500.00" step="0.01" required>
+                            <input type="number" class="form-control custom-input" id="commission_amount" name="commission_amount" placeholder="Ej: 500.00" step="0.01" min="0.01" required>
                         </div>
                     </div>
 
@@ -253,26 +252,33 @@
 
 @section('css')
     <style>
-        /* Reset de algunos estilos de AdminLTE */
-        .content-wrapper {
-            background: #f8f9fa !important;
-        }
-        
-        /* Ajuste para prevenir espacio en blanco al final */
-        .content {
-            padding-bottom: 20px !important;
+        .content-wrapper { background: #f8f9fa !important; }
+        .content { padding-bottom: 20px !important; }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Header de bienvenida con animación */
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes notificationPop {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
         .welcome-header {
@@ -318,7 +324,6 @@
             margin-top: 5px;
         }
 
-        /* Stats Cards */
         .stats-card {
             background: white;
             border-radius: 15px;
@@ -352,9 +357,7 @@
         .stats-icon.bg-yellow { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .stats-icon.bg-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
-        .stats-content {
-            flex: 1;
-        }
+        .stats-content { flex: 1; }
 
         .stats-label {
             font-size: 14px;
@@ -387,7 +390,6 @@
             color: #991b1b;
         }
 
-        /* Tarjeta de empleado/formulario */
         .appointment-card {
             background: white;
             border-radius: 20px;
@@ -411,7 +413,6 @@
             margin: 0;
         }
 
-        /* Inputs personalizados */
         .custom-input {
             border-radius: 10px;
             border: 1px solid #e0e0e0;
@@ -432,7 +433,6 @@
             display: block;
         }
 
-        /* Estilos de validación */
         .custom-input.is-invalid {
             border-color: #dc3545 !important;
             box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
@@ -452,19 +452,7 @@
             gap: 5px;
             animation: slideDown 0.3s ease-out;
         }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
-        /* Botón Salus */
         .btn-salus {
             background: linear-gradient(135deg, #c9a876, #d4b896);
             color: white;
@@ -481,7 +469,6 @@
             box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3);
         }
 
-        /* Lista de empleados */
         .appointments-list {
             background: white;
             border-radius: 20px;
@@ -505,7 +492,6 @@
             margin: 0;
         }
 
-        /* Tabs de filtro */
         .filter-tabs {
             display: flex;
             gap: 8px;
@@ -532,7 +518,6 @@
             background: #e5e7eb;
         }
 
-        /* Items de empleado */
         .employee-item {
             display: flex;
             justify-content: space-between;
@@ -548,11 +533,6 @@
         .employee-item:hover {
             background: #f5efe6;
             transform: translateX(5px);
-        }
-
-        .employee-item.editing {
-            background: #f5efe6;
-            border: 1px solid #c9a876;
         }
 
         .employee-info {
@@ -575,9 +555,7 @@
             font-size: 18px;
         }
 
-        .employee-details {
-            flex: 1;
-        }
+        .employee-details { flex: 1; }
 
         .employee-details h4 {
             color: #2C3E50;
@@ -620,7 +598,6 @@
             color: #6b7280;
         }
 
-        /* Controles de empleado */
         .employee-controls {
             display: flex;
             gap: 8px;
@@ -654,7 +631,6 @@
             color: #856404;
         }
 
-        /* Botones de acción */
         .action-btn {
             padding: 8px 12px;
             background: transparent;
@@ -686,7 +662,6 @@
             border-color: #ef4444;
         }
 
-        /* Estado vacío */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -699,7 +674,6 @@
             margin-bottom: 20px;
         }
 
-        /* Modal de confirmación */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -722,22 +696,6 @@
             width: 90%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(30px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         .modal-header {
@@ -805,7 +763,6 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
-        /* Notificación mejorada */
         .notification-toast {
             position: fixed;
             top: 50%;
@@ -821,20 +778,6 @@
             gap: 15px;
             min-width: 300px;
             animation: notificationPop 0.4s ease-out;
-        }
-
-        @keyframes notificationPop {
-            0% {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.05);
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
         }
 
         .notification-icon {
@@ -856,9 +799,7 @@
             background: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
-        .notification-content {
-            flex: 1;
-        }
+        .notification-content { flex: 1; }
 
         .notification-title {
             font-weight: 600;
@@ -871,7 +812,6 @@
             font-size: 14px;
         }
 
-        /* Formulario de edición */
         .edit-form-overlay {
             position: fixed;
             top: 0;
@@ -882,7 +822,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9998;
+            z-index: 10000;
             animation: fadeIn 0.3s ease-out;
         }
 
@@ -922,10 +862,20 @@
             font-size: 24px;
             color: #6b7280;
             cursor: pointer;
-            transition: color 0.3s;
+            transition: all 0.3s;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
 
-        /* ESTILOS PARA EL SISTEMA DE COMISIONES */
+        .close-edit-form:hover {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
         .commissions-modal {
             position: fixed;
             top: 0;
@@ -936,7 +886,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
+            z-index: 10000;
             animation: fadeIn 0.3s ease-out;
         }
 
@@ -953,8 +903,9 @@
         }
 
         .commissions-header {
-            display: flex;
-            justify-content: space-between;
+            display: flex
+
+justify-content: space-between;
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
@@ -976,7 +927,7 @@
             font-size: 28px;
             color: #6b7280;
             cursor: pointer;
-            transition: color 0.3s;
+            transition: all 0.3s;
             width: 40px;
             height: 40px;
             display: flex;
@@ -1074,15 +1025,19 @@
             margin-top: 10px;
         }
 
-        .btn-edit-commission {
+        .btn-edit-commission,
+        .btn-delete-commission {
             padding: 6px 12px;
-            background: #3b82f6;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
             transition: all 0.3s;
+        }
+
+        .btn-edit-commission {
+            background: #3b82f6;
         }
 
         .btn-edit-commission:hover {
@@ -1091,14 +1046,7 @@
         }
 
         .btn-delete-commission {
-            padding: 6px 12px;
             background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.3s;
         }
 
         .btn-delete-commission:hover {
@@ -1118,7 +1066,6 @@
             margin-bottom: 15px;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .welcome-header {
                 flex-direction: column;
@@ -1166,215 +1113,7 @@
 
 @section('js')
     <script>
-        // ========== ACTUALIZACIÓN AUTOMÁTICA DE FECHA Y HORA ==========
-        function updateDateTime() {
-            const now = new Date();
-            
-            const optionsDate = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            
-            let dateString = now.toLocaleDateString('es-HN', optionsDate);
-            dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
-            
-            let hours = now.getHours();
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            const hoursString = hours.toString().padStart(2, '0');
-            
-            const timeString = `${hoursString}:${minutes} ${ampm}`;
-            
-            const dateElement = document.getElementById('currentDate');
-            const timeElement = document.getElementById('currentTime');
-            
-            if (dateElement) dateElement.textContent = dateString;
-            if (timeElement) timeElement.textContent = timeString;
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            updateDateTime();
-            setInterval(updateDateTime, 60000);
-        });
-
-        // ========== VALIDACIONES DE SEGURIDAD ==========
-        function validateName(input) {
-            const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
-            return nameRegex.test(input.trim());
-        }
-
-        function validateEmail(email) {
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            return emailRegex.test(email.trim());
-        }
-
-        function validatePosition(input) {
-            const positionRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+$/;
-            return positionRegex.test(input.trim());
-        }
-
-        function sanitizeInput(input, type) {
-            switch(type) {
-                case 'name':
-                    return input.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
-                case 'email':
-                    return input.replace(/[^a-zA-Z0-9._%+-@]/g, '');
-                case 'position':
-                    return input.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '');
-                default:
-                    return input;
-            }
-        }
-
-        function showFieldError(fieldId, message) {
-            const field = document.getElementById(fieldId);
-            const existingError = field.parentNode.querySelector('.field-error');
-            
-            if (existingError) existingError.remove();
-            
-            field.classList.add('is-invalid');
-            
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'field-error';
-            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
-            
-            field.parentNode.appendChild(errorDiv);
-        }
-
-        function removeFieldError(fieldId) {
-            const field = document.getElementById(fieldId);
-            const errorDiv = field.parentNode.querySelector('.field-error');
-            
-            if (errorDiv) errorDiv.remove();
-            
-            field.classList.remove('is-invalid');
-            field.classList.add('is-valid');
-        }
-
-        function validateLength(input, minLength = 2, maxLength = 100) {
-            const trimmed = input.trim();
-            return trimmed.length >= minLength && trimmed.length <= maxLength;
-        }
-
-        // Event listeners para validación en tiempo real
-        document.addEventListener('DOMContentLoaded', function() {
-            const nameField = document.getElementById('employee_name');
-            const emailField = document.getElementById('email');
-            const positionField = document.getElementById('position');
-            const customDepartmentField = document.getElementById('customDepartment');
-
-            if (nameField) {
-                nameField.addEventListener('input', function() {
-                    const originalValue = this.value;
-                    const sanitizedValue = sanitizeInput(originalValue, 'name');
-                    
-                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
-                    
-                    if (this.value.trim()) {
-                        if (!validateName(this.value)) {
-                            showFieldError('employee_name', 'El nombre solo puede contener letras, espacios y acentos');
-                        } else if (!validateLength(this.value, 2, 100)) {
-                            showFieldError('employee_name', 'El nombre debe tener entre 2 y 100 caracteres');
-                        } else {
-                            removeFieldError('employee_name');
-                        }
-                    } else {
-                        removeFieldError('employee_name');
-                    }
-                });
-            }
-
-            if (emailField) {
-                emailField.addEventListener('input', function() {
-                    const originalValue = this.value;
-                    const sanitizedValue = sanitizeInput(originalValue, 'email');
-                    
-                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
-                    
-                    if (this.value.trim()) {
-                        if (!validateEmail(this.value)) {
-                            showFieldError('email', 'Por favor ingrese un email válido');
-                        } else {
-                            removeFieldError('email');
-                        }
-                    } else {
-                        removeFieldError('email');
-                    }
-                });
-            }
-
-            if (positionField) {
-                positionField.addEventListener('input', function() {
-                    const originalValue = this.value;
-                    
-                    let sanitizedValue = originalValue
-                        .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g, '')
-                        .replace(/\s+/g, ' ')
-                        .replace(/^[\s.'\-()\/]+/, '')
-                        .replace(/[\s.'\-()\/]+$/, '');
-                    
-                    sanitizedValue = sanitizedValue.replace(/[.'\-()\/]{2,}/g, match => match[0]);
-                    
-                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
-                    
-                    if (this.value.trim()) {
-                        const trimmedValue = this.value.trim();
-                        
-                        if (trimmedValue.length < 2) {
-                            showFieldError('position', 'El cargo debe tener al menos 2 caracteres');
-                        } else if (trimmedValue.length > 80) {
-                            showFieldError('position', 'El cargo no puede exceder 80 caracteres');
-                        } else if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+$/.test(trimmedValue)) {
-                            showFieldError('position', 'El cargo contiene caracteres no permitidos');
-                        } else {
-                            removeFieldError('position');
-                        }
-                    } else {
-                        removeFieldError('position');
-                    }
-                });
-            }
-
-            if (customDepartmentField) {
-                customDepartmentField.addEventListener('input', function() {
-                    const originalValue = this.value;
-                    const sanitizedValue = sanitizeInput(originalValue, 'name');
-                    
-                    if (originalValue !== sanitizedValue) this.value = sanitizedValue;
-                    
-                    if (this.value.trim()) {
-                        if (!validateName(this.value)) {
-                            showFieldError('customDepartment', 'El departamento solo puede contener letras y espacios');
-                        } else if (!validateLength(this.value, 2, 50)) {
-                            showFieldError('customDepartment', 'El departamento debe tener entre 2 y 50 caracteres');
-                        } else {
-                            removeFieldError('customDepartment');
-                        }
-                    } else {
-                        removeFieldError('customDepartment');
-                    }
-                });
-            }
-
-            document.getElementById('department').addEventListener('change', function() {
-                const customInput = document.getElementById('customDepartment');
-                if (this.value === 'otro') {
-                    customInput.classList.add('show');
-                    customInput.required = true;
-                } else {
-                    customInput.classList.remove('show');
-                    customInput.required = false;
-                    customInput.value = '';
-                }
-            });
-        });
-
-        // ========== DATOS Y FUNCIONES PRINCIPALES ==========
+        // ========== DATOS GLOBALES ==========
         let employees = [
             {
                 id: 1,
@@ -1384,7 +1123,11 @@
                 position: 'Administradora',
                 hire_date: '2023-01-15',
                 salary: 30000,
-                commissions: [],
+                commissions: [
+                    {id: 1, amount: 850, type: 'venta', description: 'Venta de tratamiento facial', date: '2024-01-15'},
+                    {id: 2, amount: 1200, type: 'bono', description: 'Bono por desempeño mensual', date: '2024-01-28'},
+                    {id: 3, amount: 800, type: 'meta', description: 'Cumplimiento meta trimestral', date: '2024-02-05'}
+                ],
                 status: 'active'
             },
             {
@@ -1395,7 +1138,10 @@
                 position: 'Enfermera Senior',
                 hire_date: '2022-06-10',
                 salary: 28000,
-                commissions: [],
+                commissions: [
+                    {id: 1, amount: 650, type: 'venta', description: 'Venta de tratamiento corporal', date: '2024-01-20'},
+                    {id: 2, amount: 1000, type: 'referido', description: 'Referido de 2 clientes nuevos', date: '2024-02-01'}
+                ],
                 status: 'active'
             },
             {
@@ -1406,7 +1152,10 @@
                 position: 'Recepcionista',
                 hire_date: '2023-03-20',
                 salary: 22000,
-                commissions: [],
+                commissions: [
+                    {id: 1, amount: 480, type: 'bono', description: 'Bono por excelente atención', date: '2024-01-25'},
+                    {id: 2, amount: 500, type: 'meta', description: 'Meta de satisfacción cliente', date: '2024-02-10'}
+                ],
                 status: 'vacation'
             },
             {
@@ -1417,39 +1166,35 @@
                 position: 'Enfermera',
                 hire_date: '2023-07-01',
                 salary: 25000,
-                commissions: [],
+                commissions: [
+                    {id: 1, amount: 1200, type: 'venta', description: 'Venta de paquete premium', date: '2024-02-03'}
+                ],
                 status: 'active'
             }
         ];
 
-        // Agregar comisiones de ejemplo
-        employees[0].commissions = [
-            {id: 1, amount: 850, type: 'venta', description: 'Venta de tratamiento facial', date: '2024-01-15'},
-            {id: 2, amount: 1200, type: 'bono', description: 'Bono por desempeño mensual', date: '2024-01-28'},
-            {id: 3, amount: 800, type: 'meta', description: 'Cumplimiento meta trimestral', date: '2024-02-05'}
-        ];
-
-        employees[1].commissions = [
-            {id: 1, amount: 650, type: 'venta', description: 'Venta de tratamiento corporal', date: '2024-01-20'},
-            {id: 2, amount: 1000, type: 'referido', description: 'Referido de 2 clientes nuevos', date: '2024-02-01'}
-        ];
-
-        employees[2].commissions = [
-            {id: 1, amount: 480, type: 'bono', description: 'Bono por excelente atención', date: '2024-01-25'},
-            {id: 2, amount: 500, type: 'meta', description: 'Meta de satisfacción cliente', date: '2024-02-10'}
-        ];
-
-        employees[3].commissions = [
-            {id: 1, amount: 1200, type: 'venta', description: 'Venta de paquete premium', date: '2024-02-03'}
-        ];
-
         let commissionIdCounter = 10;
 
-        function getInitials(name) {
-            return name.split(' ').map(n => n[0]).join('').toUpperCase();
-        }
+        // ========== UTILIDADES ==========
+        const updateDateTime = () => {
+            const now = new Date();
+            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            
+            let dateString = now.toLocaleDateString('es-HN', optionsDate);
+            dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+            
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            hours = hours % 12 || 12;
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+            
+            document.getElementById('currentDate').textContent = dateString;
+            document.getElementById('currentTime').textContent = timeString;
+        };
 
-        function formatDepartment(dept) {
+        const getInitials = name => name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+        const formatDepartment = dept => {
             const departments = {
                 'administracion': 'Administración',
                 'enfermeria': 'Enfermería', 
@@ -1457,31 +1202,22 @@
                 'limpieza': 'Limpieza'
             };
             return departments[dept] || dept;
-        }
+        };
 
-        function getStatusClass(status) {
-            switch(status) {
-                case 'active': return 'status-active';
-                case 'inactive': return 'status-inactive';
-                case 'vacation': return 'status-vacation';
-                default: return 'status-active';
-            }
-        }
+        const getStatusClass = status => `status-${status}`;
 
-        function getStatusText(status) {
-            switch(status) {
-                case 'active': return 'Activo';
-                case 'inactive': return 'Inactivo';
-                case 'vacation': return 'Vacaciones';
-                default: return 'Activo';
-            }
-        }
+        const getStatusText = status => {
+            const statuses = {
+                'active': 'Activo',
+                'inactive': 'Inactivo',
+                'vacation': 'Vacaciones'
+            };
+            return statuses[status] || 'Activo';
+        };
 
-        function getTotalCommissions(employee) {
-            return employee.commissions.reduce((sum, comm) => sum + comm.amount, 0);
-        }
+        const getTotalCommissions = employee => employee.commissions.reduce((sum, comm) => sum + comm.amount, 0);
 
-        function formatCommissionType(type) {
+        const formatCommissionType = type => {
             const types = {
                 'venta': 'Venta',
                 'bono': 'Bono',
@@ -1490,15 +1226,135 @@
                 'otro': 'Otro'
             };
             return types[type] || type;
-        }
+        };
 
-        // ========== VER COMISIONES DEL EMPLEADO ==========
+        // ========== VALIDACIONES ==========
+        const validateName = input => /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(input.trim());
+        const validateEmail = email => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+        const validatePosition = input => /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]+$/.test(input.trim());
+        const validateLength = (input, min = 2, max = 100) => {
+            const len = input.trim().length;
+            return len >= min && len <= max;
+        };
+
+        const sanitizeInput = (input, type) => {
+            const patterns = {
+                'name': /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g,
+                'email': /[^a-zA-Z0-9._%+-@]/g,
+                'position': /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.'\-()\/]/g
+            };
+            return input.replace(patterns[type] || /.^/, '');
+        };
+
+        const showFieldError = (fieldId, message) => {
+            const field = document.getElementById(fieldId);
+            const existingError = field.parentNode.querySelector('.field-error');
+            if (existingError) existingError.remove();
+            
+            field.classList.add('is-invalid');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            field.parentNode.appendChild(errorDiv);
+        };
+
+        const removeFieldError = fieldId => {
+            const field = document.getElementById(fieldId);
+            const errorDiv = field.parentNode.querySelector('.field-error');
+            if (errorDiv) errorDiv.remove();
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        };
+
+        const showNotification = (title, message, type = 'success') => {
+            const existing = document.querySelector('.notification-toast');
+            if (existing) existing.remove();
+            
+            const notification = document.createElement('div');
+            notification.className = 'notification-toast';
+            notification.innerHTML = `
+                <div class="notification-icon notification-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.style.animation = 'notificationPop 0.4s ease-out reverse';
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        };
+
+        // ========== RENDERIZADO ==========
+        const renderEmployees = (filter = 'todos') => {
+            const container = document.getElementById('employeesList');
+            let filteredEmployees = filter === 'todos' ? employees : employees.filter(emp => emp.department === filter);
+            
+            if (filteredEmployees.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>No hay empleados${filter !== 'todos' ? ' en este departamento' : ''}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredEmployees.map(employee => {
+                const totalComm = getTotalCommissions(employee);
+                return `
+                    <div class="employee-item" data-id="${employee.id}">
+                        <div class="employee-info">
+                            <div class="employee-avatar">${getInitials(employee.name)}</div>
+                            <div class="employee-details">
+                                <h4>${employee.name}</h4>
+                                <p><i class="fas fa-envelope mr-1"></i> ${employee.email}</p>
+                                <p><i class="fas fa-building mr-1"></i> ${formatDepartment(employee.department)} • ${employee.position}</p>
+                                <p><i class="fas fa-calendar mr-1"></i> Desde ${new Date(employee.hire_date).toLocaleDateString()}</p>
+                            </div>
+                            <div class="employee-commission" onclick="viewCommissions(${employee.id})" title="Ver todas las comisiones">
+                                <div class="commission-amount">$${totalComm.toLocaleString()}</div>
+                                <div class="commission-label">Comisiones</div>
+                            </div>
+                        </div>
+                        <div class="employee-controls">
+                            <button class="status-badge ${getStatusClass(employee.status)}">${getStatusText(employee.status)}</button>
+                            <button class="action-btn commission-btn" onclick="addCommission(${employee.id})" title="Agregar Comisión">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="action-btn" onclick="viewCommissions(${employee.id})" title="Ver Comisiones" style="color: #10b981; border-color: #10b981;">
+                                <i class="fas fa-list-alt"></i>
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editEmployee(${employee.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteEmployee(${employee.id})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateCommissionSelect();
+        };
+
+        const updateCommissionSelect = () => {
+            const select = document.getElementById('commission_employee');
+            select.innerHTML = '<option value="">Seleccionar empleado</option>' +
+                employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
+        };
+
+        // ========== COMISIONES ==========
         function viewCommissions(employeeId) {
             const employee = employees.find(e => e.id === employeeId);
             if (!employee) return;
 
             const total = getTotalCommissions(employee);
-
             const modal = document.createElement('div');
             modal.className = 'commissions-modal';
             
@@ -1509,21 +1365,19 @@
                             <i class="fas fa-money-bill-wave" style="color: #c9a876;"></i>
                             Comisiones de ${employee.name}
                         </div>
-                        <button class="close-commissions">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <button class="close-commissions"><i class="fas fa-times"></i></button>
                     </div>
                     
                     <div class="total-commissions">
-                        <div class="total-amount">${total.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="total-amount">$${total.toLocaleString('es-HN', {minimumFractionDigits: 2})}</div>
                         <div class="total-label">Total de Comisiones</div>
                     </div>
                     
-                    <div class="commissions-list" id="commissionsListContainer">
+                    <div class="commissions-list">
                         ${employee.commissions.length > 0 ? employee.commissions.map(comm => `
                             <div class="commission-item">
                                 <div class="commission-header-info">
-                                    <div class="commission-amount-display">${comm.amount.toLocaleString('es-HN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                                    <div class="commission-amount-display">$${comm.amount.toLocaleString('es-HN', {minimumFractionDigits: 2})}</div>
                                     <div class="commission-date">
                                         <i class="fas fa-calendar mr-1"></i>
                                         ${new Date(comm.date).toLocaleDateString('es-HN')}
@@ -1553,15 +1407,10 @@
             `;
             
             document.body.appendChild(modal);
-            
             modal.querySelector('.close-commissions').addEventListener('click', () => modal.remove());
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
-            });
+            modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
         }
 
-        // ========== EDITAR COMISIÓN ==========
         function editCommission(employeeId, commissionId) {
             const employee = employees.find(e => e.id === employeeId);
             if (!employee) return;
@@ -1579,9 +1428,7 @@
                             <i class="fas fa-edit" style="color: #c9a876;"></i>
                             Editar Comisión
                         </div>
-                        <button class="close-edit-form" onclick="this.closest('.edit-form-overlay').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <button class="close-edit-form"><i class="fas fa-times"></i></button>
                     </div>
                     
                     <form id="editCommissionForm">
@@ -1589,14 +1436,14 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Monto ($)</label>
-                                    <input type="number" class="form-control custom-input" id="edit_comm_amount" value="${commission.amount}" step="0.01" required>
+                                    <input type="number" class="form-control custom-input" id="edit_comm_amount" value="${commission.amount}" step="0.01" min="0.01" required>
                                 </div>
                             </div>
                             
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Fecha</label>
-                                    <input type="date" class="form-control custom-input" id="edit_comm_date" value="${commission.date}" required>
+                                    <input type="date" class="form-control custom-input" id="edit_comm_date" value="${commission.date}" max="${new Date().toISOString().split('T')[0]}" required>
                                 </div>
                             </div>
                             
@@ -1616,18 +1463,15 @@
                             <div class="col-12">
                                 <div class="form-group">
                                     <label>Descripción</label>
-                                    <textarea class="form-control custom-input" id="edit_comm_description" rows="3">${commission.description || ''}</textarea>
+                                    <textarea class="form-control custom-input" id="edit_comm_description" rows="3" maxlength="255">${commission.description || ''}</textarea>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="mt-4 d-flex gap-2 justify-content-end">
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.edit-form-overlay').remove()">
-                                Cancelar
-                            </button>
+                            <button type="button" class="btn btn-secondary cancel-edit-btn">Cancelar</button>
                             <button type="submit" class="btn btn-salus">
-                                <i class="fas fa-save mr-2"></i>
-                                Guardar Cambios
+                                <i class="fas fa-save mr-2"></i>Guardar Cambios
                             </button>
                         </div>
                     </form>
@@ -1636,21 +1480,39 @@
             
             document.body.appendChild(editModal);
             
-            document.getElementById('editCommissionForm').addEventListener('submit', function(e) {
+            // Botones de cierre
+            const closeBtn = editModal.querySelector('.close-edit-form');
+            const cancelBtn = editModal.querySelector('.cancel-edit-btn');
+            
+            closeBtn.addEventListener('click', () => editModal.remove());
+            cancelBtn.addEventListener('click', () => editModal.remove());
+            
+            // Formulario
+            const form = editModal.querySelector('#editCommissionForm');
+            form.addEventListener('submit', (e) => {
                 e.preventDefault();
                 
-                commission.amount = parseFloat(document.getElementById('edit_comm_amount').value);
+                const newAmount = parseFloat(document.getElementById('edit_comm_amount').value);
+                if (newAmount <= 0) {
+                    showNotification('Error', 'El monto debe ser mayor a 0', 'error');
+                    return;
+                }
+                
+                commission.amount = newAmount;
                 commission.date = document.getElementById('edit_comm_date').value;
                 commission.type = document.getElementById('edit_comm_type').value;
                 commission.description = document.getElementById('edit_comm_description').value;
                 
                 editModal.remove();
-                
-                document.querySelector('.commissions-modal').remove();
+                const commissionsModal = document.querySelector('.commissions-modal');
+                if (commissionsModal) commissionsModal.remove();
                 
                 renderEmployees();
                 
-                showNotification('Comisión actualizada', 'La comisión se ha actualizado exitosamente', 'success');
+                setTimeout(() => {
+                    viewCommissions(employeeId);
+                    showNotification('Comisión actualizada', 'La comisión se ha actualizado exitosamente', 'success');
+                }, 100);
             });
             
             editModal.addEventListener('click', (e) => {
@@ -1658,7 +1520,6 @@
             });
         }
 
-        // ========== ELIMINAR COMISIÓN ==========
         function deleteCommission(employeeId, commissionId) {
             const employee = employees.find(e => e.id === employeeId);
             if (!employee) return;
@@ -1672,130 +1533,69 @@
             modalOverlay.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
-                        <div class="modal-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
+                        <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
                         <div class="modal-title">Confirmar Eliminación</div>
                     </div>
-                    
                     <div class="modal-body">
-                        ¿Está seguro de que desea eliminar esta comisión de <strong>${commission.amount.toFixed(2)}</strong>?
+                        ¿Está seguro de que desea eliminar esta comisión de <strong>$${commission.amount.toFixed(2)}</strong>?
                     </div>
-                    
                     <div class="modal-footer">
-                        <button class="modal-btn modal-btn-cancel" onclick="this.closest('.modal-overlay').remove()">
-                            Cancelar
-                        </button>
-                        <button class="modal-btn modal-btn-confirm" id="confirmDeleteComm">
-                            Sí, eliminar
-                        </button>
+                        <button class="modal-btn modal-btn-cancel">Cancelar</button>
+                        <button class="modal-btn modal-btn-confirm">Sí, eliminar</button>
                     </div>
                 </div>
             `;
             
             document.body.appendChild(modalOverlay);
             
-            document.getElementById('confirmDeleteComm').addEventListener('click', function() {
+            // Botón cancelar
+            const cancelBtn = modalOverlay.querySelector('.modal-btn-cancel');
+            cancelBtn.addEventListener('click', () => modalOverlay.remove());
+            
+            // Botón confirmar
+            const confirmBtn = modalOverlay.querySelector('.modal-btn-confirm');
+            confirmBtn.addEventListener('click', () => {
+                // Eliminar la comisión
                 employee.commissions = employee.commissions.filter(c => c.id !== commissionId);
                 
+                // Cerrar modal de confirmación
                 modalOverlay.remove();
                 
-                document.querySelector('.commissions-modal').remove();
+                // Cerrar modal de comisiones si existe
+                const commissionsModal = document.querySelector('.commissions-modal');
+                if (commissionsModal) {
+                    commissionsModal.remove();
+                }
                 
+                // Actualizar vista
                 renderEmployees();
                 
-                showNotification('Comisión eliminada', 'La comisión se ha eliminado del sistema', 'success');
+                // Reabrir modal de comisiones actualizado
+                setTimeout(() => {
+                    viewCommissions(employeeId);
+                    showNotification('Comisión eliminada', 'La comisión se ha eliminado del sistema', 'success');
+                }, 100);
             });
             
+            // Cerrar al hacer clic fuera
             modalOverlay.addEventListener('click', (e) => {
                 if (e.target === modalOverlay) modalOverlay.remove();
             });
         }
 
-        // ========== RENDERIZAR EMPLEADOS ==========
-        function renderEmployees(filter = 'todos') {
-            const container = document.getElementById('employeesList');
-            let filteredEmployees = employees;
-            
-            if (filter !== 'todos') {
-                filteredEmployees = employees.filter(emp => emp.department === filter);
-            }
-            
-            if (filteredEmployees.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>No hay empleados${filter !== 'todos' ? ' en este departamento' : ''}</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filteredEmployees.map(employee => {
-                const totalComm = getTotalCommissions(employee);
-                return `
-                    <div class="employee-item" data-id="${employee.id}">
-                        <div class="employee-info">
-                            <div class="employee-avatar">
-                                ${getInitials(employee.name)}
-                            </div>
-                            <div class="employee-details">
-                                <h4>${employee.name}</h4>
-                                <p><i class="fas fa-envelope mr-1"></i> ${employee.email}</p>
-                                <p><i class="fas fa-building mr-1"></i> ${formatDepartment(employee.department)} • ${employee.position}</p>
-                                <p><i class="fas fa-calendar mr-1"></i> Desde ${new Date(employee.hire_date).toLocaleDateString()}</p>
-                            </div>
-                            <div class="employee-commission" onclick="viewCommissions(${employee.id})" title="Ver todas las comisiones">
-                                <div class="commission-amount">${totalComm.toLocaleString()}</div>
-                                <div class="commission-label">Comisiones</div>
-                            </div>
-                        </div>
-                        <div class="employee-controls">
-                            <button class="status-badge ${getStatusClass(employee.status)}">
-                                ${getStatusText(employee.status)}
-                            </button>
-                            <button class="action-btn commission-btn" onclick="addCommission(${employee.id})" title="Agregar Comisión">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button class="action-btn" onclick="viewCommissions(${employee.id})" title="Ver Comisiones" style="color: #10b981; border-color: #10b981;">
-                                <i class="fas fa-list-alt"></i>
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editEmployee(${employee.id})" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteEmployee(${employee.id})" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            updateCommissionSelect();
-        }
-
-        // ========== ACTUALIZAR SELECT DE COMISIONES ==========
-        function updateCommissionSelect() {
-            const select = document.getElementById('commission_employee');
-            select.innerHTML = '<option value="">Seleccionar empleado</option>' +
-                employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
-        }
-
-        // ========== AGREGAR COMISIÓN ==========
-        function addCommission(employeeId) {
+        const addCommission = employeeId => {
             const employee = employees.find(e => e.id === employeeId);
             if (employee) {
                 document.getElementById('commission_employee').value = employeeId;
                 document.getElementById('commission_amount').focus();
-                
                 document.querySelector('#commissionForm').closest('.appointment-card').scrollIntoView({
                     behavior: 'smooth',
                     block: 'center'
                 });
             }
-        }
+        };
 
-        // ========== EDITAR EMPLEADO ==========
+        // ========== EMPLEADOS ==========
         function editEmployee(id) {
             const employee = employees.find(e => e.id === id);
             if (!employee) return;
@@ -1810,7 +1610,7 @@
                             <i class="fas fa-user-edit" style="color: #c9a876;"></i>
                             Editar Empleado
                         </div>
-                        <button class="close-edit-form" onclick="this.closest('.edit-form-overlay').remove()">
+                        <button class="close-edit-form">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -1860,7 +1660,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Estado</label>
-                                    <select class="form-control custom-input" id="edit_status" required>
+
+<select class="form-control custom-input" id="edit_status" required>
                                         <option value="active" ${employee.status === 'active' ? 'selected' : ''}>Activo</option>
                                         <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Inactivo</option>
                                         <option value="vacation" ${employee.status === 'vacation' ? 'selected' : ''}>Vacaciones</option>
@@ -1870,12 +1671,9 @@
                         </div>
                         
                         <div class="mt-4 d-flex gap-2 justify-content-end">
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.edit-form-overlay').remove()">
-                                Cancelar
-                            </button>
+                            <button type="button" class="btn btn-secondary cancel-edit-employee">Cancelar</button>
                             <button type="submit" class="btn btn-salus">
-                                <i class="fas fa-save mr-2"></i>
-                                Guardar Cambios
+                                <i class="fas fa-save mr-2"></i>Guardar Cambios
                             </button>
                         </div>
                     </form>
@@ -1884,7 +1682,16 @@
             
             document.body.appendChild(editOverlay);
             
-            document.getElementById('editEmployeeForm').addEventListener('submit', function(e) {
+            // Botones de cierre
+            const closeBtn = editOverlay.querySelector('.close-edit-form');
+            const cancelBtn = editOverlay.querySelector('.cancel-edit-employee');
+            
+            closeBtn.addEventListener('click', () => editOverlay.remove());
+            cancelBtn.addEventListener('click', () => editOverlay.remove());
+            
+            // Formulario
+            const form = editOverlay.querySelector('#editEmployeeForm');
+            form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 employee.name = document.getElementById('edit_name').value;
@@ -1896,20 +1703,15 @@
                 
                 renderEmployees();
                 updateCommissionSelect();
-                
                 editOverlay.remove();
-                
                 showNotification('Empleado actualizado', 'Los datos se han actualizado exitosamente', 'success');
             });
             
-            editOverlay.addEventListener('click', function(e) {
-                if (e.target === editOverlay) {
-                    editOverlay.remove();
-                }
+            editOverlay.addEventListener('click', e => { 
+                if (e.target === editOverlay) editOverlay.remove(); 
             });
         }
 
-        // ========== ELIMINAR EMPLEADO (MENSAJE CORTO) ==========
         function deleteEmployee(id) {
             const employee = employees.find(e => e.id === id);
             if (!employee) return;
@@ -1920,202 +1722,195 @@
             modalOverlay.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
-                        <div class="modal-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
+                        <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
                         <div class="modal-title">Confirmar Eliminación</div>
                     </div>
-                    
                     <div class="modal-body">
                         ¿Está seguro de que desea eliminar a <strong>${employee.name}</strong> del sistema?
                     </div>
-                    
                     <div class="modal-footer">
-                        <button class="modal-btn modal-btn-cancel" onclick="this.closest('.modal-overlay').remove()">
-                            Cancelar
-                        </button>
-                        <button class="modal-btn modal-btn-confirm" id="confirmDelete">
-                            Sí, eliminar
-                        </button>
+                        <button class="modal-btn modal-btn-cancel">Cancelar</button>
+                        <button class="modal-btn modal-btn-confirm">Sí, eliminar</button>
                     </div>
                 </div>
             `;
             
             document.body.appendChild(modalOverlay);
             
-            document.getElementById('confirmDelete').addEventListener('click', function() {
+            // Botón cancelar
+            const cancelBtn = modalOverlay.querySelector('.modal-btn-cancel');
+            cancelBtn.addEventListener('click', () => modalOverlay.remove());
+            
+            // Botón confirmar
+            const confirmBtn = modalOverlay.querySelector('.modal-btn-confirm');
+            confirmBtn.addEventListener('click', function() {
                 employees = employees.filter(e => e.id !== id);
                 renderEmployees();
                 updateCommissionSelect();
-                
                 modalOverlay.remove();
-                
                 showNotification('Empleado eliminado', `${employee.name} ha sido eliminado del sistema`, 'success');
             });
             
-            modalOverlay.addEventListener('click', function(e) {
-                if (e.target === modalOverlay) {
-                    modalOverlay.remove();
-                }
+            modalOverlay.addEventListener('click', e => { 
+                if (e.target === modalOverlay) modalOverlay.remove(); 
             });
         }
 
-        // ========== MOSTRAR NOTIFICACIONES ==========
-        function showNotification(title, message, type = 'success') {
-            const existingNotification = document.querySelector('.notification-toast');
-            if (existingNotification) {
-                existingNotification.remove();
-            }
-            
-            const notification = document.createElement('div');
-            notification.className = 'notification-toast';
-            
-            notification.innerHTML = `
-                <div class="notification-icon notification-${type}">
-                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">${title}</div>
-                    <div class="notification-message">${message}</div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'notificationPop 0.4s ease-out reverse';
-                setTimeout(() => {
-                    notification.remove();
-                }, 400);
-            }, 3000);
-        }
+        // ========== INICIALIZACIÓN Y EVENT LISTENERS ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
 
-        // ========== MANEJAR FORMULARIO DE EMPLEADO ==========
-        document.getElementById('employeeForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            let isValid = true;
-            
-            const name = document.getElementById('employee_name').value.trim();
-            if (!name) {
-                showFieldError('employee_name', 'El nombre es requerido');
-                isValid = false;
-            } else if (!validateName(name) || !validateLength(name, 2, 100)) {
-                showFieldError('employee_name', 'Por favor ingrese un nombre válido (2-100 caracteres, solo letras y espacios)');
-                isValid = false;
-            }
-            
-            const email = document.getElementById('email').value.trim();
-            if (!email) {
-                showFieldError('email', 'El email es requerido');
-                isValid = false;
-            } else if (!validateEmail(email)) {
-                showFieldError('email', 'Por favor ingrese un email válido');
-                isValid = false;
-            }
-            
-            const position = document.getElementById('position').value.trim();
-            if (!position) {
-                showFieldError('position', 'El cargo es requerido');
-                isValid = false;
-            } else if (!validatePosition(position) || !validateLength(position, 2, 80)) {
-                showFieldError('position', 'Por favor ingrese un cargo válido (2-80 caracteres)');
-                isValid = false;
-            }
-            
-            const customDepartmentField = document.getElementById('customDepartment');
-            if (customDepartmentField.classList.contains('show')) {
-                const customDept = customDepartmentField.value.trim();
-                if (!customDept) {
-                    showFieldError('customDepartment', 'Debe especificar el departamento');
-                    isValid = false;
-                } else if (!validateName(customDept) || !validateLength(customDept, 2, 50)) {
-                    showFieldError('customDepartment', 'Por favor ingrese un departamento válido (2-50 caracteres, solo letras)');
+            // Validaciones en tiempo real
+            const fields = [
+                { id: 'employee_name', type: 'name', validate: validateName, min: 2, max: 100 },
+                { id: 'email', type: 'email', validate: validateEmail },
+                { id: 'position', type: 'position', validate: validatePosition, min: 2, max: 80 },
+                { id: 'customDepartment', type: 'name', validate: validateName, min: 2, max: 50 }
+            ];
+
+            fields.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        const sanitized = sanitizeInput(this.value, field.type);
+                        if (this.value !== sanitized) this.value = sanitized;
+                        
+                        if (this.value.trim()) {
+                            if (!field.validate(this.value)) {
+                                showFieldError(field.id, `Formato inválido`);
+                            } else if (field.min && !validateLength(this.value, field.min, field.max)) {
+                                showFieldError(field.id, `Debe tener entre ${field.min} y ${field.max} caracteres`);
+                            } else {
+                                removeFieldError(field.id);
+                            }
+                        } else {
+                            removeFieldError(field.id);
+                        }
+                    });
+                }
+            });
+
+            // Departamento personalizado
+            document.getElementById('department').addEventListener('change', function() {
+                const customInput = document.getElementById('customDepartment');
+                if (this.value === 'otro') {
+                    customInput.classList.add('show');
+                    customInput.required = true;
+                } else {
+                    customInput.classList.remove('show');
+                    customInput.required = false;
+                    customInput.value = '';
+                }
+            });
+
+            // Formulario de empleado
+            document.getElementById('employeeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('employee_name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const position = document.getElementById('position').value.trim();
+                const customDeptField = document.getElementById('customDepartment');
+                
+                let isValid = true;
+
+                if (!name || !validateName(name) || !validateLength(name, 2, 100)) {
+                    showFieldError('employee_name', 'Nombre inválido');
                     isValid = false;
                 }
-            }
-            
-            if (!isValid) {
-                showNotification('Error en el formulario', 'Por favor corrija los errores antes de continuar', 'error');
-                return false;
-            }
-            
-            const departmentSelect = document.getElementById('department');
-            const customDepartment = document.getElementById('customDepartment');
-            
-            let departmentValue = departmentSelect.value === 'otro' 
-                ? customDepartment.value 
-                : departmentSelect.value;
-            
-            const newEmployee = {
-                id: employees.length + 1,
-                name: name,
-                email: email,
-                department: departmentValue,
-                position: position,
-                hire_date: document.getElementById('hire_date').value,
-                salary: parseFloat(document.getElementById('salary').value),
-                commissions: [],
-                status: 'active'
-            };
-
-            employees.push(newEmployee);
-            renderEmployees();
-            updateCommissionSelect();
-            
-            showNotification('Empleado agregado', '¡El empleado se ha registrado exitosamente!', 'success');
-            
-            this.reset();
-            customDepartment.classList.remove('show');
-            
-            document.querySelectorAll('.field-error').forEach(error => error.remove());
-            document.querySelectorAll('.is-valid, .is-invalid').forEach(field => {
-                field.classList.remove('is-valid', 'is-invalid');
-            });
-        });
-
-        // ========== MANEJAR FORMULARIO DE COMISIÓN ==========
-        document.getElementById('commissionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const employeeId = parseInt(document.getElementById('commission_employee').value);
-            const amount = parseFloat(document.getElementById('commission_amount').value);
-            const type = document.getElementById('commission_type').value;
-            const description = document.getElementById('commission_description').value;
-            
-            const employee = employees.find(e => e.id === employeeId);
-            if (employee) {
-                const newCommission = {
-                    id: ++commissionIdCounter,
-                    amount: amount,
-                    type: type,
-                    description: description,
-                    date: new Date().toISOString().split('T')[0]
+                
+                if (!email || !validateEmail(email)) {
+                    showFieldError('email', 'Email inválido');
+                    isValid = false;
+                }
+                
+                if (!position || !validatePosition(position) || !validateLength(position, 2, 80)) {
+                    showFieldError('position', 'Cargo inválido');
+                    isValid = false;
+                }
+                
+                if (customDeptField.classList.contains('show')) {
+                    const customDept = customDeptField.value.trim();
+                    if (!customDept || !validateName(customDept) || !validateLength(customDept, 2, 50)) {
+                        showFieldError('customDepartment', 'Departamento inválido');
+                        isValid = false;
+                    }
+                }
+                
+                if (!isValid) {
+                    showNotification('Error', 'Corrija los errores en el formulario', 'error');
+                    return;
+                }
+                
+                const departmentSelect = document.getElementById('department');
+                const departmentValue = departmentSelect.value === 'otro' 
+                    ? customDeptField.value 
+                    : departmentSelect.value;
+                
+                const newEmployee = {
+                    id: employees.length + 1,
+                    name,
+                    email,
+                    department: departmentValue,
+                    position,
+                    hire_date: document.getElementById('hire_date').value,
+                    salary: parseFloat(document.getElementById('salary').value),
+                    commissions: [],
+                    status: 'active'
                 };
-                
-                employee.commissions.push(newCommission);
+
+                employees.push(newEmployee);
                 renderEmployees();
-                
-                showNotification('Comisión registrada', `Se agregó una comisión de ${amount.toFixed(2)} a ${employee.name}`, 'success');
+                updateCommissionSelect();
+                showNotification('Empleado agregado', 'El empleado se ha registrado exitosamente', 'success');
                 
                 this.reset();
-            }
-        });
-
-        // ========== MANEJAR FILTROS ==========
-        const filterTabs = document.querySelectorAll('.filter-tab');
-        filterTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                filterTabs.forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                const filter = this.dataset.filter;
-                renderEmployees(filter);
+                customDeptField.classList.remove('show');
+                document.querySelectorAll('.field-error').forEach(e => e.remove());
+                document.querySelectorAll('.is-valid, .is-invalid').forEach(f => {
+                    f.classList.remove('is-valid', 'is-invalid');
+                });
             });
-        });
 
-        // ========== RENDERIZAR EMPLEADOS INICIALES ==========
-        renderEmployees();
-        updateCommissionSelect();
+            // Formulario de comisión
+            document.getElementById('commissionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const employeeId = parseInt(document.getElementById('commission_employee').value);
+                const amount = parseFloat(document.getElementById('commission_amount').value);
+                const type = document.getElementById('commission_type').value;
+                const description = document.getElementById('commission_description').value;
+                
+                const employee = employees.find(e => e.id === employeeId);
+                if (employee) {
+                    const newCommission = {
+                        id: ++commissionIdCounter,
+                        amount,
+                        type,
+                        description,
+                        date: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    employee.commissions.push(newCommission);
+                    renderEmployees();
+                    showNotification('Comisión registrada', `Se agregó $${amount.toFixed(2)} a ${employee.name}`, 'success');
+                    this.reset();
+                }
+            });
+
+            // Filtros
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    renderEmployees(this.dataset.filter);
+                });
+            });
+
+            // Renderizado inicial
+            renderEmployees();
+            updateCommissionSelect();
+        });
     </script>
 @stop
