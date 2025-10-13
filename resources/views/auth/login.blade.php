@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión</title>
+    <title>Iniciar Sesión - Clínica Salus</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
     <style>
@@ -14,8 +14,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px 0;
         }
 
         .login-card {
@@ -71,6 +72,8 @@
             border-radius: 0.5rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .button-primary:hover {
@@ -83,21 +86,65 @@
             margin-top: 0.25rem;
             display: block;
         }
+
+        .error-message {
+            background-color: #fef2f2;
+            border: 1px solid #dc2626;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+        }
+
+        .remember-forgot label {
+            display: flex;
+            align-items: center;
+            color: #4C342C;
+        }
+
+        .remember-forgot input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        .remember-forgot a {
+            color: #4C342C;
+            text-decoration: none;
+        }
+
+        .remember-forgot a:hover {
+            text-decoration: underline;
+        }
+
+        .help-text {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
     </style>
 </head>
 
 <body>
     <div class="login-card">
         <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
+
         <h2 style="color: #4C342C; margin-bottom: 2rem;">Iniciar Sesión</h2>
 
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
             <div class="form-group">
-                <label for="email">Correo Electrónico</label>
-                <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus>
-                @error('email')
+                <label for="login">Usuario o Correo Electrónico</label>
+                <input type="text" id="login" name="login" value="{{ old('login') }}" required autofocus>
+                @error('login')
                     <span class="error">{{ $message }}</span>
                 @enderror
             </div>
@@ -118,7 +165,7 @@
             <button type="submit" class="button-primary">Iniciar Sesión</button>
 
             <p style="margin-top: 1rem; font-size: 0.875rem;">
-                ¿No tienes cuenta? <a href="{{ route('register.persona') }}"
+                ¿No tienes cuenta? <a href="{{ route('register.usuario') }}"
                     style="color: #4C342C; text-decoration: none;">Regístrate aquí</a>
             </p>
         </form>
