@@ -9,8 +9,10 @@ return [
     */
 
     'defaults' => [
+        // El guard por defecto será 'web'
         'guard' => 'web',
-        'passwords' => 'personas',
+        // El proveedor de contraseñas por defecto será 'usuarios'
+        'passwords' => 'usuarios',
     ],
 
     /*
@@ -22,16 +24,17 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'multi', // Proveedor personalizado que maneja múltiples modelos
+            // CRÍTICO: Usamos 'usuarios' como proveedor principal.
+            'provider' => 'usuarios',
         ],
-        
-        // Guard específico para personas
+
+        // Puedes dejar los guards específicos si los usas en alguna parte,
+        // pero el 'web' es el que se usa en el login principal.
         'personas' => [
             'driver' => 'session',
             'provider' => 'personas',
         ],
 
-        // Guard específico para usuarios
         'usuarios' => [
             'driver' => 'session',
             'provider' => 'usuarios',
@@ -45,34 +48,23 @@ return [
     */
 
     'providers' => [
-        // Provider multi-modelo para el guard web
-        'multi' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Usuario::class, // Modelo principal
-        ],
-
-        // Provider para usuarios (tabla usuarios)
+        // Provider principal (usuarios) - Se usará en el guard 'web'
         'usuarios' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Usuario::class,
+            'model' => App\Models\Usuario::class, // Modelo de usuario autenticable
         ],
 
         // Provider para personas (existente)
         'personas' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Persona::class,
+            'model' => App\Models\Persona::class, // Modelo de persona (NO autenticable por sí mismo)
         ],
 
-        // Mantén el provider original por compatibilidad
+        // Puedes eliminar el provider 'multi' y 'correos' si no los usas directamente en guards.
+        // Mantenemos el provider original por si acaso (aunque no lo uses).
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
-        ],
-
-        // Provider para correos
-        'correos' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Correo::class,
         ],
     ],
 
@@ -83,7 +75,7 @@ return [
     */
 
     'passwords' => [
-        // Configuración para usuarios
+        // Configuración para usuarios (debe usar el provider 'usuarios')
         'usuarios' => [
             'provider' => 'usuarios',
             'table' => 'password_reset_tokens',
@@ -91,7 +83,7 @@ return [
             'throttle' => 60,
         ],
 
-        // Configuración para personas
+        // Configuración para personas (debe usar el provider 'personas')
         'personas' => [
             'provider' => 'personas',
             'table' => 'password_reset_tokens',
@@ -99,17 +91,9 @@ return [
             'throttle' => 60,
         ],
 
-        // Mantén la configuración original
+        // Mantén la configuración original por si acaso
         'users' => [
             'provider' => 'users',
-            'table' => 'password_reset_tokens',
-            'expire' => 60,
-            'throttle' => 60,
-        ],
-
-        // Configuración para correos
-        'correos' => [
-            'provider' => 'correos',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,

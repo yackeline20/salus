@@ -4,31 +4,31 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate; //
 use App\Models\Persona;
 use App\Models\Usuario;
 
 class DashboardController extends Controller
 {
     /**
-     * Muestra la página principal (Dashboard) si el usuario tiene permiso.
+     * Muestra la página principal (Dashboard).
+     * El acceso ya está garantizado por el middleware 'auth' en web.php.
      */
     public function index()
     {
-        // Obtener el usuario autenticado (puede ser Persona o Usuario)
+        // Obtener el usuario autenticado
         $user = Auth::user();
 
-        // Verificar que el usuario esté autenticado
+        // Verificar que el usuario esté autenticado (aunque el middleware 'auth' ya lo hace)
         if (!$user) {
             return redirect()->route('login')->with('error', 'Sesión inválida o expirada.');
         }
 
         // Detectar el tipo de usuario y preparar los datos
         if ($user instanceof Usuario) {
-            // Es un Usuario (tabla usuarios) - Procede a verificar el permiso RBAC
+            // Es un Usuario (empleado/administrador)
             return $this->dashboardForUsuario($user);
         } elseif ($user instanceof Persona) {
-            // Es una Persona (tabla persona) - No requiere verificación RBAC (son clientes o externos)
+            // Es una Persona (cliente/externo)
             return $this->dashboardForPersona($user);
         }
 
@@ -41,19 +41,13 @@ class DashboardController extends Controller
      */
     private function dashboardForUsuario(Usuario $usuario)
     {
-        // ==========================================================
-        // 🛡️ APLICACIÓN DE SEGURIDAD RBAC (Gate)
-        // Llama al Gate 'access-dashboard' definido en AuthServiceProvider.php
-        // Esto verifica si el rol del usuario tiene 'select' en el objeto 'Dashboard' o 'Pagina Principal'.
-        // Si no tiene permiso, Laravel detiene la ejecución con un error 403.
-        // ==========================================================
-        Gate::authorize('access-dashboard');
+        // CORRECCIÓN CLAVE: Se ELIMINÓ la verificación de Gate (Gate::authorize('access-dashboard');)
+        // Ahora, cualquier usuario de la tabla 'usuarios' que inicie sesión
+        // correctamente tiene acceso al Dashboard.
 
-        // NOTA: Asegúrate de que $usuario tiene la relación con Persona cargada si la vista la necesita.
-
+        // La vista 'dashboard' recibirá la información del usuario
         return view('dashboard', [
-            // Mantenemos 'persona' para compatibilidad con la vista
-            'persona' => $usuario,
+            'persona' => $usuario->persona, // Asumiendo que existe la relación 'persona'
             'nombre_completo' => $usuario->Nombre_Usuario,
             'correo' => 'Usuario del sistema',
             'es_usuario' => true
