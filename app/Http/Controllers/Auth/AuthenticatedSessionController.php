@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use App\Models\Correo;
 use App\Models\Usuario;
+use App\Models\Persona;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -24,11 +25,10 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Handle an incoming authentication request.
-     * Soporta login tanto con email (personas) como con username (usuarios)
+     * Soporta login tanto con email (persona/usuario) como con username (usuario).
      */
     public function store(Request $request): RedirectResponse
     {
-        // Validación flexible - puede ser email o username
         $request->validate([
             'login' => 'required|string',
             'password' => 'required',
@@ -36,81 +36,69 @@ class AuthenticatedSessionController extends Controller
 
         $loginField = $request->input('login');
         $password = $request->input('password');
-
-        // Determinar si es email o username
+        $remember = $request->filled('remember');
         $isEmail = filter_var($loginField, FILTER_VALIDATE_EMAIL);
 
-        if ($isEmail) {
-            // FLUJO ORIGINAL: Login con CORREO (tabla persona)
-            return $this->loginWithEmail($request, $loginField, $password);
-        } else {
-            // NUEVO FLUJO: Login con USERNAME (tabla usuarios)
-            return $this->loginWithUsername($request, $loginField, $password);
-        }
-    }
+        // Intenta obtener el objeto Usuario
+        $usuario = $isEmail
+            ? $this->findUsuarioByEmail($loginField)
+            : $this->findUsuarioByUsername($loginField);
 
-    /**
-     * Login usando correo electrónico (sistema de personas - ORIGINAL)
-     */
-    private function loginWithEmail(Request $request, string $email, string $password): RedirectResponse
-    {
-        // Buscar el correo en la tabla correo
-        $correoModel = Correo::where('Correo', $email)->first();
-
-        // Verificar que existe el correo y tiene persona asociada
-        if (!$correoModel || !$correoModel->persona) {
-            return back()->withErrors([
-                'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
-            ])->onlyInput('login');
-        }
-
-        // Verificar la contraseña
-        if (!Hash::check($password, $correoModel->persona->Password)) {
-            return back()->withErrors([
-                'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
-            ])->onlyInput('login');
-        }
-
-        // Login exitoso - Hacer login con la PERSONA
-        Auth::guard('web')->login($correoModel->persona, $request->filled('remember'));
-        $request->session()->regenerate();
-
-        return redirect()->intended('dashboard');
-    }
-
-    /**
-     * Login usando nombre de usuario (sistema de usuarios - NUEVO)
-     */
-    private function loginWithUsername(Request $request, string $username, string $password): RedirectResponse
-    {
-        // Buscar usuario por nombre de usuario
-        $usuario = Usuario::where('Nombre_Usuario', $username)
-                         ->where('Indicador_Usuario_Activo', '1')
-                         ->first();
-
-        // Verificar que existe el usuario
+        // 1. Verificar si se encontró un usuario activo
         if (!$usuario) {
             return back()->withErrors([
-                'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+                'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros o el usuario está inactivo.',
             ])->onlyInput('login');
         }
 
-        // Verificar la contraseña
+        // 2. Verificar la contraseña usando el HASH de la tabla usuarios (CRÍTICO)
         if (!Hash::check($password, $usuario->Password)) {
             return back()->withErrors([
-                'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+                'login' => 'La contraseña es incorrecta.',
             ])->onlyInput('login');
         }
 
-        // CRÍTICO: Login exitoso - Autenticar manualmente al usuario
-        // Usamos loginUsingId para asegurar que funcione correctamente
-        Auth::guard('web')->loginUsingId($usuario->Cod_Usuario, $request->filled('remember'));
-        
-        // Regenerar la sesión para seguridad
+        // 3. Login exitoso - Autenticar al usuario con el guard 'web'
+        Auth::guard('web')->login($usuario, $remember);
+
+        // 4. Regenerar la sesión para seguridad (EVITA REDIRECCIONES INFINITAS)
         $request->session()->regenerate();
 
-        // Redirigir al dashboard
-        return redirect()->intended('dashboard');
+        // 5. Redirigir al dashboard
+        return redirect()->intended(RouteServiceProvider::HOME);
+    }
+
+    /**
+     * Busca el modelo Usuario asociado al correo electrónico.
+     */
+    private function findUsuarioByEmail(string $email): ?Usuario
+    {
+        // 1. Buscar el Correo y obtener Cod_Persona
+        $correoModel = Correo::where('Correo', $email)->first();
+
+        if (!$correoModel) {
+            return null; // Correo no encontrado
+        }
+
+        // 2. Buscar el Usuario por Cod_Persona y que esté activo
+        $usuario = Usuario::where('Cod_Persona', $correoModel->Cod_Persona)
+                          ->where('Indicador_Usuario_Activo', 1) // Usamos entero 1 para ser consistente
+                          ->first();
+
+        return $usuario;
+    }
+
+    /**
+     * Busca el modelo Usuario por Nombre de Usuario.
+     */
+    private function findUsuarioByUsername(string $username): ?Usuario
+    {
+        // 1. Buscar el usuario por Nombre_Usuario y que esté activo
+        $usuario = Usuario::where('Nombre_Usuario', $username)
+                          ->where('Indicador_Usuario_Activo', 1) // Usamos entero 1 para ser consistente
+                          ->first();
+
+        return $usuario;
     }
 
     /**

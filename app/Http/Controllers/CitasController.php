@@ -11,10 +11,14 @@ class CitasController extends Controller
 {
     private $apiUrl = 'http://localhost:3000';
 
+    /**
+     * Muestra la vista principal del módulo de Citas.
+     * Requiere Permiso_Seleccionar.
+     */
     public function index()
     {
         // 1. 🛡️ Autorizar la visualización del listado (ViewAny)
-        // Llama a CitaPolicy::viewAny()
+        // Llama a CitaPolicy::viewAny() -> Verifica Permiso_Seleccionar
         $this->authorize('viewAny', Cita::class);
 
         return view('citas');
@@ -24,8 +28,7 @@ class CitasController extends Controller
     public function getCitas(Request $request)
     {
         // 2. 🛡️ Autorizar la lectura/obtención de datos (ViewAny)
-        // Llama a CitaPolicy::viewAny()
-        // Nota: Se repite la autorización por si este método es llamado directamente vía API
+        // Llama a CitaPolicy::viewAny() -> Verifica Permiso_Seleccionar
         $this->authorize('viewAny', Cita::class);
 
         try {
@@ -48,7 +51,7 @@ class CitasController extends Controller
     public function storeCita(Request $request)
     {
         // 3. 🛡️ Autorizar la creación de una nueva Cita (Create)
-        // Llama a CitaPolicy::create()
+        // Llama a CitaPolicy::create() -> Verifica Permiso_Insertar
         $this->authorize('create', Cita::class);
 
         try {
@@ -72,9 +75,8 @@ class CitasController extends Controller
     public function updateCita(Request $request)
     {
         // 4. 🛡️ Autorizar la actualización de una Cita (Update)
-        // Llama a CitaPolicy::update()
-        // Nota: Como no tenemos el objeto Cita completo, pasamos una nueva instancia.
-        // La Policy solo verificará el permiso del Rol, no la propiedad del objeto.
+        // Llama a CitaPolicy::update() -> Verifica Permiso_Actualizar
+        // Pasamos una nueva instancia de Cita ya que solo necesitamos verificar el permiso de rol.
         $this->authorize('update', new Cita);
 
         try {
@@ -99,7 +101,7 @@ class CitasController extends Controller
     public function deleteCita(Request $request)
     {
         // 5. 🛡️ Autorizar la eliminación de una Cita (Delete)
-        // Llama a CitaPolicy::delete()
+        // Llama a CitaPolicy::delete() -> Verifica Permiso_Eliminar
         $this->authorize('delete', new Cita);
 
         try {

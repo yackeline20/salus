@@ -7,13 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-// Importaciones necesarias para las relaciones y la lógica de permisos
 use App\Models\Role;
 use App\Models\Acceso;
 use App\Models\Objeto;
-use App\Models\Empleado;
 use App\Models\Persona;
-use App\Models\Correo; // Asegúrate de tener este modelo para la relación con Correo
+use App\Models\Correo;
 
 class Usuario extends Authenticatable
 {
@@ -21,7 +19,15 @@ class Usuario extends Authenticatable
 
     protected $table = 'usuarios';
     protected $primaryKey = 'Cod_Usuario';
+
+    // IMPORTANTE: Definimos la columna de ID para serialización de autenticación
+    protected $authIdentifierName = 'Cod_Usuario';
+
+    // IMPORTANTE: Definimos el nombre real de la columna de la contraseña
+    protected $passwordColumn = 'Password';
+
     public $timestamps = false;
+    public $incrementing = true;
 
     protected $fillable = [
         'Cod_Persona',
@@ -35,74 +41,89 @@ class Usuario extends Authenticatable
     ];
 
     protected $hidden = [
-        'Password', // Usar el nombre de la columna real
+        'Password',
         'remember_token',
     ];
 
-    // El campo que Laravel usa por defecto para el login es 'email',
-    // lo sobreescribimos con un Accessor.
-    protected $appends = ['email'];
+    // --- MÉTODOS CRÍTICOS DE AUTENTICACIÓN (Compatibilidad de Sesión) ---
 
+    // 1. Obtiene el nombre de la columna que almacena el ID (la clave primaria)
+    public function getAuthIdentifierName()
+    {
+        return $this->authIdentifierName;
+    }
 
-    // --- MÉTODOS CRÍTICOS DE AUTENTICACIÓN (Compatibilidad Laravel) ---
+    // 2. Obtiene el valor del ID. Simplificado para evitar problemas con el array de atributos.
+    public function getAuthIdentifier()
+    {
+        // Devolvemos el valor del primaryKey directamente.
+        return $this->getAttribute($this->getAuthIdentifierName());
+    }
 
-    public function getAuthIdentifier() { return $this->Cod_Usuario; }
-    public function getAuthIdentifierName() { return 'Cod_Usuario'; }
-    public function getAuthPassword() { return $this->Password; }
-    public function getRememberToken() { return $this->remember_token; }
-    public function setRememberToken($value) { $this->remember_token = $value; }
-    public function getRememberTokenName() { return 'remember_token'; }
+    // 3. Obtiene el nombre de la columna de la contraseña
+    public function getAuthPasswordName()
+    {
+        return $this->passwordColumn;
+    }
 
-    /**
-     * ACCESOR VIRTUAL: Permite que Laravel use 'email' como campo de login
-     * consultando el correo principal de la tabla 'correo'.
-     */
+    // 4. Obtiene el valor de la contraseña. Simplificado.
+    public function getAuthPassword()
+    {
+        // Devolvemos el valor de la contraseña directamente.
+        return $this->getAttribute($this->getAuthPasswordName());
+    }
+
+    // --- ACCESORES Y RELACIONES (Se mantienen como estaban) ---
+
+    public function persona() { return $this->belongsTo(Persona::class, 'Cod_Persona', 'Cod_Persona'); }
+    public function rol() { return $this->belongsTo(Role::class, 'Cod_Rol', 'Cod_Rol'); }
+
     public function getEmailAttribute()
     {
         return $this->getCorreoPrincipal();
     }
 
-    /**
-     * ACCESOR DE LA VISTA: Define el método para obtener el nombre completo
-     * y corregir el error "Call to undefined method".
-     */
+    public function getCorreoPrincipal()
+    {
+        if ($this->persona) {
+            $correo = $this->persona->correos()->first();
+            return $correo ? $correo->Correo : null;
+        }
+        return null;
+    }
+
     public function getNombreCompleto()
     {
-        // Retorna el nombre de usuario, ya que es el dato disponible en la tabla 'usuarios'.
-        return $this->Nombre_Usuario;
+        return $this->persona
+            ? trim($this->persona->Nombre . ' ' . $this->persona->Apellido)
+            : $this->Nombre_Usuario;
     }
-
-
-    // --- RELACIONES PARA EL MÓDULO DE SEGURIDAD Y DATOS ---
-
-    /** Relación a Persona (datos personales) */
-    public function persona()
-    {
-        return $this->belongsTo(Persona::class, 'Cod_Persona', 'Cod_Persona');
-    }
-
-    /** Relación a Role (tipo de usuario) */
-    public function rol()
-    {
-        return $this->belongsTo(Role::class, 'Cod_Rol', 'Cod_Rol');
-    }
-
-    // ... Otras relaciones (empleado)
 
     // --- LÓGICA DEL MÓDULO DE SEGURIDAD (Permisos RBAC) ---
 
     /**
-     * Verifica si el usuario tiene un rol específico (e.g., 'Administrador').
+     * Verifica si el usuario tiene el rol especificado.
+     * @param string $role Nombre del rol (ej: 'admin', 'recepcionista').
+     * @return bool
      */
-    public function hasRole(string $roleName): bool
+    public function hasRole($role): bool
     {
-        // Se asegura de que la comparación sea insensible a mayúsculas/minúsculas
-        return $this->rol && strtolower($this->rol->Nombre_Rol) === strtolower($roleName);
+        // La CitaPolicy busca 'admin' o 'Administrador'
+        if ($role === 'admin' || $role === 'Administrador') {
+            return $this->Cod_Rol === 1; // Asumiendo Cod_Rol=1 es Administrador
+        }
+
+        // Puedes agregar otros roles si es necesario para lógica futura
+        if ($role === 'recepcionista') {
+            return $this->Cod_Rol === 2; // Asumiendo Cod_Rol=2 es Recepcionista
+        }
+
+        return false;
     }
 
     /**
-     * Alias para verificar si el usuario es Administrador (usa Cod_Rol = 1).
-     * Esto reemplaza a la propiedad antigua '$user->es_administrador'.
+     * Atajo para isAdmin, ya que muchos middlewares lo usan.
+     * @return bool
      */
     public function isAdmin(): bool
     {
@@ -110,21 +131,21 @@ class Usuario extends Authenticatable
     }
 
     /**
-     * Verifica si el usuario tiene un permiso específico (select, insert, update, delete)
-     * para un Objeto (Citas, Inventario, etc.) consultando la tabla 'accesos'.
+     * Verifica si el rol del usuario tiene un permiso específico sobre un objeto.
+     * @param string $action Tipo de permiso (select, insert, update, delete).
+     * @param string $objectName Nombre del objeto (módulo) a revisar (ej: 'Citas').
+     * @return bool
      */
     public function hasPermission(string $action, string $objectName): bool
     {
-        // 1. Acceso total para el Administrador
-        if ($this->isAdmin()) { // Usamos el nuevo alias
+        if ($this->isAdmin()) {
             return true;
         }
 
-        if (!$this->rol) {
+        if (!$this->Cod_Rol) {
             return false;
         }
 
-        // 2. Mapear la acción a la columna de la tabla 'accesos'
         $columnMap = [
             'select' => 'Permiso_Seleccionar', 'insert' => 'Permiso_Insertar',
             'update' => 'Permiso_Actualizar', 'delete' => 'Permiso_Eliminar',
@@ -133,44 +154,15 @@ class Usuario extends Authenticatable
 
         if (!$column) { return false; }
 
-        // 3. Obtener el Cod_Objeto
+        // Usamos la clase Objeto importada
         $objeto = Objeto::where('Nombre_Objeto', $objectName)->first();
 
         if (!$objeto) { return false; }
 
-        // 4. Consultar la tabla 'accesos'
+        // Usamos la clase Acceso importada
         return Acceso::where('Cod_Rol', $this->Cod_Rol)
                      ->where('Cod_Objeto', $objeto->Cod_Objeto)
-                     ->where($column, 1) // Debe estar activo (1)
+                     ->where($column, 1)
                      ->exists();
     }
-
-
-    // --- SCOPE Y MÉTODOS DE COMPATIBILIDAD CON PERSONA (Modificados para datos reales) ---
-
-    // ... (El resto de los métodos se mantienen iguales)
-
-    /** Devuelve la colección de correos de la Persona o una colección vacía. */
-    public function correos()
-    {
-        // Asumiendo que Persona tiene la relación hasMany(Correo)
-        return $this->persona ? $this->persona->correos() : null;
-    }
-
-    // Si tu modelo necesita la función getCorreoPrincipal, debe ser añadida aquí
-    // ya que es llamada por getEmailAttribute().
-    public function getCorreoPrincipal()
-    {
-        // Busca el correo con Cod_Persona. Requiere que la relación 'persona' esté cargada.
-        if ($this->persona) {
-            // Asume que la relación 'correos' devuelve una colección de correos.
-            // Si quieres el primer correo, puedes usar:
-            $correo = $this->persona->correos()->first();
-            return $correo ? $correo->Correo : null;
-        }
-        return null; // No hay persona o relación cargada
-    }
-
-
-    // Nota: Es crucial que en tu modelo 'Persona.php' exista la relación 'hasMany' a 'Correo.php'.
 }

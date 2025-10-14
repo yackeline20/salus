@@ -66,8 +66,10 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
         // **************************************************
-        // CORRECCIÓN CLAVE: Mapeamos el nombre 'role' a la clase
+        // CORRECCIÓN CLAVE: Mapeamos el nombre 'check.permissions' a la clase CheckPermissions
         // **************************************************
+        'check.permissions' => \App\Http\Middleware\CheckPermissions::class, // <-- AÑADIDO
         'role' => \App\Http\Middleware\RoleMiddleware::class,
     ];
 }
+

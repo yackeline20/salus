@@ -15,15 +15,21 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    
-                    <!-- AGREGAR ESTOS ENLACES NUEVOS -->
-                    <x-nav-link :href="route('factura')" :active="request()->routeIs('factura*')">
-                        {{ __('Facturas') }}
-                    </x-nav-link>
-                    
-                    <x-nav-link :href="route('citas')" :active="request()->routeIs('citas*')">
-                        {{ __('Citas') }}
-                    </x-nav-link>
+
+                    <!-- Lógica de Permisos para Menú Desktop -->
+
+                    @if (PermissionHelper::hasAccess('Factura'))
+                        <x-nav-link :href="route('factura')" :active="request()->routeIs('factura*')">
+                            {{ __('Facturas') }}
+                        </x-nav-link>
+                    @endif
+
+                    @if (PermissionHelper::hasAccess('Citas'))
+                        <x-nav-link :href="route('citas')" :active="request()->routeIs('citas*')">
+                            {{ __('Citas') }}
+                        </x-nav-link>
+                    @endif
+
                 </div>
             </div>
 
@@ -50,7 +56,7 @@
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}" style="padding: 0; margin: 0;">
                             @csrf
-                            <button type="submit" 
+                            <button type="submit"
                                     style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 16px; margin: 4px 8px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: left; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);"
                                     onmouseover="this.style.background='linear-gradient(135deg, #ff5252, #e73c7e)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'; this.style.transform='translateY(-1px)';"
                                     onmouseout="this.style.background='linear-gradient(135deg, #ff6b6b, #ee5a6f)'; this.style.boxShadow='0 2px 8px rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(0)';">
@@ -80,15 +86,19 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            
-            <!-- AGREGAR ESTOS ENLACES PARA MÓVIL -->
-            <x-responsive-nav-link :href="route('factura')" :active="request()->routeIs('factura*')">
-                {{ __('Facturas') }}
-            </x-responsive-nav-link>
-            
-            <x-responsive-nav-link :href="route('citas')" :active="request()->routeIs('citas*')">
-                {{ __('Citas') }}
-            </x-responsive-nav-link>
+
+            <!-- Lógica de Permisos para Menú Móvil -->
+            @if (PermissionHelper::hasAccess('Factura'))
+                <x-responsive-nav-link :href="route('factura')" :active="request()->routeIs('factura*')">
+                    {{ __('Facturas') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if (PermissionHelper::hasAccess('Citas'))
+                <x-responsive-nav-link :href="route('citas')" :active="request()->routeIs('citas*')">
+                    {{ __('Citas') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
@@ -106,7 +116,7 @@
                 <!-- Authentication para móvil -->
                 <form method="POST" action="{{ route('logout') }}" style="padding: 0; margin: 0;">
                     @csrf
-                    <button type="submit" 
+                    <button type="submit"
                             style="display: flex; align-items: center; gap: 8px; width: calc(100% - 32px); margin: 8px 16px; padding: 10px 16px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: left; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);"
                             onclick="event.preventDefault(); this.closest('form').submit();">
                         <span style="font-size: 16px; display: flex; align-items: center;">⏻</span>
