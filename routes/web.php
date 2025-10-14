@@ -9,13 +9,9 @@ use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
-<<<<<<< HEAD
-use App\Http\Controllers\TwoFactorController;
-use App\Http\Controllers\TwoFactorVerifyController;
-=======
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
->>>>>>> 1be9f5537474fb02e2eb279b614f22aed2233811
+
 
 // Ruta raíz - Redirige según el estado de autenticación
 Route::get('/', function () {
@@ -122,21 +118,3 @@ Route::middleware('auth')->group(function () {
 
 });
 
-<<<<<<< HEAD
-// ========================================
-// RUTAS DE AUTENTICACIÓN PREDETERMINADAS 
-// ========================================
-require __DIR__ . '/auth.php';
-
-// Rutas protegidas (usuario autenticado)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/2fa/setup', [TwoFactorController::class, 'show'])->name('2fa.setup');
-    Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
-    Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
-});
-
-// Rutas para verificar 2FA en login
-Route::get('/2fa/verify', [TwoFactorVerifyController::class, 'show'])->name('2fa.verify');
-Route::post('/2fa/verify', [TwoFactorVerifyController::class, 'verify']);
-=======
->>>>>>> 1be9f5537474fb02e2eb279b614f22aed2233811
