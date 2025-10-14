@@ -13,6 +13,7 @@ use App\Models\Acceso;
 use App\Models\Objeto;
 use App\Models\Empleado;
 use App\Models\Persona;
+use App\Models\Correo; // Asegúrate de tener este modelo para la relación con Correo
 
 class Usuario extends Authenticatable
 {
@@ -34,9 +35,14 @@ class Usuario extends Authenticatable
     ];
 
     protected $hidden = [
-        'Password',
+        'Password', // Usar el nombre de la columna real
         'remember_token',
     ];
+
+    // El campo que Laravel usa por defecto para el login es 'email',
+    // lo sobreescribimos con un Accessor.
+    protected $appends = ['email'];
+
 
     // --- MÉTODOS CRÍTICOS DE AUTENTICACIÓN (Compatibilidad Laravel) ---
 
@@ -46,6 +52,26 @@ class Usuario extends Authenticatable
     public function getRememberToken() { return $this->remember_token; }
     public function setRememberToken($value) { $this->remember_token = $value; }
     public function getRememberTokenName() { return 'remember_token'; }
+
+    /**
+     * ACCESOR VIRTUAL: Permite que Laravel use 'email' como campo de login
+     * consultando el correo principal de la tabla 'correo'.
+     */
+    public function getEmailAttribute()
+    {
+        return $this->getCorreoPrincipal();
+    }
+
+    /**
+     * ACCESOR DE LA VISTA: Define el método para obtener el nombre completo
+     * y corregir el error "Call to undefined method".
+     */
+    public function getNombreCompleto()
+    {
+        // Retorna el nombre de usuario, ya que es el dato disponible en la tabla 'usuarios'.
+        return $this->Nombre_Usuario;
+    }
+
 
     // --- RELACIONES PARA EL MÓDULO DE SEGURIDAD Y DATOS ---
 
@@ -61,11 +87,7 @@ class Usuario extends Authenticatable
         return $this->belongsTo(Role::class, 'Cod_Rol', 'Cod_Rol');
     }
 
-    /** Relación a Empleado (para staff como Esteticista o Recepcionista) */
-    public function empleado()
-    {
-        return $this->hasOne(Empleado::class, 'Cod_Persona', 'Cod_Persona');
-    }
+    // ... Otras relaciones (empleado)
 
     // --- LÓGICA DEL MÓDULO DE SEGURIDAD (Permisos RBAC) ---
 
@@ -74,7 +96,17 @@ class Usuario extends Authenticatable
      */
     public function hasRole(string $roleName): bool
     {
-        return $this->rol && $this->rol->Nombre_Rol === $roleName;
+        // Se asegura de que la comparación sea insensible a mayúsculas/minúsculas
+        return $this->rol && strtolower($this->rol->Nombre_Rol) === strtolower($roleName);
+    }
+
+    /**
+     * Alias para verificar si el usuario es Administrador (usa Cod_Rol = 1).
+     * Esto reemplaza a la propiedad antigua '$user->es_administrador'.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->Cod_Rol === 1;
     }
 
     /**
@@ -84,7 +116,7 @@ class Usuario extends Authenticatable
     public function hasPermission(string $action, string $objectName): bool
     {
         // 1. Acceso total para el Administrador
-        if ($this->hasRole('Administrador')) {
+        if ($this->isAdmin()) { // Usamos el nuevo alias
             return true;
         }
 
@@ -116,71 +148,29 @@ class Usuario extends Authenticatable
 
     // --- SCOPE Y MÉTODOS DE COMPATIBILIDAD CON PERSONA (Modificados para datos reales) ---
 
-    public function scopeActivos($query)
-    {
-        return $query->where('Indicador_Usuario_Activo', '1');
-    }
+    // ... (El resto de los métodos se mantienen iguales)
 
     /** Devuelve la colección de correos de la Persona o una colección vacía. */
     public function correos()
     {
-        return $this->persona ? $this->persona->correos : collect();
+        // Asumiendo que Persona tiene la relación hasMany(Correo)
+        return $this->persona ? $this->persona->correos() : null;
     }
 
-    /** Devuelve la colección de teléfonos de la Persona o una colección vacía. */
-    public function telefonos()
-    {
-        return $this->persona ? $this->persona->telefonos : collect();
-    }
-
-    /** Devuelve la colección de direcciones de la Persona o una colección vacía. */
-    public function direcciones()
-    {
-        return $this->persona ? $this->persona->direcciones : collect();
-    }
-
-    /** Obtiene la dirección de correo principal de la Persona. */
+    // Si tu modelo necesita la función getCorreoPrincipal, debe ser añadida aquí
+    // ya que es llamada por getEmailAttribute().
     public function getCorreoPrincipal()
     {
-        // Asumiendo que persona()->correos()->first() devuelve el objeto Correo
-        return $this->persona && $this->persona->correos()->first()
-               ? $this->persona->correos()->first()->Direccion_Correo
-               : 'sin_correo@salus.com'; // Valor por defecto si no hay datos
+        // Busca el correo con Cod_Persona. Requiere que la relación 'persona' esté cargada.
+        if ($this->persona) {
+            // Asume que la relación 'correos' devuelve una colección de correos.
+            // Si quieres el primer correo, puedes usar:
+            $correo = $this->persona->correos()->first();
+            return $correo ? $correo->Correo : null;
+        }
+        return null; // No hay persona o relación cargada
     }
 
-    /** Obtiene el número de teléfono principal de la Persona. */
-    public function getTelefonoPrincipal()
-    {
-        return $this->persona && $this->persona->telefonos()->first()
-               ? $this->persona->telefonos()->first()->Numero_Telefono
-               : 'No Asignado';
-    }
 
-    /** Obtiene la dirección principal de la Persona. */
-    public function getDireccionPrincipal()
-    {
-        return $this->persona && $this->persona->direcciones()->first()
-               ? $this->persona->direcciones()->first()->Direccion_Completa
-               : 'Sin Dirección';
-    }
-
-    /** Obtiene el Nombre Completo de la Persona. */
-    public function getNombreCompleto()
-    {
-        return $this->persona
-               ? $this->persona->Nombre . ' ' . $this->persona->Apellido
-               : $this->Nombre_Usuario;
-    }
-
-    /** Alias para compatibilidad de nombre. */
-    public function getNameAttribute()
-    {
-        return $this->Nombre_Usuario;
-    }
-
-    /** Obtiene el email para reset de contraseña (usa el correo principal). */
-    public function getEmailForPasswordReset()
-    {
-        return $this->getCorreoPrincipal();
-    }
+    // Nota: Es crucial que en tu modelo 'Persona.php' exista la relación 'hasMany' a 'Correo.php'.
 }

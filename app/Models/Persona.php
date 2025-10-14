@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model; // CORRECCIÓN: Extiende de Model, no de Authenticatable
 use Illuminate\Notifications\Notifiable;
 
-class Persona extends Authenticatable
+class Persona extends Model // CORRECCIÓN
 {
     use HasFactory, Notifiable;
 
@@ -20,58 +20,73 @@ class Persona extends Authenticatable
         'DNI',
         'Fecha_Nacimiento',
         'Genero',
-        'Password'
+        // 'Password' NO debe estar aquí si Persona ya no se usa para login
     ];
 
-    protected $hidden = ['Password'];
+    // Si la tabla Persona no se usa para login, 'Password' y 'hidden' no son necesarios aquí
+    // protected $hidden = ['Password'];
 
-    // IMPORTANTE: Laravel busca 'password' por defecto, debemos decirle que use 'Password'
-    public function getAuthPassword()
-    {
-        return $this->Password;
-    }
 
-    // IMPORTANTE: Laravel busca 'email' por defecto para algunas operaciones
+    // --- Métodos de Compatibilidad con Autenticación (Solo si son estrictamente necesarios) ---
+
+    /* * Los siguientes métodos (getAuthPassword, getEmailForPasswordReset)
+    * SOLO son necesarios si Persona fuera a usarse para login.
+    * Puesto que Usuario es el que autentica, estos pueden ser eliminados
+    * o corregidos para usarlos en el proceso de restablecimiento de contraseña.
+    */
+
+    // public function getAuthPassword() { return $this->Password; } // Se elimina
+
+    /** Obtiene el email para reset de contraseña. */
     public function getEmailForPasswordReset()
     {
         $correo = $this->getCorreoPrincipal();
+        // CORRECCIÓN: Asumo que el campo en la tabla 'correo' es 'Correo' (con C mayúscula)
         return $correo ? $correo->Correo : null;
     }
 
-    // Relaciones
+    // --- Relaciones ---
+
+    /** Relación Uno a Muchos con Correo */
     public function correos()
     {
         return $this->hasMany(Correo::class, 'Cod_Persona', 'Cod_Persona');
     }
 
+    /** Relación Uno a Muchos con Telefono */
     public function telefonos()
     {
         return $this->hasMany(Telefono::class, 'Cod_Persona', 'Cod_Persona');
     }
 
+    /** Relación Uno a Muchos con Direccion */
     public function direcciones()
     {
         return $this->hasMany(Direccion::class, 'Cod_Persona', 'Cod_Persona');
     }
 
-    // Relación para obtener el correo principal (el primero o de tipo 'Personal')
+    /** Relación Uno a Uno con Correo (Solo para obtener el primero, pero 'correos' ya lo cubre) */
     public function correo()
     {
         return $this->hasOne(Correo::class, 'Cod_Persona', 'Cod_Persona');
     }
 
-    // Método auxiliar para obtener el correo principal
+    // --- Métodos Auxiliares ---
+
+    /** Método auxiliar para obtener el correo principal */
     public function getCorreoPrincipal()
     {
         return $this->correos()
-                    ->where('Tipo_correo', 'Personal')
+                     // Buscamos el tipo 'Personal' (insensible a mayúsculas/minúsculas)
+                    ->whereRaw('LOWER(Tipo_correo) = ?', ['personal'])
                     ->first()
-                ?? $this->correos()->first();
+                ?? $this->correos()->first(); // Si no hay Personal, devuelve el primero
     }
 
-    // Método auxiliar para obtener el nombre completo
+    /** Método auxiliar para obtener el nombre completo */
     public function getNombreCompleto()
     {
         return $this->Nombre . ' ' . $this->Apellido;
     }
 }
+

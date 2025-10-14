@@ -935,7 +935,8 @@
         </div>
 
         <div class="admin-button">
-            <a href="{{ route('admin.login') }}"
+            <!-- CAMBIO SOLICITADO: Se cambió 'admin.login' a 'admin.login.demo' -->
+            <a href="{{ route('admin.login.demo') }}"
                 class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl">
                 Administrador
             </a>
