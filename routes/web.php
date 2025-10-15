@@ -12,6 +12,13 @@ use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
+<<<<<<< HEAD
+=======
+use Illuminate\Support\Facades\Auth;
+
+// Importación clave que estaba en conflicto (RegisteredUsuarioController)
+use App\Http\Controllers\Auth\RegisteredUsuarioController;
+>>>>>>> 8a3a3bcfdaa798e93ddc172e391b183e034d8f07
 
 // Ruta raíz - Redirige según el estado de autenticación
 Route::get('/', function () {
@@ -40,9 +47,12 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
+
+// Registro de Usuario (usa RegisteredUsuarioController)
 Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])->name('register.usuario');
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 
+// Registro de Persona (usa RegisteredPersonaController)
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
 
@@ -72,7 +82,11 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // A. RUTAS COMUNES y DASHBOARD
     // ----------------------------------------
 
+<<<<<<< HEAD
     // DASHBOARD
+=======
+    // DASHBOARD: Ahora solo requiere que el usuario esté autenticado.
+>>>>>>> 8a3a3bcfdaa798e93ddc172e391b183e034d8f07
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // PERFIL

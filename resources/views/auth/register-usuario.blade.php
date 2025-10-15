@@ -30,8 +30,11 @@
         }
 
         .logo {
-            width: 150px;
+            /* Ajusté el ancho a 200px para que el logo se vea bien centrado */
+            width: 200px;
             margin-bottom: 2rem;
+            /* Se asegura que la imagen sea responsiva y mantenga la proporción */
+            height: auto;
         }
 
         .form-group {
@@ -146,9 +149,11 @@
 
 <body>
     <div class="register-card">
-        <!-- Reemplaza la URL de la imagen si es necesario -->
-        <!-- NOTA: La ruta de asset('images/logo_salus.jpeg') solo funcionará si tienes el archivo en public/images/ -->
-        <img src="https://placehold.co/150x50/4C342C/ffffff?text=LOGO" alt="Logo de Salus" class="logo">
+        <!-- ****************************************************** -->
+        <!-- CORRECCIÓN: Se actualiza la extensión del logo a .jpeg -->
+        <!-- ASUME: La imagen se llama 'logo_salus.jpeg' y está en 'public/images/' -->
+        <!-- ****************************************************** -->
+        <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
 
         @if(session('success'))
             <!-- ESTADO 2: REGISTRO EXITOSO -->
