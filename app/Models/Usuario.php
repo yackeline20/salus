@@ -34,6 +34,8 @@ class Usuario extends Authenticatable
         'Cod_Rol',
         'Nombre_Usuario',
         'Password',
+        'google2fa_secret',
+        'google2fa_enabled',
         'Indicador_Usuario_Activo',
         'Indicador_Insertado',
         'Usuario_Registro',

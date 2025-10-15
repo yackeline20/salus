@@ -99,7 +99,8 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card modern-card">
+            <!-- Próximas Citas -->
+            <div class="card modern-card mb-4">
                 <div class="card-header">
                     <h3 class="card-title">Próximas Citas</h3>
                 </div>
@@ -129,6 +130,41 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ✅ SECCIÓN DE SEGURIDAD 2FA - AGREGAR AQUÍ -->
+            <div class="card modern-card security-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt"></i> Seguridad
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="security-item">
+                        <div class="security-info">
+                            <h6 class="mb-1">Autenticación de Dos Factores</h6>
+                            <p class="text-muted small mb-2">
+                                @if(auth()->user()->google2fa_enabled)
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-check-circle"></i> Activa
+                                    </span>
+                                    <span class="d-block mt-1">Tu cuenta está protegida</span>
+                                @else
+                                    <span class="badge badge-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Inactiva
+                                    </span>
+                                    <span class="d-block mt-1">Agrega seguridad extra</span>
+                                @endif
+                            </p>
+                        </div>
+                        <div class="security-action">
+                            <a href="{{ route('2fa.setup') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-cog"></i> Configurar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -345,6 +381,45 @@
         color: #8C8C8C;
     }
 
+    /* ✅ ESTILOS PARA LA TARJETA DE SEGURIDAD */
+    .security-card {
+        border-left: 4px solid #FF6B6B;
+    }
+
+    .security-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .security-info h6 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #2C3E50;
+        margin-bottom: 5px;
+    }
+
+    .security-info .badge {
+        font-size: 11px;
+        padding: 5px 10px;
+        font-weight: 600;
+    }
+
+    .security-info .badge-success {
+        background: #52C41A;
+    }
+
+    .security-info .badge-warning {
+        background: #FFA500;
+    }
+
+    .security-action .btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .welcome-header {
@@ -363,6 +438,20 @@
 
         .welcome-content h1 {
             font-size: 24px;
+        }
+
+        .security-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .security-action {
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .security-action .btn {
+            width: 100%;
         }
     }
 </style>

@@ -11,6 +11,7 @@ use BaconQrCode\Writer;
 
 class TwoFactorController extends Controller
 {
+    // Mostrar formulario de configuración 2FA
     public function show()
     {
         $user = auth()->user();
@@ -44,6 +45,7 @@ class TwoFactorController extends Controller
         ]);
     }
 
+    // Habilitar 2FA (primera vez)
     public function enable(Request $request)
     {
         $request->validate([
@@ -65,10 +67,39 @@ class TwoFactorController extends Controller
         return back()->withErrors(['one_time_password' => 'El código ingresado es inválido']);
     }
 
+    // Mostrar formulario de verificación durante login
+    public function showVerify()
+    {
+        return view('auth.two-factor-verify');
+    }
+
+    // Verificar código 2FA durante login
+    public function verify(Request $request)
+    {
+        $request->validate([
+            'one_time_password' => 'required|numeric|digits:6'
+        ]);
+
+        $google2fa = new Google2FA();
+        $user = auth()->user();
+
+        $valid = $google2fa->verifyKey($user->google2fa_secret, $request->one_time_password);
+
+        if ($valid) {
+            // Marcar como verificado en la sesión
+            $request->session()->put('2fa_verified', true);
+            return redirect()->intended('dashboard');
+        }
+
+        return back()->withErrors(['one_time_password' => 'El código ingresado es inválido']);
+    }
+
+    // Deshabilitar 2FA
     public function disable()
     {
         $user = auth()->user();
         $user->google2fa_enabled = false;
+        $user->google2fa_secret = null; // Opcional: limpiar el secreto
         $user->save();
 
         return back()->with('success', 'Autenticación de dos pasos deshabilitada');

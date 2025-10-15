@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use App\Models\Correo;
 use App\Models\Usuario;
@@ -61,11 +62,43 @@ class AuthenticatedSessionController extends Controller
         // 3. Login exitoso - Autenticar al usuario con el guard 'web'
         Auth::guard('web')->login($usuario, $remember);
 
-        // 4. Regenerar la sesión para seguridad (EVITA REDIRECCIONES INFINITAS)
+        // 4. Regenerar la sesión para seguridad
         $request->session()->regenerate();
 
-        // 5. Redirigir al dashboard
-        return redirect()->intended(RouteServiceProvider::HOME);
+        // ✅ 5. LÓGICA DE 2FA OBLIGATORIO
+        Log::info('=== DEBUG LOGIN 2FA ===');
+        Log::info('Usuario: ' . $usuario->Nombre_Usuario);
+        Log::info('google2fa_enabled: ' . ($usuario->google2fa_enabled ? 'SI' : 'NO'));
+        Log::info('google2fa_secret: ' . ($usuario->google2fa_secret ? 'EXISTE' : 'NO EXISTE'));
+
+        // IMPORTANTE: Verificar PRIMERO si tiene el secreto configurado
+        // Si NO tiene secreto configurado, debe ir a SETUP (mostrar QR)
+        if (empty($usuario->google2fa_secret)) {
+            Log::info('⚠️ Usuario SIN secreto 2FA - Redirigiendo a CONFIGURACIÓN (mostrar QR)');
+            
+            $request->session()->put('2fa_verified', false);
+            $request->session()->put('2fa_setup_required', true);
+            
+            return redirect()->route('2fa.setup')
+                ->with('warning', '⚠️ Debes configurar la autenticación de dos factores para continuar.');
+        }
+
+        // Si tiene secreto pero NO está habilitado, forzar habilitación
+        if (!$usuario->google2fa_enabled) {
+            Log::info('⚠️ Usuario tiene secreto pero 2FA no habilitado - Redirigiendo a CONFIGURACIÓN');
+            
+            $request->session()->put('2fa_verified', false);
+            $request->session()->put('2fa_setup_required', true);
+            
+            return redirect()->route('2fa.setup')
+                ->with('warning', '⚠️ Debes activar la autenticación de dos factores para continuar.');
+        }
+
+        // Si tiene secreto Y está habilitado, pedir código de VERIFICACIÓN
+        Log::info('✅ Usuario con 2FA completo - Redirigiendo a VERIFICACIÓN (pedir código)');
+        $request->session()->put('2fa_verified', false);
+        
+        return redirect()->route('2fa.verify.show');
     }
 
     /**
@@ -82,7 +115,7 @@ class AuthenticatedSessionController extends Controller
 
         // 2. Buscar el Usuario por Cod_Persona y que esté activo
         $usuario = Usuario::where('Cod_Persona', $correoModel->Cod_Persona)
-                          ->where('Indicador_Usuario_Activo', 1) // Usamos entero 1 para ser consistente
+                          ->where('Indicador_Usuario_Activo', 1)
                           ->first();
 
         return $usuario;
@@ -95,7 +128,7 @@ class AuthenticatedSessionController extends Controller
     {
         // 1. Buscar el usuario por Nombre_Usuario y que esté activo
         $usuario = Usuario::where('Nombre_Usuario', $username)
-                          ->where('Indicador_Usuario_Activo', 1) // Usamos entero 1 para ser consistente
+                          ->where('Indicador_Usuario_Activo', 1)
                           ->first();
 
         return $usuario;
@@ -106,10 +139,19 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        Log::info('=== LOGOUT ===');
+        Log::info('Usuario cerrando sesión: ' . Auth::user()->Nombre_Usuario);
+        
+        // ✅ Limpiar el flag de verificación 2FA de la sesión
+        $request->session()->forget('2fa_verified');
+        $request->session()->forget('2fa_setup_required');
+        
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        Log::info('Sesión cerrada correctamente');
 
         return redirect('/');
     }

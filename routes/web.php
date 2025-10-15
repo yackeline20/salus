@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\RegisteredPersonaController;
+use App\Http\Controllers\Auth\RegisteredUsuarioController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\CitasController;
@@ -9,14 +10,13 @@ use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-
 
 // Ruta raíz - Redirige según el estado de autenticación
 Route::get('/', function () {
     if (Auth::check()) {
-        return redirect()->route('dashboard'); // Usamos el nombre de la ruta para ser seguros
+        return redirect()->route('dashboard');
     }
     return view('welcome');
 })->name('welcome');
@@ -46,18 +46,33 @@ Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
 
+
 // ========================================
-// RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN)
+// RUTAS DE 2FA (SOLO REQUIEREN AUTENTICACIÓN, SIN VERIFICACIÓN 2FA)
+// Estas rutas deben estar accesibles para configurar y verificar 2FA
+// ========================================
+Route::middleware(['auth'])->group(function () {
+    // Configuración de 2FA (setup y activación)
+    Route::get('/2fa/setup', [TwoFactorController::class, 'show'])->name('2fa.setup');
+    Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
+    
+    // Verificación de 2FA durante login
+    Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
+    Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
+});
+
+
+// ========================================
+// RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN + VERIFICACIÓN 2FA)
 // ========================================
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'twofactor'])->group(function () {
 
     // ----------------------------------------
     // A. RUTAS COMUNES y DASHBOARD
     // ----------------------------------------
 
-    // DASHBOARD: Ahora solo requiere que el usuario esté autenticado.
-    // La lógica de permisos para mostrar módulos va dentro del DashboardController.
+    // DASHBOARD
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // PERFIL
@@ -65,16 +80,22 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    
+    // ----------------------------------------
+    // B. GESTIÓN DE 2FA (Dentro del dashboard - Deshabilitar)
+    // ----------------------------------------
+    Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
+
 
     // ----------------------------------------
-    // B. MÓDULOS CON RESTRICCIÓN DE PERMISOS
+    // C. MÓDULOS CON RESTRICCIÓN DE PERMISOS
     // ----------------------------------------
 
-    // Módulo de Citas (Verifica el permiso 'select' para el objeto 'Citas')
+    // Módulo de Citas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
-        ->middleware('check.permissions:Citas,select'); // Explícitamente verificar 'select'
+        ->middleware('check.permissions:Citas,select');
 
-    // Rutas API de citas: Aquí sí especificamos la acción necesaria
+    // Rutas API de citas
     Route::get('/api/citas', [CitasController::class, 'getCitas'])->name('api.citas.get')
         ->middleware('check.permissions:Citas,select');
     Route::post('/api/citas', [CitasController::class, 'storeCita'])->name('api.citas.store')
@@ -93,7 +114,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/servicios', function () {
         return view('gestion-servicios');
     })->name('servicios')
-      ->middleware('check.permissions:Gestión de Servicios,select'); // Usar Nombre_Objeto correcto
+      ->middleware('check.permissions:Gestión de Servicios,select');
 
     // Módulo de Facturación
     Route::get('/factura', function () {
@@ -118,3 +139,7 @@ Route::middleware('auth')->group(function () {
 
 });
 
+// ========================================
+// RUTAS DE AUTENTICACIÓN PREDETERMINADAS 
+// ========================================
+require __DIR__ . '/auth.php';

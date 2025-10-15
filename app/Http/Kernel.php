@@ -70,6 +70,9 @@ class Kernel extends HttpKernel
         // **************************************************
         'check.permissions' => \App\Http\Middleware\CheckPermissions::class, // <-- AÑADIDO
         'role' => \App\Http\Middleware\RoleMiddleware::class,
+        'twofactor' => \App\Http\Middleware\TwoFactorAuthentication::class,
+        
+
     ];
 }
 
