@@ -15,8 +15,6 @@ use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Auth;
 
-// Importación clave que estaba en conflicto (RegisteredUsuarioController)
-use App\Http\Controllers\Auth\RegisteredUsuarioController;
 
 
 // Ruta raíz - Redirige según el estado de autenticación
