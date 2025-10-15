@@ -12,8 +12,7 @@ use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
-<<<<<<< HEAD
-=======
+
 use Illuminate\Support\Facades\Auth;
 
 // Importación clave que estaba en conflicto (RegisteredUsuarioController)
@@ -82,11 +81,8 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // A. RUTAS COMUNES y DASHBOARD
     // ----------------------------------------
 
-<<<<<<< HEAD
-    // DASHBOARD
-=======
     // DASHBOARD: Ahora solo requiere que el usuario esté autenticado.
->>>>>>> 8a3a3bcfdaa798e93ddc172e391b183e034d8f07
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // PERFIL
