@@ -12,6 +12,11 @@ use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+// *******************************************************
+// CORRECCIÓN CLAVE: Importamos RegisteredUsuarioController (según lo indicado por el usuario)
+// *******************************************************
+use App\Http\Controllers\Auth\RegisteredUsuarioController;
+
 // Ruta raíz - Redirige según el estado de autenticación
 Route::get('/', function () {
     if (Auth::check()) {
@@ -39,6 +44,9 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
+// *******************************************************
+// USAMOS EL NOMBRE DE CLASE CORRECTO: RegisteredUsuarioController
+// *******************************************************
 Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])->name('register.usuario');
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 
