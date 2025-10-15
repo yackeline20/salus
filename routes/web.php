@@ -12,9 +12,7 @@ use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
-// *******************************************************
-// CORRECCIÓN CLAVE: Importamos RegisteredUsuarioController (según lo indicado por el usuario)
-// *******************************************************
+// Importación clave que estaba en conflicto (RegisteredUsuarioController)
 use App\Http\Controllers\Auth\RegisteredUsuarioController;
 
 // Ruta raíz - Redirige según el estado de autenticación
@@ -44,12 +42,12 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
-// *******************************************************
-// USAMOS EL NOMBRE DE CLASE CORRECTO: RegisteredUsuarioController
-// *******************************************************
+
+// Registro de Usuario (usa RegisteredUsuarioController)
 Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])->name('register.usuario');
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 
+// Registro de Persona (usa RegisteredPersonaController)
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
 
@@ -64,7 +62,6 @@ Route::middleware('auth')->group(function () {
     // ----------------------------------------
 
     // DASHBOARD: Ahora solo requiere que el usuario esté autenticado.
-    // La lógica de permisos para mostrar módulos va dentro del DashboardController.
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // PERFIL

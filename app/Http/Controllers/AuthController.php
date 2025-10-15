@@ -20,11 +20,33 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required'
         ]);
 
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
+        $loginData = [
+            'Nombre_Usuario' => $request->email,
+            'password' => $request->password
+        ];
+
+        if (Auth::attempt($loginData, $request->filled('remember'))) {
+            $user = Auth::user();
+
+            // ========================================
+            // VERIFICAR SI EL USUARIO TIENE 2FA HABILITADO
+            // ========================================
+            if ($user->google2fa_enabled) {
+                // Cerrar la sesión temporal
+                Auth::logout();
+                
+                // Guardar el ID del usuario en sesión para verificación posterior
+                $request->session()->put('2fa:user:id', $user->Cod_Usuario);
+                
+                // Redirigir a la página de verificación 2FA
+                return redirect()->route('2fa.verify');
+            }
+
+            // Si no tiene 2FA habilitado, continuar normalmente
             $request->session()->regenerate();
             return redirect()->intended('/dashboard');
         }
@@ -54,9 +76,6 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
-
-        // ELIMINÉ Auth::login($user); para que NO entre automáticamente
-        // CAMBIÉ el redirect para mostrar mensaje de éxito
 
         return redirect()->route('register')->with('success', 'Registro exitoso');
     }
