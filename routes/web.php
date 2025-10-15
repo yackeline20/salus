@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Auth;
 
 // Importación clave que estaba en conflicto (RegisteredUsuarioController)
 use App\Http\Controllers\Auth\RegisteredUsuarioController;
->>>>>>> 8a3a3bcfdaa798e93ddc172e391b183e034d8f07
+
 
 // Ruta raíz - Redirige según el estado de autenticación
 Route::get('/', function () {
