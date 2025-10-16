@@ -911,19 +911,40 @@
     <div class="button-container background-white">
         <img src="{{ asset('images/logo_salus.jpeg') }}" alt="Logo de Salus" class="logo">
         <h1 class="welcome-message">Salus le da una cordial Bienvenida!</h1>
+
+        {{-- LÓGICA DE BOTONES CORREGIDA --}}
         <div class="auth-buttons">
             @if (Route::has('login'))
                 @auth
+                    {{-- USUARIO LOGUEADO: Mostrar Dashboard y Cerrar Sesión --}}
+
+                    {{-- Botón de Dashboard --}}
                     <a href="{{ url('/dashboard') }}"
                         class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl">
                         Dashboard
                     </a>
+
+                    {{-- Botón de Cerrar Sesión --}}
+                    {{-- Usa un formulario POST para cerrar sesión de forma segura --}}
+                    <form method="POST" action="{{ route('logout') }}" style="display:inline;">
+                        @csrf
+                        <button type="submit"
+                            class="ml-4 font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl"
+                            style="background: none; border: none; padding: 0; cursor: pointer;">
+                            Cerrar Sesión
+                        </button>
+                    </form>
+
                 @else
+                    {{-- USUARIO NO LOGUEADO (Invitado): Mostrar Iniciar Sesión y Registrarse --}}
+
+                    {{-- Botón de Iniciar Sesión --}}
                     <a href="{{ route('login') }}"
                         class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl">
-                        Iniciar sesión
+                        Iniciar Sesión
                     </a>
 
+                    {{-- Botón de Registrarse --}}
                     @if (Route::has('register.usuario'))
                         <a href="{{ route('register.usuario') }}"
                             class="ml-4 font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl">
@@ -934,14 +955,16 @@
             @endif
         </div>
 
+        {{-- Botón de Administrador (Siempre visible) --}}
         <div class="admin-button">
-            <!-- CAMBIO SOLICITADO: Se cambió 'admin.login' a 'admin.login.demo' -->
             <a href="{{ route('admin.login.demo') }}"
                 class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500 text-xl">
                 Administrador
             </a>
         </div>
+
     </div>
+    {{-- FIN DE LA LÓGICA DE BOTONES CORREGIDA --}}
 
     <div class="social-container">
         <div class="social-item">

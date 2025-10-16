@@ -16,6 +16,9 @@ use App\Models\Persona;
 
 class AuthenticatedSessionController extends Controller
 {
+    // ID del rol de Administrador (basado en la tabla de roles)
+    private const ADMIN_ROLE_ID = 1;
+
     /**
      * Display the login view.
      */
@@ -65,8 +68,22 @@ class AuthenticatedSessionController extends Controller
         // 4. Regenerar la sesión para seguridad
         $request->session()->regenerate();
 
-        // ✅ 5. LÓGICA DE 2FA OBLIGATORIO
-        Log::info('=== DEBUG LOGIN 2FA ===');
+        // =============================================================
+        // ✅ 5. LÓGICA DE EXCEPCIÓN DE ROL Y REDIRECCIÓN DE 2FA
+        // =============================================================
+
+        // Excepción: Si el usuario es Administrador, saltar la verificación 2FA y
+        // redirigir directamente al dashboard, limpiando cualquier flag 2FA previo.
+        if ($usuario->Cod_Rol == self::ADMIN_ROLE_ID) {
+            Log::info('✅ Administrador logueado - Saltando 2FA y redirigiendo a Home.');
+            $request->session()->put('2fa_verified', true); // Marcar como verificado para evitar middleware
+            $request->session()->forget('2fa_setup_required');
+            return redirect()->intended(RouteServiceProvider::HOME);
+        }
+
+        // --- Lógica de 2FA para el resto de Roles (Recepcionista, etc.) ---
+
+        Log::info('=== DEBUG LOGIN 2FA PARA NO-ADMINS ===');
         Log::info('Usuario: ' . $usuario->Nombre_Usuario);
         Log::info('google2fa_enabled: ' . ($usuario->google2fa_enabled ? 'SI' : 'NO'));
         Log::info('google2fa_secret: ' . ($usuario->google2fa_secret ? 'EXISTE' : 'NO EXISTE'));
@@ -75,10 +92,10 @@ class AuthenticatedSessionController extends Controller
         // Si NO tiene secreto configurado, debe ir a SETUP (mostrar QR)
         if (empty($usuario->google2fa_secret)) {
             Log::info('⚠️ Usuario SIN secreto 2FA - Redirigiendo a CONFIGURACIÓN (mostrar QR)');
-            
+
             $request->session()->put('2fa_verified', false);
             $request->session()->put('2fa_setup_required', true);
-            
+
             return redirect()->route('2fa.setup')
                 ->with('warning', '⚠️ Debes configurar la autenticación de dos factores para continuar.');
         }
@@ -86,10 +103,10 @@ class AuthenticatedSessionController extends Controller
         // Si tiene secreto pero NO está habilitado, forzar habilitación
         if (!$usuario->google2fa_enabled) {
             Log::info('⚠️ Usuario tiene secreto pero 2FA no habilitado - Redirigiendo a CONFIGURACIÓN');
-            
+
             $request->session()->put('2fa_verified', false);
             $request->session()->put('2fa_setup_required', true);
-            
+
             return redirect()->route('2fa.setup')
                 ->with('warning', '⚠️ Debes activar la autenticación de dos factores para continuar.');
         }
@@ -97,7 +114,7 @@ class AuthenticatedSessionController extends Controller
         // Si tiene secreto Y está habilitado, pedir código de VERIFICACIÓN
         Log::info('✅ Usuario con 2FA completo - Redirigiendo a VERIFICACIÓN (pedir código)');
         $request->session()->put('2fa_verified', false);
-        
+
         return redirect()->route('2fa.verify.show');
     }
 
@@ -141,11 +158,11 @@ class AuthenticatedSessionController extends Controller
     {
         Log::info('=== LOGOUT ===');
         Log::info('Usuario cerrando sesión: ' . Auth::user()->Nombre_Usuario);
-        
+
         // ✅ Limpiar el flag de verificación 2FA de la sesión
         $request->session()->forget('2fa_verified');
         $request->session()->forget('2fa_setup_required');
-        
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

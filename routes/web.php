@@ -16,12 +16,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
-
-// Ruta raíz - Redirige según el estado de autenticación
+// Ruta raíz - SIEMPRE muestra la vista de bienvenida.
+// (Se eliminó la redirección a dashboard si Auth::check() es verdadero)
 Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('dashboard');
-    }
     return view('welcome');
 })->name('welcome');
 
@@ -62,8 +59,9 @@ Route::middleware(['auth'])->group(function () {
     // Configuración de 2FA (setup y activación)
     Route::get('/2fa/setup', [TwoFactorController::class, 'show'])->name('2fa.setup');
     Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
-    
+
     // Verificación de 2FA durante login
+    // El middleware 'auth' es suficiente para proteger estas rutas.
     Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
 });
@@ -79,8 +77,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // A. RUTAS COMUNES y DASHBOARD
     // ----------------------------------------
 
-    // DASHBOARD: Ahora solo requiere que el usuario esté autenticado.
-
+    // DASHBOARD
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // PERFIL
@@ -88,7 +85,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    
+
     // ----------------------------------------
     // B. GESTIÓN DE 2FA (Dentro del dashboard - Deshabilitar)
     // ----------------------------------------
@@ -148,6 +145,6 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 });
 
 // ========================================
-// RUTAS DE AUTENTICACIÓN PREDETERMINADAS 
+// RUTAS DE AUTENTICACIÓN PREDETERMINADAS
 // ========================================
 require __DIR__ . '/auth.php';
