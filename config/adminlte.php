@@ -256,12 +256,19 @@ return [
             'route' => 'gestion-personal',
             'icon' => 'fas fa-users',
         ],
+        // Administración
+[
+    'text' => 'Administración',
+    'route' => 'administracion',
+    'icon' => 'fas fa-user-shield',
+],
 
         [
             'text' => 'Reportes',
             'route' => 'reportes',
             'icon' => 'fas fa-chart-bar',
         ],
+        
     ],
 // ...existing code...
     /*

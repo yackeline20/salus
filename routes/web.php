@@ -12,6 +12,7 @@ use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdministracionController;
 
 use Illuminate\Support\Facades\Auth;
 
@@ -142,6 +143,26 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
         ->middleware('check.permissions:Gestión de Personal,select');
 
+
+// Módulo de Administración
+Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
+    ->middleware('check.permissions:Administración,select');
+ 
+// SUB-RUTAS DE ADMINISTRACIÓN
+Route::prefix('administracion')->middleware('check.permissions:Administración,select')->group(function () {
+    
+    // Backup y Restore
+    Route::get('/backup', [AdministracionController::class, 'backup'])->name('administracion.backup');
+    Route::post('/backup/crear', [AdministracionController::class, 'crearBackup'])->name('administracion.backup.crear');
+    Route::post('/backup/restaurar', [AdministracionController::class, 'restaurarBackup'])->name('administracion.backup.restaurar');
+    
+    // Cambio de Contraseña
+    Route::get('/password', [AdministracionController::class, 'password'])->name('administracion.password');
+    Route::post('/password/cambiar', [AdministracionController::class, 'cambiarPassword'])->name('administracion.password.cambiar');
+    
+    // Bitácora
+    Route::get('/bitacora', [AdministracionController::class, 'bitacora'])->name('administracion.bitacora');
+});
 });
 
 // ========================================
