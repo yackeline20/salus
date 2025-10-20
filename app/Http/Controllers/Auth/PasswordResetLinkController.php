@@ -29,9 +29,9 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
+        // Laravel automáticamente usará el CustomUserProvider
+        // que llama al scopeWhereEmail() del modelo Usuario
+        // para buscar el usuario por el correo en la tabla 'correo'
         $status = Password::sendResetLink(
             $request->only('email')
         );

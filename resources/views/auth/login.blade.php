@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -163,6 +163,14 @@
             </div>
 
             <button type="submit" class="button-primary">Iniciar Sesión</button>
+
+            <!-- ENLACE DE RECUPERACIÓN DE CONTRASEÑA AGREGADO AQUÍ -->
+            <p style="margin-top: 1rem; font-size: 0.875rem;">
+                <a href="{{ route('password.request') }}"
+                    style="color: #4C342C; text-decoration: none;">¿Olvidaste tu contraseña?</a>
+            </p>
+            <!-- FIN DEL ENLACE -->
+
 
             <p style="margin-top: 1rem; font-size: 0.875rem;">
                 ¿No tienes cuenta? <a href="{{ route('register.usuario') }}"

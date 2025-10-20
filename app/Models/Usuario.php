@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use App\Models\Role;
 use App\Models\Acceso;
@@ -13,7 +16,8 @@ use App\Models\Objeto;
 use App\Models\Persona;
 use App\Models\Correo;
 
-class Usuario extends Authenticatable
+// Aseguramos que el modelo implemente la interfaz de restablecimiento
+class Usuario extends Authenticatable implements CanResetPassword
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -47,6 +51,37 @@ class Usuario extends Authenticatable
         'remember_token',
     ];
 
+    // ----------------------------------------------------------------------
+    // 🟢 FUNCIONES CRÍTICAS PARA RESTABLECIMIENTO DE CONTRASEÑA 🟢
+    // (Resuelve: Unknown column 'email' in 'where clause')
+    // ----------------------------------------------------------------------
+
+    /**
+     * 1. OBLIGA a Laravel a buscar el usuario por el correo en la tabla 'correo'.
+     * Esta función sobrescribe la consulta SQL fallida (SELECT * FROM `usuarios` WHERE `email` =...)
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $email El email ingresado en el formulario.
+     */
+    public function scopeWhereEmail(Builder $query, string $email): Builder
+    {
+        // Usa whereHas para buscar en la relación anidada: Usuario -> Persona -> Correos
+        return $query->whereHas('persona.correos', function (Builder $query) use ($email) {
+            // CRÍTICO: Buscamos la columna 'Correo' en la tabla 'correo'
+            $query->where('Correo', $email);
+        });
+    }
+
+    /**
+     * 2. Obtiene el correo electrónico para el envío del enlace.
+     * (Laravel llama a esta función para saber a dónde enviar el correo).
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        // Usamos tu método existente que ya sabe cómo encontrar el correo principal
+        return $this->getCorreoPrincipal() ?? '';
+    }
+
+    // ----------------------------------------------------------------------
     // --- MÉTODOS CRÍTICOS DE AUTENTICACIÓN (Compatibilidad de Sesión) ---
 
     // 1. Obtiene el nombre de la columna que almacena el ID (la clave primaria)
@@ -55,10 +90,9 @@ class Usuario extends Authenticatable
         return $this->authIdentifierName;
     }
 
-    // 2. Obtiene el valor del ID. Simplificado para evitar problemas con el array de atributos.
+    // 2. Obtiene el valor del ID.
     public function getAuthIdentifier()
     {
-        // Devolvemos el valor del primaryKey directamente.
         return $this->getAttribute($this->getAuthIdentifierName());
     }
 
@@ -68,29 +102,43 @@ class Usuario extends Authenticatable
         return $this->passwordColumn;
     }
 
-    // 4. Obtiene el valor de la contraseña. Simplificado.
+    // 4. Obtiene el valor de la contraseña.
     public function getAuthPassword()
     {
-        // Devolvemos el valor de la contraseña directamente.
         return $this->getAttribute($this->getAuthPasswordName());
     }
 
-    // --- ACCESORES Y RELACIONES (Se mantienen como estaban) ---
+    // --- ACCESORES Y RELACIONES ---
 
+    // La relación persona()
     public function persona() { return $this->belongsTo(Persona::class, 'Cod_Persona', 'Cod_Persona'); }
+
+    // La relación rol()
     public function rol() { return $this->belongsTo(Role::class, 'Cod_Rol', 'Cod_Rol'); }
 
+    // ACCESOR: Permite acceder al correo como $usuario->email
     public function getEmailAttribute()
     {
         return $this->getCorreoPrincipal();
     }
 
+    /**
+     * Obtiene el Correo principal del usuario (Personal > Primero encontrado).
+     * @return string|null
+     */
     public function getCorreoPrincipal()
     {
-        if ($this->persona) {
-            $correo = $this->persona->correos()->first();
-            return $correo ? $correo->Correo : null;
+        // El operador opcional (?) de PHP 8+ es más limpio que muchos if/else
+        $correos = $this->persona->correos ?? null;
+
+        if ($correos && $correos->isNotEmpty()) {
+            // 1. Busca el correo con Tipo_correo = 'Personal'
+            $personal = $correos->where('Tipo_correo', 'Personal')->first();
+
+            // 2. Si existe el personal, lo devuelve. Si no, devuelve el Correo del primer elemento.
+            return $personal?->Correo ?? $correos->first()->Correo ?? null;
         }
+
         return null;
     }
 
@@ -103,50 +151,22 @@ class Usuario extends Authenticatable
 
     // --- LÓGICA DEL MÓDULO DE SEGURIDAD (Permisos RBAC) ---
 
-    /**
-     * Verifica si el usuario tiene el rol especificado.
-     * @param string $role Nombre del rol (ej: 'admin', 'recepcionista').
-     * @return bool
-     */
     public function hasRole($role): bool
     {
-        // La CitaPolicy busca 'admin' o 'Administrador'
-        if ($role === 'admin' || $role === 'Administrador') {
-            return $this->Cod_Rol === 1; // Asumiendo Cod_Rol=1 es Administrador
-        }
-
-        // Puedes agregar otros roles si es necesario para lógica futura
-        if ($role === 'recepcionista') {
-            return $this->Cod_Rol === 2; // Asumiendo Cod_Rol=2 es Recepcionista
-        }
-
+        if ($role === 'admin' || $role === 'Administrador') { return $this->Cod_Rol === 1; }
+        if ($role === 'recepcionista') { return $this->Cod_Rol === 2; }
         return false;
     }
 
-    /**
-     * Atajo para isAdmin, ya que muchos middlewares lo usan.
-     * @return bool
-     */
     public function isAdmin(): bool
     {
         return $this->Cod_Rol === 1;
     }
 
-    /**
-     * Verifica si el rol del usuario tiene un permiso específico sobre un objeto.
-     * @param string $action Tipo de permiso (select, insert, update, delete).
-     * @param string $objectName Nombre del objeto (módulo) a revisar (ej: 'Citas').
-     * @return bool
-     */
     public function hasPermission(string $action, string $objectName): bool
     {
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        if (!$this->Cod_Rol) {
-            return false;
-        }
+        if ($this->isAdmin()) { return true; }
+        if (!$this->Cod_Rol) { return false; }
 
         $columnMap = [
             'select' => 'Permiso_Seleccionar', 'insert' => 'Permiso_Insertar',
@@ -156,15 +176,13 @@ class Usuario extends Authenticatable
 
         if (!$column) { return false; }
 
-        // Usamos la clase Objeto importada
         $objeto = Objeto::where('Nombre_Objeto', $objectName)->first();
-
         if (!$objeto) { return false; }
 
-        // Usamos la clase Acceso importada
         return Acceso::where('Cod_Rol', $this->Cod_Rol)
                      ->where('Cod_Objeto', $objeto->Cod_Objeto)
                      ->where($column, 1)
                      ->exists();
     }
 }
+
