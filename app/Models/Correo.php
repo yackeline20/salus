@@ -25,6 +25,19 @@ class Correo extends Model
         return $this->belongsTo(Persona::class, 'Cod_Persona', 'Cod_Persona');
     }
 
+    // Relación inversa: obtener el usuario a través de persona
+    public function usuario()
+    {
+        return $this->hasOneThrough(
+            Usuario::class,
+            Persona::class,
+            'Cod_Persona',      // Foreign key en persona
+            'Cod_Persona',      // Foreign key en usuarios
+            'Cod_Persona',      // Local key en correo
+            'Cod_Persona'       // Local key en persona
+        );
+    }
+
     // --- Métodos AUXILIARES ---
 
     public function getNombreCompleto()
