@@ -44,7 +44,6 @@ return [
     'logo_img_xl_class' => 'brand-image-xs',
     'logo_img_alt' => 'salus',
 
-
     /*
     |--------------------------------------------------------------------------
     | Authentication Logo
@@ -63,22 +62,23 @@ return [
     ],
 
     /*
-|--------------------------------------------------------------------------
-| Preloader Animation
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | Preloader Animation
+    |--------------------------------------------------------------------------
+    */
 
-'preloader' => [
-    'enabled' => false,  // CAMBIO: de true a false
-    'mode' => 'fullscreen',
-    'img' => [
-        'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-        'alt' => 'AdminLTE Preloader Image',
-        'effect' => 'animation__shake',
-        'width' => 60,
-        'height' => 60,
+    'preloader' => [
+        'enabled' => false,
+        'mode' => 'fullscreen',
+        'img' => [
+            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
+            'alt' => 'AdminLTE Preloader Image',
+            'effect' => 'animation__shake',
+            'width' => 60,
+            'height' => 60,
+        ],
     ],
-],
+
     /*
     |--------------------------------------------------------------------------
     | User Menu
@@ -197,36 +197,36 @@ return [
     | Menu Items
     |--------------------------------------------------------------------------
     */
-'menu' => [
-    // Navbar items:
-    [
-        'type' => 'navbar-search',
-        'text' => 'search',
-        'topnav_right' => true,
-    ],
-    [
-        'type' => 'fullscreen-widget',
-        'topnav_right' => true,
-    ],
 
-    // Sidebar items:
-    [
-        'type' => 'sidebar-menu-search',
-        'text' => 'search',
-    ],
+    'menu' => [
+        // Navbar items:
+        [
+            'type' => 'navbar-search',
+            'text' => 'search',
+            'topnav_right' => true,
+        ],
+        [
+            'type' => 'fullscreen-widget',
+            'topnav_right' => true,
+        ],
 
-    //dashboard
-    [
-        'text' => 'Dashboard',
-        'route' => 'dashboard',
-        'icon' => 'fas fa-tachometer-alt',
-    ],
+        // Sidebar items:
+        [
+            'type' => 'sidebar-menu-search',
+            'text' => 'search',
+        ],
 
+        // Dashboard
+        [
+            'text' => 'Dashboard',
+            'route' => 'dashboard',
+            'icon' => 'fas fa-tachometer-alt',
+        ],
 
-        // Facturación
+        // Facturación - ✅ CORRECCIÓN APLICADA
         [
             'text' => 'Factura',
-            'route' => 'factura',
+            'route' => 'factura.index',
             'icon' => 'fas fa-file-invoice-dollar',
         ],
 
@@ -250,27 +250,29 @@ return [
             'route' => 'servicios',
             'icon' => 'fas fa-cogs',
         ],
-        //gestion de personal
+
+        // Gestión de Personal
         [
             'text' => 'Gestión de Personal',
             'route' => 'gestion-personal',
             'icon' => 'fas fa-users',
         ],
-        // Administración
-[
-    'text' => 'Administración',
-    'route' => 'administracion',
-    'icon' => 'fas fa-user-shield',
-],
 
+        // Administración
+        [
+            'text' => 'Administración',
+            'route' => 'administracion',
+            'icon' => 'fas fa-user-shield',
+        ],
+
+        // Reportes
         [
             'text' => 'Reportes',
             'route' => 'reportes',
             'icon' => 'fas fa-chart-bar',
         ],
-        
     ],
-// ...existing code...
+
     /*
     |--------------------------------------------------------------------------
     | Menu Filters
@@ -399,5 +401,5 @@ return [
     */
 
     'livewire' => false,
-];
 
+];

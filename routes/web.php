@@ -11,13 +11,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdministracionController;
+// 🟢 Importar el controlador de Facturas
+use App\Http\Controllers\FacturaController;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
 // Ruta raíz - SIEMPRE muestra la vista de bienvenida.
-// (Se eliminó la redirección a dashboard si Auth::check() es verdadero)
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
@@ -26,7 +27,7 @@ Route::get('/', function () {
 // RUTAS DE AUTENTICACIÓN
 // ========================================
 
-// Login de Administrador (Rutas separadas para el login especial)
+// Login de Administrador
 Route::get('/admin/login', [AdminController::class, 'showAdminLoginForm'])->name('admin.login.demo');
 Route::post('/admin/login', [AdminController::class, 'login'])->name('admin.login.post');
 
@@ -41,34 +42,25 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
-
-// Registro de Usuario (usa RegisteredUsuarioController)
 Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])->name('register.usuario');
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
-
-// Registro de Persona (usa RegisteredPersonaController)
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
 
 
 // ========================================
-// RUTAS DE 2FA (SOLO REQUIEREN AUTENTICACIÓN, SIN VERIFICACIÓN 2FA)
-// Estas rutas deben estar accesibles para configurar y verificar 2FA
+// RUTAS DE 2FA (SIN VERIFICACIÓN 2FA)
 // ========================================
 Route::middleware(['auth'])->group(function () {
-    // Configuración de 2FA (setup y activación)
     Route::get('/2fa/setup', [TwoFactorController::class, 'show'])->name('2fa.setup');
     Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
-
-    // Verificación de 2FA durante login
-    // El middleware 'auth' es suficiente para proteger estas rutas.
     Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
 });
 
 
 // ========================================
-// RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN + VERIFICACIÓN 2FA)
+// RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN + VERIFICACIÓN 2FA + POLICIES)
 // ========================================
 
 Route::middleware(['auth', 'twofactor'])->group(function () {
@@ -77,70 +69,55 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // A. RUTAS COMUNES y DASHBOARD
     // ----------------------------------------
 
-    // DASHBOARD
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // PERFIL
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-
-    // ----------------------------------------
-    // B. GESTIÓN DE 2FA (Dentro del dashboard - Deshabilitar)
-    // ----------------------------------------
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
 
     // ----------------------------------------
-    // C. MÓDULOS CON RESTRICCIÓN DE PERMISOS
+    // B. MÓDULOS PROTEGIDOS POR POLICIES (Route::resource)
+    // Usar Route::resource activa FacturaPolicy, CitaPolicy, etc.
     // ----------------------------------------
 
-    // Módulo de Citas
+    // 🟢 Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
+    Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+    // 🟢 Módulo de Citas (CRÍTICO: Usamos Route::resource si tienes CitaController)
+    // Ya que usaste rutas API, asumiremos que el index de Citas es la vista principal,
+    // pero incluiremos el Route::resource si necesitas CRUD
+    // NOTA: Dejo las rutas API ya que son específicas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
-        ->middleware('check.permissions:Citas,select');
+        ->middleware('can:viewAny,App\Models\Cita'); // 🟢 Usamos @can y Policy
 
-    // Rutas API de citas
+    // Rutas API de citas: Revisa si estas APIs deben seguir usando 'check.permissions' o policies
     Route::get('/api/citas', [CitasController::class, 'getCitas'])->name('api.citas.get')
-        ->middleware('check.permissions:Citas,select');
+         ->middleware('check.permissions:Citas,select');
     Route::post('/api/citas', [CitasController::class, 'storeCita'])->name('api.citas.store')
-        ->middleware('check.permissions:Citas,insert');
+         ->middleware('check.permissions:Citas,insert');
     Route::put('/api/citas', [CitasController::class, 'updateCita'])->name('api.citas.update')
-        ->middleware('check.permissions:Citas,update');
+         ->middleware('check.permissions:Citas,update');
     Route::delete('/api/citas', [CitasController::class, 'deleteCita'])->name('api.citas.delete')
-        ->middleware('check.permissions:Citas,delete');
+         ->middleware('check.permissions:Citas,delete');
 
-
-    // Módulo de Inventario
+    // 🟢 Módulo de Inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-        ->middleware('check.permissions:Inventario,select');
+         ->middleware('can:viewAny,App\Models\Product'); // 🟢 Usamos @can y Policy
 
-    // Módulo de Gestión de Servicios
+    // 🟢 Módulo de Gestión de Servicios
     Route::get('/servicios', function () {
         return view('gestion-servicios');
     })->name('servicios')
-      ->middleware('check.permissions:Gestión de Servicios,select');
-
-    // Módulo de Facturación
-    Route::get('/factura', function () {
-        return view('factura');
-    })->name('factura')
-      ->middleware('check.permissions:Facturación,select');
-
-    Route::get('/factura/crear', function () {
-        return view('factura-crear');
-    })->name('factura.crear')
-      ->middleware('check.permissions:Facturación,insert');
-
+      ->middleware('can:viewAny,App\Models\Tratamiento'); // 🟢 Usamos @can y Policy
 
     // Módulo de Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-        ->middleware('check.permissions:Reportes,select');
-
+         ->middleware('can:viewAny,App\Models\Reporte'); // 🟢 Usamos @can y Policy
 
     // Módulo de Gestión de Personal
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
-        ->middleware('check.permissions:Gestión de Personal,select');
+         ->middleware('can:viewAny,App\Models\Empleado'); // 🟢 Usamos @can y Policy
 
 
     // ========================================
@@ -149,27 +126,27 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
     // Ruta principal de Administración
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-        ->middleware('check.permissions:Administración,select');
-     
+         ->middleware('can:viewAny,App\Models\Cliente'); // 🟢 Usamos @can y Policy
+
     // SUB-RUTAS DE ADMINISTRACIÓN
-    Route::prefix('administracion')->middleware('check.permissions:Administración,select')->group(function () {
-        
+    Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
+
         // Backup y Restore
         Route::get('/backup', [AdministracionController::class, 'backup'])->name('administracion.backup');
         Route::post('/backup/crear', [AdministracionController::class, 'crearBackup'])->name('administracion.backup.crear');
         Route::post('/backup/restaurar', [AdministracionController::class, 'restaurarBackup'])->name('administracion.backup.restaurar');
-        
+
         // Cambio de Contraseña
         Route::get('/password', [AdministracionController::class, 'password'])->name('administracion.password');
         Route::post('/password/cambiar', [AdministracionController::class, 'cambiarPassword'])->name('administracion.password.cambiar');
-        
+
         // Bitácora
         Route::get('/bitacora', [AdministracionController::class, 'bitacora'])->name('administracion.bitacora');
         Route::get('/bitacora/export-pdf', [AdministracionController::class, 'exportPdf'])->name('administracion.bitacora.export.pdf');
         Route::get('/bitacora/export-excel', [AdministracionController::class, 'exportExcel'])->name('administracion.bitacora.export.excel');
     });
 
-}); // ← ESTA LÍNEA ERA LA QUE FALTABA
+}); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
 
 // ========================================
 // RUTAS DE AUTENTICACIÓN PREDETERMINADAS
