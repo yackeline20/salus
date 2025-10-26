@@ -8,87 +8,88 @@ use App\Models\Factura;
 
 class FacturaController extends Controller
 {
+    public function __construct()
+    {
+        // 🟢 SOLUCIÓN: Usamos authorizeResource para proteger todo el controlador
+        // Esto automáticamente llama a FacturaPolicy::viewAny para el index,
+        // create para create/store, y update/delete para los métodos que manejan modelos.
+        $this->authorizeResource(Factura::class, 'factura');
+    }
+
     /**
      * Display a listing of the resource. (Leer/Seleccionar)
+     * (Protegido por FacturaPolicy::viewAny)
      */
     public function index()
     {
-        // 🛡️ Autorizar la visualización del listado (viewAny)
-        // Llama a FacturaPolicy::viewAny()
-        $this->authorize('viewAny', Factura::class);
+        // Ya no necesitamos $this->authorize('viewAny', Factura::class);
 
         // ... Lógica para obtener y listar facturas ...
+        $facturas = Factura::all(); // Ejemplo
+        return view('factura.index', compact('facturas'));
     }
 
     /**
      * Show the form for creating a new resource. (Crear/Insertar)
+     * (Protegido por FacturaPolicy::create)
      */
     public function create()
     {
-        // 🛡️ Autorizar la visualización del formulario de creación (create)
-        // Llama a FacturaPolicy::create()
-        $this->authorize('create', Factura::class);
-
-        // ... Lógica para mostrar el formulario ...
+        // Ya no necesitamos $this->authorize('create', Factura::class);
+        return view('factura.create');
     }
 
     /**
      * Store a newly created resource in storage. (Crear/Insertar)
+     * (Protegido por FacturaPolicy::create)
      */
     public function store(Request $request)
     {
-        // 🛡️ Autorizar la acción de guardar/insertar (create)
-        // Llama a FacturaPolicy::create()
-        $this->authorize('create', Factura::class);
-
+        // Ya no necesitamos $this->authorize('create', Factura::class);
         // ... Lógica para validar y guardar la nueva factura ...
+        return redirect()->route('factura.index')->with('success', 'Factura creada.');
     }
 
     /**
      * Display the specified resource. (Leer/Seleccionar detalle)
+     * Si la ruta usa inyección de modelo: public function show(Factura $factura)
+     * (Protegido por FacturaPolicy::view)
      */
-    public function show(string $id)
+    public function show(Factura $factura)
     {
-        // 🛡️ Autorizar la visualización de un detalle (view)
-        // Llama a FacturaPolicy::view(). Usamos new Factura si $id no es un modelo inyectado.
-        $this->authorize('view', new Factura);
-
-        // ... Lógica para buscar la factura por $id y mostrarla ...
+        // Ya no necesitamos $this->authorize('view', $factura);
+        return view('factura.show', compact('factura'));
     }
 
     /**
      * Show the form for editing the specified resource. (Actualizar)
+     * (Protegido por FacturaPolicy::update)
      */
-    public function edit(string $id)
+    public function edit(Factura $factura)
     {
-        // 🛡️ Autorizar la visualización del formulario de edición (update)
-        // Llama a FacturaPolicy::update()
-        $this->authorize('update', new Factura);
-
-        // ... Lógica para buscar la factura por $id y mostrar el formulario de edición ...
+        // Ya no necesitamos $this->authorize('update', $factura);
+        return view('factura.edit', compact('factura'));
     }
 
     /**
      * Update the specified resource in storage. (Actualizar)
+     * (Protegido por FacturaPolicy::update)
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Factura $factura)
     {
-        // 🛡️ Autorizar la acción de actualizar (update)
-        // Llama a FacturaPolicy::update()
-        $this->authorize('update', new Factura);
-
-        // ... Lógica para validar y actualizar la factura por $id ...
+        // Ya no necesitamos $this->authorize('update', $factura);
+        // ... Lógica para validar y actualizar la factura ...
+        return redirect()->route('factura.index')->with('success', 'Factura actualizada.');
     }
 
     /**
      * Remove the specified resource from storage. (Eliminar)
+     * (Protegido por FacturaPolicy::delete)
      */
-    public function destroy(string $id)
+    public function destroy(Factura $factura)
     {
-        // 🛡️ Autorizar la acción de eliminar (delete)
-        // Llama a FacturaPolicy::delete()
-        $this->authorize('delete', new Factura);
-
-        // ... Lógica para buscar y eliminar la factura por $id ...
+        // Ya no necesitamos $this->authorize('delete', $factura);
+        // ... Lógica para eliminar la factura ...
+        return redirect()->route('factura.index')->with('success', 'Factura eliminada.');
     }
 }

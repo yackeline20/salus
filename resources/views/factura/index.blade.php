@@ -25,7 +25,7 @@
 <!-- Acciones principales -->
 <div class="row mt-4">
     <div class="col-md-3">
-        <a href="{{ route('factura.crear') }}" class="text-decoration-none">
+        <a href="{{ route('factura.create') }}" class="text-decoration-none">
             <div class="card border-0 shadow-sm h-100" style="cursor: pointer;">
                 <div class="card-body text-center">
                     <div class="mb-3">
