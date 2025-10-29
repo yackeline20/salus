@@ -12,7 +12,6 @@ use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
-// 🟢 Importar el controlador de Facturas
 use App\Http\Controllers\FacturaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -84,40 +83,57 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // 🟢 Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
     Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
-    // 🟢 Módulo de Citas (CRÍTICO: Usamos Route::resource si tienes CitaController)
-    // Ya que usaste rutas API, asumiremos que el index de Citas es la vista principal,
-    // pero incluiremos el Route::resource si necesitas CRUD
-    // NOTA: Dejo las rutas API ya que son específicas
+    // ========================================
+    // 🟢 MÓDULO DE CITAS - COMPLETO Y MEJORADO
+    // ========================================
+    
+    // Vista principal de citas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
-        ->middleware('can:viewAny,App\Models\Cita'); // 🟢 Usamos @can y Policy
+        ->middleware('can:viewAny,App\Models\Cita');
 
-    // Rutas API de citas: Revisa si estas APIs deben seguir usando 'check.permissions' o policies
-    Route::get('/api/citas', [CitasController::class, 'getCitas'])->name('api.citas.get')
-         ->middleware('check.permissions:Citas,select');
-    Route::post('/api/citas', [CitasController::class, 'storeCita'])->name('api.citas.store')
-         ->middleware('check.permissions:Citas,insert');
-    Route::put('/api/citas', [CitasController::class, 'updateCita'])->name('api.citas.update')
-         ->middleware('check.permissions:Citas,update');
-    Route::delete('/api/citas', [CitasController::class, 'deleteCita'])->name('api.citas.delete')
-         ->middleware('check.permissions:Citas,delete');
+    // 🆕 NUEVAS RUTAS - Búsqueda y creación de clientes
+    Route::get('/api/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
+        ->name('api.citas.buscar-cliente')
+        ->middleware('can:viewAny,App\Models\Cita');
+    
+    Route::post('/api/citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])
+        ->name('api.citas.crear-cliente')
+        ->middleware('can:create,App\Models\Cita');
+
+    // Rutas API de citas - CRUD completo
+    Route::get('/api/citas', [CitasController::class, 'getCitas'])
+        ->name('api.citas.get')
+        ->middleware('can:viewAny,App\Models\Cita');
+    
+    Route::post('/api/citas', [CitasController::class, 'storeCita'])
+        ->name('api.citas.store')
+        ->middleware('can:create,App\Models\Cita');
+    
+    Route::put('/api/citas', [CitasController::class, 'updateCita'])
+        ->name('api.citas.update')
+        ->middleware('can:update,App\Models\Cita');
+    
+    Route::delete('/api/citas', [CitasController::class, 'deleteCita'])
+        ->name('api.citas.delete')
+        ->middleware('can:delete,App\Models\Cita');
 
     // 🟢 Módulo de Inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-         ->middleware('can:viewAny,App\Models\Product'); // 🟢 Usamos @can y Policy
+         ->middleware('can:viewAny,App\Models\Product');
 
     // 🟢 Módulo de Gestión de Servicios
     Route::get('/servicios', function () {
         return view('gestion-servicios');
     })->name('servicios')
-      ->middleware('can:viewAny,App\Models\Tratamiento'); // 🟢 Usamos @can y Policy
+      ->middleware('can:viewAny,App\Models\Tratamiento');
 
     // Módulo de Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-         ->middleware('can:viewAny,App\Models\Reporte'); // 🟢 Usamos @can y Policy
+         ->middleware('can:viewAny,App\Models\Reporte');
 
     // Módulo de Gestión de Personal
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
-         ->middleware('can:viewAny,App\Models\Empleado'); // 🟢 Usamos @can y Policy
+         ->middleware('can:viewAny,App\Models\Empleado');
 
 
     // ========================================
@@ -126,7 +142,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
     // Ruta principal de Administración
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-         ->middleware('can:viewAny,App\Models\Cliente'); // 🟢 Usamos @can y Policy
+         ->middleware('can:viewAny,App\Models\Cliente');
 
     // SUB-RUTAS DE ADMINISTRACIÓN
     Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
