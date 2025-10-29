@@ -49,7 +49,7 @@
                     </div>
                     <h3 class="profile-username text-center">Bitácora</h3>
                     <p class="text-muted text-center">Registro de acciones del sistema</p>
-                    <a href="{{ route('administracion.bitacora') }}" class="btn btn-info btn-block">
+                    <a href="{{ route('bitacora.index') }}" class="btn btn-info btn-block">
                         <i class="fas fa-arrow-right"></i> Acceder
                     </a>
                 </div>

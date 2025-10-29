@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Bitacora extends Model
 {
@@ -20,28 +22,40 @@ class Bitacora extends Model
         'Observaciones',
         'Modulo',
         'IP_Address',
-    ];
-
-    protected $dates = [
         'Fecha_Registro'
     ];
 
-    // Relación con Usuario
-    public function usuario()
-    {
-        return $this->belongsTo(Usuario::class, 'Cod_Usuario', 'Cod_Usuario');
-    }
+    protected $casts = [
+        'Fecha_Registro' => 'datetime',
+    ];
 
-    // Método helper para registrar acciones fácilmente
-    public static function registrar($accion, $modulo = null, $observaciones = null)
+    /**
+     * Método estático para registrar acciones manuales en la bitácora
+     */
+    public static function registrar($accion, $modulo, $observaciones = '')
     {
-        return self::create([
-            'Cod_Usuario' => auth()->user()->Cod_Usuario ?? 0,
-            'Nombre_Usuario' => auth()->user()->Nombre_Usuario ?? 'Sistema',
-            'Accion' => $accion,
-            'Modulo' => $modulo,
-            'Observaciones' => $observaciones,
-            'IP_Address' => request()->ip(),
-        ]);
+        try {
+            // Establecer variables de sesión MySQL para los triggers
+            if (Auth::check()) {
+                DB::statement("SET @usuario_id = ?", [Auth::id()]);
+                DB::statement("SET @usuario_nombre = ?", [Auth::user()->name ?? 'Usuario']);
+                DB::statement("SET @usuario_ip = ?", [request()->ip()]);
+            }
+
+            self::create([
+                'Cod_Usuario' => Auth::id() ?? 0,
+                'Nombre_Usuario' => Auth::user()->name ?? 'Sistema',
+                'Accion' => $accion,
+                'Observaciones' => $observaciones,
+                'Modulo' => $modulo,
+                'IP_Address' => request()->ip(),
+                'Fecha_Registro' => now()
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Error en bitácora: ' . $e->getMessage());
+            return false;
+        }
     }
 }
