@@ -2,9 +2,6 @@
 
 @section('content')
 <style>
-    /* * Nota: Mantengo tu CSS original ya que es muy bueno y temático.
-    * Solo añado el ícono de Font Awesome si no está en tu layout.
-    */
     body {
         background-color: #f5f5f5;
     }
@@ -31,31 +28,36 @@
         align-items: center;
     }
 
-    /* Estilos generales para el contenedor (sin fondo marrón) */
     .bitacora-icon {
         width: 50px;
         height: 50px;
-        background: transparent; /* O background: none; */
+        background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin-right: 15px;
+        position: relative;
     }
 
-    /* Estilo para el spinner de CSS puro */
-    .bitacora-icon.spinner {
-        border: 4px solid #f3f3f3; /* Light grey */
-        border-top: 4px solid #8B4513; /* Brown */
-        border-radius: 50%;
-        width: 36px; /* Ajusta el tamaño del spinner */
-        height: 36px;
-        animation: spin 2s linear infinite; /* Animación de giro */
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    .bitacora-icon::before {
+        content: '';
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        background: white;
+        clip-path: polygon(
+            50% 0%, 
+            61% 35%, 
+            98% 35%, 
+            68% 57%, 
+            79% 91%, 
+            50% 70%, 
+            21% 91%, 
+            32% 57%, 
+            2% 35%, 
+            39% 35%
+        );
     }
 
     .bitacora-title h2 {
@@ -134,7 +136,7 @@
 
     .search-box input {
         width: 100%;
-        padding-right: 40px;
+        padding: 8px 40px 8px 15px;
         border-radius: 8px;
         border: 1px solid #e2e8f0;
     }
@@ -183,9 +185,48 @@
         background-color: #f7fafc;
     }
 
-    table.bitacora-table tbody tr.destacado {
-        background-color: #fff5f5;
-        border-left: 4px solid #f56565;
+    /* Badge para acciones */
+    .badge-action {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-delete {
+        background-color: #fee;
+        color: #c53030;
+    }
+
+    .badge-update {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-insert {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    /* Usuario destacado */
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 12px;
     }
 
     .action-buttons {
@@ -208,7 +249,6 @@
         font-size: 16px;
     }
 
-    /* Botón Detalle - Tono Café Claro */
     .btn-update {
         background-color: #A0522D;
     }
@@ -218,7 +258,6 @@
         transform: scale(1.1);
     }
 
-    /* Botón Eliminar - Tono Café Oscuro */
     .btn-delete {
         background-color: #654321;
     }
@@ -228,7 +267,6 @@
         transform: scale(1.1);
     }
 
-    /* PAGINACIÓN MEJORADA */
     .pagination-wrapper {
         display: flex;
         justify-content: space-between;
@@ -307,18 +345,6 @@
         opacity: 0.6;
     }
 
-    .page-item.disabled .page-link:hover {
-        transform: none;
-        box-shadow: none;
-    }
-
-    /* Flechas de paginación */
-    .page-link[rel="prev"],
-    .page-link[rel="next"] {
-        font-weight: 700;
-        padding: 8px 12px;
-    }
-
     .modal-content {
         border-radius: 15px;
         border: none;
@@ -351,82 +377,33 @@
         .no-print {
             display: none !important;
         }
-        
-        .bitacora-container {
-            box-shadow: none;
-            padding: 0;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .bitacora-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .header-actions {
-            width: 100%;
-            justify-content: stretch;
-        }
-
-        .btn-export {
-            flex: 1;
-            justify-content: center;
-        }
-
-        .controls-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 15px;
-        }
-
-        .search-box {
-            max-width: 100%;
-        }
-
-        .pagination-wrapper {
-            flex-direction: column;
-            gap: 15px;
-            text-align: center;
-        }
-
-        .pagination {
-            flex-wrap: wrap;
-            justify-content: center;
-        }
     }
 </style>
-
-<!-- Asegúrate de tener Font Awesome cargado en tu layouts.app o aquí. -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
 
 <div class="container-fluid">
     <div class="bitacora-container">
         <!-- Header -->
         <div class="bitacora-header">
             <div class="header-left">
-                <div class="bitacora-icon spinner">
-                    <!-- Icono de spinner generado con CSS -->
-                </div>
+                <div class="bitacora-icon"></div>
                 <div class="bitacora-title">
-                    <h2>Bitácora</h2>
-                    <p>Registro de actividad Clínica Salus</p>
+                    <h2>Bitácora del Sistema</h2>
+                    <p>Historial completo de movimientos - Clínica Salus</p>
                 </div>
             </div>
             <div class="header-actions no-print">
-                <button class="btn-export btn-print" onclick="imprimirBitacora()">
-                    <i class="fas fa-print"></i>
+                <button class="btn-export btn-print" onclick="window.print()">
+                    <span>🖨️</span>
                     <span>Imprimir</span>
                 </button>
                 <button class="btn-export btn-pdf" onclick="exportarPDF()">
-                    <i class="fas fa-file-pdf"></i>
+                    <span>📄</span>
                     <span>Exportar PDF</span>
                 </button>
             </div>
         </div>
 
-        <!-- Controles: Entries y Búsqueda -->
+        <!-- Controles -->
         <div class="controls-row no-print">
             <div class="entries-selector">
                 <span>Mostrar</span>
@@ -444,10 +421,10 @@
                     type="text" 
                     class="form-control" 
                     id="searchInput" 
-                    placeholder="Buscar..."
+                    placeholder="Buscar por usuario, módulo, acción..."
                     value="{{ request('buscar') }}"
                 >
-                <i class="fas fa-search"></i>
+                <i>🔍</i>
             </div>
         </div>
 
@@ -456,28 +433,56 @@
             <table class="bitacora-table">
                 <thead>
                     <tr>
-                        <th>TABLA</th>
-                        <th>REGISTRO ELIMINADO</th>
-                        <th>USUARIO REGISTRO</th>
-                        <th>FECHA ELIMINACIÓN</th>
+                        <th>USUARIO</th>
+                        <th>MÓDULO</th>
+                        <th>ACCIÓN</th>
+                        <th>DETALLES</th>
+                        <th>IP</th>
+                        <th>FECHA Y HORA</th>
                         <th class="no-print">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($registros as $index => $registro)
+                    @forelse($registros as $registro)
                     <tr>
-                        <td>{{ $registro->Modulo }}</td>
-                        <td>{{ $registro->Observaciones }}</td>
-                        <td>{{ $registro->Nombre_Usuario }}</td>
-                        <td>{{ \Carbon\Carbon::parse($registro->Fecha_Registro)->format('d/m/Y H:i') }}</td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ strtoupper(substr($registro->Nombre_Usuario, 0, 2)) }}
+                                </div>
+                                <div>
+                                    <strong>{{ $registro->Nombre_Usuario }}</strong>
+                                    <br>
+                                    <small style="color: #718096;">ID: {{ $registro->Cod_Usuario }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><strong>{{ $registro->Modulo }}</strong></td>
+                        <td>
+                            @php
+                                $accion = strtoupper($registro->Accion);
+                                $badgeClass = 'badge-action ';
+                                if(str_contains($accion, 'DELETE') || str_contains($accion, 'ELIMINÓ')) {
+                                    $badgeClass .= 'badge-delete';
+                                } elseif(str_contains($accion, 'UPDATE') || str_contains($accion, 'MODIFICÓ') || str_contains($accion, 'ACTUALIZÓ')) {
+                                    $badgeClass .= 'badge-update';
+                                } else {
+                                    $badgeClass .= 'badge-insert';
+                                }
+                            @endphp
+                            <span class="{{ $badgeClass }}">{{ $registro->Accion }}</span>
+                        </td>
+                        <td>{{ \Illuminate\Support\Str::limit($registro->Observaciones, 50) }}</td>
+                        <td><code>{{ $registro->IP_Address }}</code></td>
+                        <td>{{ \Carbon\Carbon::parse($registro->Fecha_Registro)->format('d/m/Y H:i:s') }}</td>
                         <td class="no-print">
                             <div class="action-buttons">
                                 <button 
                                     class="btn-action btn-update" 
-                                    onclick="actualizarRegistro({{ $registro->Cod_Bitacora }})"
-                                    title="Ver Detalle"
+                                    onclick="verDetalles({{ $registro->Cod_Bitacora }})"
+                                    title="Ver Detalles"
                                 >
-                                    <i class="fas fa-eye"></i> <!-- Ícono cambiado a OJO para DETALLE -->
+                                    ↻
                                 </button>
                                 <button 
                                     class="btn-action btn-delete" 
@@ -491,9 +496,9 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-4">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
-                            <p class="text-muted">No se encontraron registros</p>
+                        <td colspan="7" class="text-center py-4">
+                            <div style="font-size: 48px;">📋</div>
+                            <p class="text-muted">No se encontraron registros en la bitácora</p>
                         </td>
                     </tr>
                     @endforelse
@@ -501,7 +506,7 @@
             </table>
         </div>
 
-        <!-- Paginación Mejorada -->
+        <!-- Paginación -->
         <div class="pagination-wrapper no-print">
             <div class="showing-entries">
                 Mostrando 
@@ -519,18 +524,17 @@
     </div>
 </div>
 
-<!-- Modal Detalle Registro -->
-<!-- El nombre del modal y el título se han ajustado para reflejar que es una vista de DETALLE -->
-<div class="modal fade" id="modalDetalle" tabindex="-1">
+<!-- Modal Detalles -->
+<div class="modal fade" id="modalDetalles" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-info-circle"></i> Detalle del Registro
+                    📋 Detalles del Registro
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="modalBodyDetalle">
+            <div class="modal-body" id="modalBodyDetalles">
                 <!-- Contenido dinámico -->
             </div>
         </div>
@@ -540,22 +544,16 @@
 @endsection
 
 @push('scripts')
-<!-- Asumo que jQuery y SweetAlert2 están cargados. Si no lo están, debes incluirlos aquí. -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Asegúrate de tener jQuery cargado, ya sea en el layout o aquí:
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
--->
-
 
 <script>
-    // CSRF Token para peticiones AJAX
     $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         }
     });
 
-    // Cambiar cantidad de entradas
+    // Cambiar entradas
     $('#entriesSelect').on('change', function() {
         const perPage = $(this).val();
         const url = new URL(window.location.href);
@@ -563,7 +561,7 @@
         window.location.href = url.toString();
     });
 
-    // Búsqueda en tiempo real
+    // Búsqueda
     let searchTimeout;
     $('#searchInput').on('keyup', function() {
         clearTimeout(searchTimeout);
@@ -580,66 +578,10 @@
         }, 800);
     });
 
-    // Función para imprimir
-    function imprimirBitacora() {
-        window.print();
-    }
-
-    // Función para exportar a PDF (CORREGIDA: Usa la ruta de exportación y mantiene los filtros)
-    function exportarPDF() {
-        Swal.fire({
-            title: 'Exportando a PDF...',
-            text: 'Preparando el documento, por favor espere',
-            icon: 'info',
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            willOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        // 1. Obtener la URL base del controlador de exportación
-        // USANDO EL HELPER DE RUTA DE LARAVEL
-        let url = '{{ route("bitacora.export.pdf") }}';
-        
-        // 2. Crear un objeto URL con la URL base
-        const exportUrl = new URL(url);
-
-        // 3. Copiar los parámetros de búsqueda y paginación actuales
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.forEach((value, key) => {
-            // Se agregan todos los parámetros actuales (buscar, per_page, etc.)
-            exportUrl.searchParams.append(key, value);
-        });
-
-        // 4. Crear un elemento temporal para descargar
-        const link = document.createElement('a');
-        link.href = exportUrl.toString(); // Usa la URL con filtros
-        link.download = 'bitacora-' + new Date().toISOString().slice(0,10) + '.pdf';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Cierra el modal de carga y muestra el mensaje de éxito
-        setTimeout(() => {
-            Swal.close();
-            Swal.fire({
-                title: '¡Éxito!',
-                text: 'PDF exportado correctamente',
-                icon: 'success',
-                timer: 2000,
-                confirmButtonColor: '#8B4513'
-            });
-        }, 1000);
-    }
-
-    // Mostrar Detalle de registro (Función 'actualizarRegistro' renombrada para claridad en el modal)
-    function actualizarRegistro(id) {
-        // CORREGIDO: Usando el helper de ruta para show
-        const showUrl = '{{ route("bitacora.show", ["id" => "TEMP_ID"]) }}'.replace('TEMP_ID', id);
-
+    // Ver detalles
+    function verDetalles(id) {
         $.ajax({
-            url: showUrl,
+            url: `/administracion/bitacora/${id}`,
             method: 'GET',
             success: function(data) {
                 let html = `
@@ -649,7 +591,7 @@
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Usuario:</div>
-                        <div class="detail-value">${data.Nombre_Usuario}</div>
+                        <div class="detail-value"><strong>${data.Nombre_Usuario}</strong> (ID: ${data.Cod_Usuario})</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Módulo:</div>
@@ -657,18 +599,18 @@
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Acción:</div>
-                        <div class="detail-value"><span class="badge bg-danger">${data.Accion}</span></div>
+                        <div class="detail-value"><span class="badge bg-info">${data.Accion}</span></div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Observaciones:</div>
                         <div class="detail-value">${data.Observaciones}</div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label">IP Address:</div>
-                        <div class="detail-value">${data.IP_Address}</div>
+                        <div class="detail-label">Dirección IP:</div>
+                        <div class="detail-value"><code>${data.IP_Address}</code></div>
                     </div>
                     <div class="detail-row">
-                        <div class="detail-label">Fecha:</div>
+                        <div class="detail-label">Fecha y Hora:</div>
                         <div class="detail-value">${new Date(data.Fecha_Registro).toLocaleString('es-HN')}</div>
                     </div>
                     <div class="mt-3 text-center">
@@ -676,16 +618,13 @@
                     </div>
                 `;
                 
-                $('#modalBodyDetalle').html(html); // Usar el ID del modalBody corregido
-                // Asegurar que el modal se muestre correctamente (usando Bootstrap 5)
-                const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
-                detalleModal.show();
+                $('#modalBodyDetalles').html(html);
+                new bootstrap.Modal(document.getElementById('modalDetalles')).show();
             },
-            error: function(xhr) {
-                console.error("Error al cargar detalle:", xhr);
+            error: function() {
                 Swal.fire({
                     title: 'Error',
-                    text: 'No se pudo cargar los detalles. Verifique las rutas.',
+                    text: 'No se pudo cargar los detalles',
                     icon: 'error',
                     confirmButtonColor: '#8B4513'
                 });
@@ -693,11 +632,11 @@
         });
     }
 
-    // Eliminar/Restaurar registro de bitácora
+    // Eliminar registro
     function eliminarRegistro(id) {
         Swal.fire({
-            title: '¿Eliminar registro?',
-            text: "Esta acción eliminará físicamente el registro del log de Bitácora.",
+            title: '¿Eliminar este registro?',
+            text: "Esta acción no se puede deshacer",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#654321',
@@ -706,12 +645,9 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                // CORREGIDO: Usando el helper de ruta para Restaurar/Eliminar (se mapea a POST)
-                const deleteUrl = '{{ route("bitacora.restaurar", ["id" => "TEMP_ID"]) }}'.replace('TEMP_ID', id);
-
                 $.ajax({
-                    url: deleteUrl,
-                    method: 'POST',
+                    url: `/administracion/bitacora/${id}`,
+                    method: 'DELETE',
                     success: function(response) {
                         if(response.success) {
                             Swal.fire({
@@ -723,20 +659,12 @@
                             }).then(() => {
                                 location.reload();
                             });
-                        } else {
-                            Swal.fire({
-                                title: 'Error',
-                                text: response.message || 'Error desconocido al eliminar el registro.',
-                                icon: 'error',
-                                confirmButtonColor: '#8B4513'
-                            });
                         }
                     },
-                    error: function(xhr) {
-                        console.error("Error al eliminar:", xhr);
+                    error: function() {
                         Swal.fire({
                             title: 'Error',
-                            text: 'No se pudo eliminar el registro (Error de servidor).',
+                            text: 'No se pudo eliminar el registro',
                             icon: 'error',
                             confirmButtonColor: '#8B4513'
                         });
@@ -744,6 +672,11 @@
                 });
             }
         });
+    }
+
+    function exportarPDF() {
+        window.location.href = '?' + route('bitacora') + '?' + new URLSearchParams(window.location.search);
+// Falla porque la app no encuentra una ruta llamada 'bitacora'.
     }
 </script>
 @endpush

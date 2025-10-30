@@ -1,16 +1,17 @@
 <?php
-// En: app/Models/Cliente.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BitacoraTrait;  // ← AGREGAR ESTA LÍNEA
 
 class Cliente extends Model
 {
     use HasFactory;
+    use BitacoraTrait;  // ← AGREGAR ESTA LÍNEA
 
-    protected $table = 'cliente'; // Nombre de tu tabla de clientes
+    protected $table = 'cliente';
     protected $primaryKey = 'Cod_Cliente';
     public $timestamps = false;
 

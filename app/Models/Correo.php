@@ -1,14 +1,14 @@
 <?php
 
 namespace App\Models;
-
+use App\Traits\BitacoraTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Correo extends Model
 {
     use HasFactory;
-
+use BitacoraTrait;
     protected $table = 'correo';
     protected $primaryKey = 'Cod_Correo';
     public $timestamps = false;

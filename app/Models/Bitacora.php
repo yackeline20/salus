@@ -30,17 +30,13 @@ class Bitacora extends Model
     ];
 
     /**
-     * Método estático para registrar acciones manuales en la bitácora
+     * Método para registrar acciones manualmente
      */
     public static function registrar($accion, $modulo, $observaciones = '')
     {
         try {
-            // Establecer variables de sesión MySQL para los triggers
-            if (Auth::check()) {
-                DB::statement("SET @usuario_id = ?", [Auth::id()]);
-                DB::statement("SET @usuario_nombre = ?", [Auth::user()->name ?? 'Usuario']);
-                DB::statement("SET @usuario_ip = ?", [request()->ip()]);
-            }
+            // Establecer variables para triggers
+            self::setMySQLVariables();
 
             self::create([
                 'Cod_Usuario' => Auth::id() ?? 0,
@@ -48,7 +44,7 @@ class Bitacora extends Model
                 'Accion' => $accion,
                 'Observaciones' => $observaciones,
                 'Modulo' => $modulo,
-                'IP_Address' => request()->ip(),
+                'IP_Address' => request()->ip() ?? '0.0.0.0',
                 'Fecha_Registro' => now()
             ]);
 
@@ -57,5 +53,33 @@ class Bitacora extends Model
             \Log::error('Error en bitácora: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Establecer variables MySQL
+     */
+    public static function setMySQLVariables()
+    {
+        try {
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $userName = Auth::user()->name ?? 'Usuario';
+                $userIp = request()->ip() ?? '0.0.0.0';
+                
+                DB::unprepared("SET @usuario_id = {$userId}");
+                DB::unprepared("SET @usuario_nombre = '{$userName}'");
+                DB::unprepared("SET @usuario_ip = '{$userIp}'");
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error setting MySQL variables: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Relación con usuario (si tienes tabla usuarios)
+     */
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'Cod_Usuario', 'id');
     }
 }
