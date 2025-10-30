@@ -1,3 +1,5 @@
+
+
 @extends('adminlte::page')
 
 @section('title', 'Citas')
@@ -8,7 +10,6 @@
 
 @section('content')
     <div class="container-fluid p-0">
-        <!-- Header Welcome -->
         <div class="welcome-header">
             <div class="welcome-content">
                 <h1>Gestión de Citas</h1>
@@ -20,7 +21,6 @@
             </div>
         </div>
 
-        <!-- Formulario de Nueva Cita -->
         <div class="appointment-card mb-4">
             <div class="appointment-header">
                 <i class="fas fa-calendar-plus" style="color: #c9a876; font-size: 24px;"></i>
@@ -30,7 +30,6 @@
             <form id="appointmentForm">
                 @csrf
                 
-                <!-- 🔍 SECCIÓN DE BÚSQUEDA DE CLIENTE -->
                 <div class="client-search-section" id="searchSection">
                     <h4><i class="fas fa-user-search mr-2"></i>Buscar Cliente Existente</h4>
                     <div class="row">
@@ -55,7 +54,6 @@
 
                 <hr class="my-4">
 
-                <!-- ✅ DATOS DEL CLIENTE ENCONTRADO -->
                 <div id="clientDataSection" style="display: none;">
                     <h4 class="text-success"><i class="fas fa-check-circle mr-2"></i>Cliente Encontrado</h4>
                     
@@ -75,7 +73,6 @@
                     </button>
                 </div>
 
-                <!-- 📝 FORMULARIO PARA NUEVO CLIENTE -->
                 <div id="newClientForm" style="display: none;">
                     <h4 class="text-primary"><i class="fas fa-user-plus mr-2"></i>Registro de Nuevo Cliente</h4>
                     
@@ -149,7 +146,6 @@
 
                 <hr class="my-4">
 
-                <!-- 📅 DATOS DE LA CITA -->
                 <div id="appointmentDataSection" style="display: none;">
                     <h4><i class="fas fa-calendar-check mr-2"></i>Datos de la Cita</h4>
                     
@@ -234,7 +230,6 @@
             </form>
         </div>
 
-        <!-- Lista de Citas -->
         <div class="appointments-list">
             <div class="list-header">
                 <h2><i class="fas fa-list mr-2"></i>Mis Citas</h2>
@@ -250,7 +245,6 @@
         </div>
     </div>
 
-    <!-- Modal de confirmación de eliminación -->
     <div id="confirmModal" class="custom-modal-overlay">
         <div class="custom-modal">
             <div class="modal-icon">
@@ -678,6 +672,20 @@
         let currentFilter = 'todas';
         let currentClientCode = null;
 
+        // Función para mapear el código corto a la palabra completa requerida por el ENUM/Procedimiento
+        function mapGenderToFullText(genderCode) {
+            switch (genderCode) {
+                case 'M':
+                    return 'Masculino';
+                case 'F':
+                    return 'Femenino';
+                case 'O':
+                    return 'Otro'; // El SP solo acepta 'Masculino'/'Femenino'. Si 'Otro' falla, debes modificar la DB.
+                default:
+                    return '';
+            }
+        }
+
         // ============================================
         // 🔍 BÚSQUEDA DE CLIENTE EXISTENTE
         // ============================================
@@ -753,16 +761,28 @@
             const apellido = document.getElementById('newClientLastName').value.trim();
             const dni = document.getElementById('newClientDNI').value.trim();
             const fechaNacimiento = document.getElementById('newClientBirthDate').value;
-            const genero = document.getElementById('newClientGender').value;
+            
+            // Adaptación: Obtener el código corto del select y convertirlo al texto completo del ENUM
+            const generoCode = document.getElementById('newClientGender').value;
+            const generoTexto = mapGenderToFullText(generoCode); 
+            
             const telefono = document.getElementById('newClientPhone').value.trim();
             const correo = document.getElementById('newClientEmail').value.trim();
             const direccion = document.getElementById('newClientAddress').value.trim();
 
             // Validaciones
-            if (!nombre || !apellido || !dni || !fechaNacimiento || !genero) {
+            if (!nombre || !apellido || !dni || !fechaNacimiento || !generoCode) {
                 showNotification('⚠️ Complete todos los campos obligatorios (marcados con *)', 'error');
                 return;
             }
+            
+            // Validación para asegurar que se envía un valor válido para el ENUM
+            if (generoCode !== 'M' && generoCode !== 'F') {
+                 // Si el SP solo acepta Masculino/Femenino, 'Otro' dará error de cualquier manera.
+                 // Si el SP solo acepta M/F pero la DB acepta 'Otro' con texto completo, 
+                 // debemos confiar en que la DB y el SP coinciden, y enviar el texto adaptado.
+            }
+
 
             // Mostrar loading
             const btnSave = this;
@@ -782,7 +802,7 @@
                         apellido: apellido,
                         dni: dni,
                         fechaNacimiento: fechaNacimiento,
-                        genero: genero,
+                        genero: generoTexto, // ¡ENVIAMOS EL TEXTO COMPLETO AQUÍ!
                         telefono: telefono,
                         correo: correo,
                         direccion: direccion
@@ -833,7 +853,7 @@
                 } else {
                     const errorMsg = result.error || result.message || 'Error desconocido';
                     console.error('Error del servidor:', result);
-                    showNotification('❌ Error al registrar cliente: ' + errorMsg, 'error');
+                    showNotification('❌ Error al registrar cliente: ' + errorMsg, 'error'); 
                 }
             } catch (error) {
                 console.error('Error completo:', error);

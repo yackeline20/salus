@@ -81,36 +81,29 @@ class CitasController extends Controller
 
         try {
             // 1. Crear persona
+            // Se asume que $request->genero ya envía el texto completo ('Masculino' o 'Femenino') desde la vista.
             $responsePersona = Http::post($this->apiUrl . '/persona', [
-                'Nombre' => $request->nombre,
-                'Apellido' => $request->apellido,
-                'DNI' => $request->dni,
+                'Nombre'           => $request->nombre,
+                'Apellido'         => $request->apellido,
+                'DNI'              => $request->dni,
                 'Fecha_Nacimiento' => $request->fechaNacimiento,
-                'Genero' => $request->genero
+                'Genero'           => $request->genero
             ]);
 
             if (!$responsePersona->successful()) {
+                $errorDetails = $responsePersona->json()['details'] ?? $responsePersona->body();
                 \Log::error('Error al crear persona', [
                     'status' => $responsePersona->status(),
                     'body' => $responsePersona->body()
                 ]);
                 return response()->json([
                     'success' => false,
-                    'error' => 'Error al crear persona: ' . $responsePersona->body()
+                    'error' => 'Error al crear persona: ' . $errorDetails
                 ], 500);
             }
 
             $personaData = $responsePersona->json();
-            
-            // Extraer Cod_Persona de diferentes posibles estructuras
-            $codPersona = null;
-            if (isset($personaData['Cod_Persona'])) {
-                $codPersona = $personaData['Cod_Persona'];
-            } elseif (isset($personaData['cod_persona'])) {
-                $codPersona = $personaData['cod_persona'];
-            } elseif (is_array($personaData) && isset($personaData[0]['Cod_Persona'])) {
-                $codPersona = $personaData[0]['Cod_Persona'];
-            }
+            $codPersona = $personaData['Cod_Persona'] ?? $personaData['cod_persona'] ?? null;
 
             if (!$codPersona) {
                 \Log::error('Respuesta de persona sin Cod_Persona', ['response' => $personaData]);
@@ -123,28 +116,27 @@ class CitasController extends Controller
             \Log::info('Persona creada con Cod_Persona: ' . $codPersona);
 
             // 2. Crear cliente
+            // CORRECCIÓN CLAVE: Usar 'Ocacional' para coincidir con el ENUM('Ocacional','Frecuente','VIP')
             $responseCliente = Http::post($this->apiUrl . '/cliente', [
-                'Cod_Persona' => $codPersona,
-                'Tipo_Cliente' => 'Regular',
+                'Cod_Persona'      => $codPersona,
+                'Tipo_Cliente'     => 'Ocacional', 
                 'Nota_Preferencia' => '',
-                'Fecha_Registro' => date('Y-m-d')
+                'Fecha_Registro'   => date('Y-m-d')
             ]);
 
             if (!$responseCliente->successful()) {
+                $errorClienteDetails = $responseCliente->body();
                 \Log::error('Error al crear cliente', [
                     'status' => $responseCliente->status(),
-                    'body' => $responseCliente->body()
+                    'body' => $errorClienteDetails
                 ]);
                 return response()->json([
                     'success' => false,
-                    'error' => 'Error al crear cliente: ' . $responseCliente->body()
+                    'error' => 'Error al crear cliente: ' . $errorClienteDetails
                 ], 500);
             }
 
-            // Esperar un momento para asegurar que se guardó
-            sleep(1);
-
-            // Obtener todos los clientes y buscar el que acabamos de crear
+            // 3. Obtener Cod_Cliente de forma más eficiente
             $responseClienteGet = Http::get($this->apiUrl . '/cliente');
             
             if (!$responseClienteGet->successful()) {
@@ -161,13 +153,7 @@ class CitasController extends Controller
             $clientes = $responseClienteGet->json();
             
             // Buscar el cliente con el Cod_Persona que acabamos de crear
-            $clienteEncontrado = null;
-            foreach ($clientes as $cli) {
-                if (isset($cli['Cod_Persona']) && $cli['Cod_Persona'] == $codPersona) {
-                    $clienteEncontrado = $cli;
-                    break;
-                }
-            }
+            $clienteEncontrado = collect($clientes)->where('Cod_Persona', $codPersona)->first();
 
             if (!$clienteEncontrado) {
                 \Log::error('No se encontró cliente con Cod_Persona: ' . $codPersona, [
@@ -182,7 +168,7 @@ class CitasController extends Controller
             $codCliente = $clienteEncontrado['Cod_Cliente'];
             \Log::info('Cliente encontrado con Cod_Cliente: ' . $codCliente);
 
-            // 3. Crear correo si se proporcionó
+            // 4. Crear correo si se proporcionó
             if ($request->correo) {
                 $responseCorreo = Http::post($this->apiUrl . '/correo', [
                     'Cod_Persona' => $codPersona,
@@ -195,7 +181,7 @@ class CitasController extends Controller
                 }
             }
 
-            // 4. Crear teléfono si se proporcionó
+            // 5. Crear teléfono si se proporcionó
             if ($request->telefono) {
                 $responseTelefono = Http::post($this->apiUrl . '/telefono', [
                     'Cod_Persona' => $codPersona,
@@ -210,7 +196,7 @@ class CitasController extends Controller
                 }
             }
 
-            // 5. Crear dirección si se proporcionó
+            // 6. Crear dirección si se proporcionó
             if ($request->direccion) {
                 $responseDireccion = Http::post($this->apiUrl . '/direccion', [
                     'Cod_Persona' => $codPersona,
