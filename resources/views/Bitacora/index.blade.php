@@ -28,37 +28,39 @@
         align-items: center;
     }
 
-    .bitacora-icon {
-        width: 50px;
-        height: 50px;
-        background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-        position: relative;
-    }
+   .bitacora-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    position: relative;
+}
 
-    .bitacora-icon::before {
-        content: '';
-        position: absolute;
-        width: 28px;
-        height: 28px;
-        background: white;
-        clip-path: polygon(
-            50% 0%, 
-            61% 35%, 
-            98% 35%, 
-            68% 57%, 
-            79% 91%, 
-            50% 70%, 
-            21% 91%, 
-            32% 57%, 
-            2% 35%, 
-            39% 35%
-        );
+/* Eliminar el ::before anterior */
+/* .bitacora-icon::before { ... } ← BORRAR ESTO */
+
+/* Animación del icono de carga */
+.loading-icon {
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
     }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.bitacora-icon:hover .loading-icon {
+    animation: rotate 1s linear infinite;
+}
+
 
     .bitacora-title h2 {
         margin: 0;
@@ -129,26 +131,43 @@
     }
 
     .search-box {
-        position: relative;
-        max-width: 300px;
-        flex: 1;
-    }
+    position: relative;
+    max-width: 400px;
+    flex: 1;
+}
 
-    .search-box input {
-        width: 100%;
-        padding: 8px 40px 8px 15px;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    }
+.search-box input {
+    width: 100%;
+    padding: 10px 45px 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+    transition: all 0.3s;
+}
 
-    .search-box i {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #a0aec0;
-    }
+.search-box input:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+}
 
+.search-box input::placeholder {
+    color: #a0aec0;
+}
+
+.search-box .search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+
+.search-box input:focus + .search-icon {
+    color: #8B4513;
+}
     .table-wrapper {
         overflow-x: auto;
     }
@@ -383,26 +402,40 @@
 <div class="container-fluid">
     <div class="bitacora-container">
         <!-- Header -->
-        <div class="bitacora-header">
-            <div class="header-left">
-                <div class="bitacora-icon"></div>
-                <div class="bitacora-title">
-                    <h2>Bitácora del Sistema</h2>
-                    <p>Historial completo de movimientos - Clínica Salus</p>
-                </div>
-            </div>
-            <div class="header-actions no-print">
-                <button class="btn-export btn-print" onclick="window.print()">
-                    <span>🖨️</span>
-                    <span>Imprimir</span>
-                </button>
-                <button class="btn-export btn-pdf" onclick="exportarPDF()">
-                    <span>📄</span>
-                    <span>Exportar PDF</span>
-                </button>
-            </div>
+<div class="bitacora-header">
+    <div class="header-left">
+        <div class="bitacora-icon">
+            <!-- Icono de cargando/procesando con animación -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="loading-icon">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
         </div>
-
+        <div class="bitacora-title">
+            <h2>Bitácora del Sistema</h2>
+            <p>Historial completo de movimientos - Clínica Salus</p>
+        </div>
+    </div>
+    <div class="header-actions no-print">
+        <button class="btn-export btn-print" onclick="window.print()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span>Imprimir</span>
+        </button>
+        <button class="btn-export btn-pdf" onclick="exportarPDF()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Exportar PDF</span>
+        </button>
+    </div>
+</div>
         <!-- Controles -->
         <div class="controls-row no-print">
             <div class="entries-selector">

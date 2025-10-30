@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; 
+
 // use PDF; // Descomentar si usas un generador de PDF (ej: barryvdh/laravel-dompdf)
 
 class BitacoraController extends Controller
@@ -15,30 +16,38 @@ class BitacoraController extends Controller
      * Muestra la vista de bitácora con registros paginados y filtrados.
      * Soporta paginación dinámica (per_page) y búsqueda general (search).
      */
-    public function index(Request $request)
-    {
-        // Obtener el número de registros por página (por defecto 10)
-        $perPage = $request->input('per_page', 10);
-        
-        $query = Bitacora::orderBy('Fecha_Registro', 'desc');
+   public function index(Request $request)
+{
+    $query = Bitacora::orderBy('Fecha_Registro', 'desc');
 
-        // Búsqueda general en múltiples campos
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('Modulo', 'like', "%{$search}%")
-                  ->orWhere('Nombre_Usuario', 'like', "%{$search}%")
-                  ->orWhere('Observaciones', 'like', "%{$search}%")
-                  ->orWhere('Accion', 'like', "%{$search}%");
-            });
-        }
-
-        // Aplicar la paginación y mantener los filtros en la URL
-        $registros = $query->paginate($perPage)->withQueryString();
-
-        return view('bitacora.index', compact('registros', 'perPage'));
+    // Filtro por fecha inicial
+    if ($request->filled('fecha_inicial')) {
+        $query->whereDate('Fecha_Registro', '>=', $request->fecha_inicial);
     }
 
+    // Filtro por fecha final
+    if ($request->filled('fecha_final')) {
+        $query->whereDate('Fecha_Registro', '<=', $request->fecha_final);
+    }
+
+    // Búsqueda general
+    if ($request->filled('buscar')) {
+        $buscar = $request->buscar;
+        $query->where(function($q) use ($buscar) {
+            $q->where('Nombre_Usuario', 'like', "%{$buscar}%")
+              ->orWhere('Accion', 'like', "%{$buscar}%")
+              ->orWhere('Observaciones', 'like', "%{$buscar}%")
+              ->orWhere('Modulo', 'like', "%{$buscar}%")
+              ->orWhere('IP_Address', 'like', "%{$buscar}%");
+        });
+    }
+
+    // Paginación
+    $perPage = $request->get('per_page', 15);
+    $registros = $query->paginate($perPage)->appends($request->all());
+
+    return view('partials.administracion.bitacora', compact('registros'));
+}
     /**
      * Ver detalles de un registro de bitácora (para modal o AJAX).
      * @param int $id El ID del registro de bitácora.
@@ -148,24 +157,30 @@ class BitacoraController extends Controller
      * Exporta los registros de la bitácora a PDF.
      */
     public function exportPdf(Request $request)
-    {
-        // ... Lógica de filtrado ...
-        $query = Bitacora::orderBy('Fecha_Registro', 'desc');
+{
+    $query = Bitacora::orderBy('Fecha_Registro', 'desc');
 
-        if ($request->has('search') && $request->search != '') {
-             // ... aplicar filtros ...
-        }
-        
-        $registros = $query->get();
-
-        // Implementación de generación de PDF aquí.
-        // return PDF::loadView('bitacora.pdf_template', compact('registros'))->download('bitacora.pdf');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'PDF generado. Registros: ' . $registros->count()
-        ]);
+    // Aplicar filtros si existen
+    if ($request->filled('buscar')) {
+        $buscar = $request->buscar;
+        $query->where(function($q) use ($buscar) {
+            $q->where('Nombre_Usuario', 'like', "%{$buscar}%")
+              ->orWhere('Accion', 'like', "%{$buscar}%")
+              ->orWhere('Observaciones', 'like', "%{$buscar}%")
+              ->orWhere('Modulo', 'like', "%{$buscar}%")
+              ->orWhere('IP_Address', 'like', "%{$buscar}%");
+        });
     }
+    
+    $registros = $query->get();
+    
+    // Por ahora, retornar JSON (después implementaremos PDF real)
+    return response()->json([
+        'success' => true,
+        'message' => 'Exportación PDF - Total de registros: ' . $registros->count(),
+        'registros' => $registros
+    ]);
+}
 
     /**
      * MÉTODO CLAVE PARA TRABAJAR CON TRIGGERS.
