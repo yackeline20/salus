@@ -9,7 +9,7 @@ use App\Http\Controllers\CitasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
-use App\Http\Controllers\ServicioController; // <--- CORRECCIÓN: Usando el nombre correcto (Singular)
+use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
@@ -38,7 +38,6 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('l
 // Logout (Debe ser POST)
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
@@ -46,7 +45,6 @@ Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])-
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
-
 
 // ========================================
 // RUTAS DE 2FA (SIN VERIFICACIÓN 2FA)
@@ -57,7 +55,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
 });
-
 
 // ========================================
 // RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN + VERIFICACIÓN 2FA + POLICIES)
@@ -87,36 +84,93 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create')
         ->middleware('can:create,App\Models\Factura');
 
+    // Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
+    Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
-    // MÓDULO DE CITAS
+    // ========================================
+    // 🟢 MÓDULO DE CITAS - COMPLETO Y MEJORADO
+    // ========================================
+    
     // Vista principal de citas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
         ->middleware('can:viewAny,App\Models\Cita');
 
+    // 🆕 NUEVAS RUTAS - Búsqueda y creación de clientes
+    Route::get('/api/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
+        ->name('api.citas.buscar-cliente')
+        ->middleware('can:viewAny,App\Models\Cita');
+    
+    Route::post('/api/citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])
+        ->name('api.citas.crear-cliente')
+        ->middleware('can:create,App\Models\Cita');
+
+    // Rutas API de citas - CRUD completo
+    Route::get('/api/citas', [CitasController::class, 'getCitas'])
+        ->name('api.citas.get')
+        ->middleware('can:viewAny,App\Models\Cita');
+    
+    Route::post('/api/citas', [CitasController::class, 'storeCita'])
+        ->name('api.citas.store')
+        ->middleware('can:create,App\Models\Cita');
+    
+    Route::put('/api/citas', [CitasController::class, 'updateCita'])
+        ->name('api.citas.update')
+        ->middleware('can:update,App\Models\Cita');
+    
+    Route::delete('/api/citas', [CitasController::class, 'deleteCita'])
+        ->name('api.citas.delete')
+        ->middleware('can:delete,App\Models\Cita');
+
     // Módulo de Inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-             ->middleware('can:viewAny,App\Models\Product');
+        ->middleware('can:viewAny,App\Models\Product');
 
     // Módulo de Gestión de Servicios (Ajustado para usar el controller)
-    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios') // <--- CORRECCIÓN A SERVICIOCONTROLLER
-      ->middleware('can:viewAny,App\Models\Tratamiento');
+    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios')
+        ->middleware('can:viewAny,App\Models\Tratamiento');
 
     // Módulo de Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-             ->middleware('can:viewAny,App\Models\Reporte');
+        ->middleware('can:viewAny,App\Models\Reporte');
 
-    // Módulo de Gestión de Personal
-    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
-             ->middleware('can:viewAny,App\Models\Empleado');
-
+    // ========================================
+    // MÓDULO DE GESTIÓN DE PERSONAL
+    // ========================================
+    Route::prefix('gestion-personal')->group(function () {
+        // Página principal
+        Route::get('/', [GestionPersonalController::class, 'index'])->name('gestion-personal.index')
+            ->middleware('can:viewAny,App\Models\Empleado');
+        
+        // Crear empleado
+        Route::post('/', [GestionPersonalController::class, 'store'])->name('gestion-personal.store')
+            ->middleware('can:create,App\Models\Empleado');
+        
+        // ELIMINAR EMPLEADO - NUEVA RUTA
+        Route::delete('/empleados/{id}', [GestionPersonalController::class, 'destroy'])->name('gestion-personal.destroy')
+            ->middleware('can:delete,App\Models\Empleado');
+        
+        // Registrar comisión
+        Route::post('/comision', [GestionPersonalController::class, 'storeComision'])->name('gestion-personal.comision.store')
+            ->middleware('can:create,App\Models\Empleado');
+        
+        // API endpoints para AJAX
+        Route::get('/empleados/ajax', [GestionPersonalController::class, 'getEmpleadosAjax'])->name('gestion-personal.empleados.ajax')
+            ->middleware('can:viewAny,App\Models\Empleado');
+        
+        // RUTA NUEVA: Empleados activos para comisiones
+        Route::get('/empleados-activos', [GestionPersonalController::class, 'getEmpleadosActivos'])->name('empleados.activos')
+            ->middleware('can:viewAny,App\Models\Empleado');
+        
+        Route::get('/empleados/{id}', [GestionPersonalController::class, 'show'])->name('gestion-personal.empleados.show')
+            ->middleware('can:view,App\Models\Empleado');
+    });
 
     // MÓDULO DE ADMINISTRACIÓN
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-             ->middleware('can:viewAny,App\Models\Cliente');
+        ->middleware('can:viewAny,App\Models\Cliente');
 
     // SUB-RUTAS DE ADMINISTRACIÓN
     Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
-
         // Backup y Restore
         Route::get('/backup', [AdministracionController::class, 'backup'])->name('administracion.backup');
         Route::post('/backup/crear', [AdministracionController::class, 'crearBackup'])->name('administracion.backup.crear');
@@ -125,8 +179,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // Cambio de Contraseña
         Route::get('/password', [AdministracionController::class, 'password'])->name('administracion.password');
         Route::post('/password/cambiar', [AdministracionController::class, 'cambiarPassword'])->name('administracion.password.cambiar');
-
-    }); // Cierre de prefix 'administracion'
+    });
 
     // RUTAS DEL MÓDULO DE BITÁCORA
     Route::prefix('bitacora')->name('bitacora.')->group(function () {
@@ -135,45 +188,32 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
         Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
         Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
-    }); // Cierre de prefix 'bitacora'
-
+    });
 
     // ========================================
     // 🟠 RUTAS DE API (CRUD de Facturación, Citas, Inventario, Servicios, Personal)
-    // Estas rutas actúan como un intermediario (proxy) para las APIs de Node.js (puerto 3000).
     // ========================================
 
     Route::group(['prefix' => 'api'], function () {
-
         // ----------------------------------------
         // CRUD DE CABECERA DE FACTURA
         // ----------------------------------------
-        // POST /api/factura (Creación)
         Route::post('factura', [FacturaController::class, 'storeCabecera'])->name('api.factura.store');
-        // GET /api/factura (Listado/Búsqueda por Cod_Factura)
         Route::get('factura', [FacturaController::class, 'index'])->name('api.factura.index');
-        // PUT /api/factura (Actualización/Cambio de estado/pago)
         Route::put('factura', [FacturaController::class, 'update'])->name('api.factura.update');
-        // DELETE /api/factura/{factura} (Eliminación/Anulación)
         Route::delete('factura/{factura}', [FacturaController::class, 'destroy'])->name('api.factura.destroy');
 
-
         // ----------------------------------------
-        // CRUD DE DETALLE DE FACTURA (PRODUCTOS Y TRATAMIENTOS)
+        // CRUD DE DETALLE DE FACTURA
         // ----------------------------------------
-
-        // GET y POST
         Route::get('detalle_factura_tratamiento', [FacturaController::class, 'getDetalleTratamiento'])->name('api.factura.detalle_tratamiento');
         Route::get('detalle_factura_producto', [FacturaController::class, 'getDetalleProducto'])->name('api.factura.detalle_producto');
         Route::post('detalle_factura_producto', [FacturaController::class, 'storeDetalleProducto'])->name('api.detalle_producto.store');
         Route::post('detalle_factura_tratamiento', [FacturaController::class, 'storeDetalleTratamiento'])->name('api.detalle_tratamiento.store');
-
-        // PUT y DELETE AÑADIDOS para Detalle de Factura
         Route::put('detalle_factura_producto/{id}', [FacturaController::class, 'updateDetalleProducto'])->name('api.detalle_producto.update');
         Route::delete('detalle_factura_producto/{id}', [FacturaController::class, 'destroyDetalleProducto'])->name('api.detalle_producto.destroy');
         Route::put('detalle_factura_tratamiento/{id}', [FacturaController::class, 'updateDetalleTratamiento'])->name('api.detalle_tratamiento.update');
         Route::delete('detalle_factura_tratamiento/{id}', [FacturaController::class, 'destroyDetalleTratamiento'])->name('api.detalle_tratamiento.destroy');
-
 
         // ----------------------------------------
         // CRUD DE INVENTARIO (PRODUCTOS)
@@ -183,15 +223,13 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::put('productos/{id}', [InventarioController::class, 'updateProduct'])->name('api.productos.update');
         Route::delete('productos/{id}', [InventarioController::class, 'destroyProduct'])->name('api.productos.destroy');
 
-
         // ----------------------------------------
         // CRUD DE SERVICIOS (TRATAMIENTOS)
         // ----------------------------------------
-        Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('api.tratamientos.index'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-        Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('api.tratamientos.store'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-        Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('api.tratamientos.update'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-        Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('api.tratamientos.destroy'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-
+        Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('api.tratamientos.index');
+        Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('api.tratamientos.store');
+        Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('api.tratamientos.update');
+        Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('api.tratamientos.destroy');
 
         // ----------------------------------------
         // CRUD DE GESTIÓN DE PERSONAL (EMPLEADOS)
@@ -201,9 +239,8 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::put('empleados/{id}', [GestionPersonalController::class, 'updateEmpleado'])->name('api.empleados.update');
         Route::delete('empleados/{id}', [GestionPersonalController::class, 'destroyEmpleado'])->name('api.empleados.destroy');
 
-
         // ----------------------------------------
-        // CRUD DE CITAS (Mantengo las suyas originales)
+        // CRUD DE CITAS
         // ----------------------------------------
         Route::get('/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
             ->name('api.citas.buscar-cliente');
@@ -226,9 +263,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
         Route::put('/citas/estado/{id}', [CitasController::class, 'updateStatus'])
             ->name('api.citas.update-status');
-
-    }); // CIERRE DEL GRUPO 'api'
-
+    });
 
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
 
