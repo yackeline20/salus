@@ -1044,8 +1044,6 @@
                         };
                     });
                     
-                    // ⬇️ CORRECCIÓN DE ORDENAMIENTO ⬇️
-                    // Ordena de la fecha más futura a la más pasada
                     appointments.sort((a, b) => {
                         const dateA = new Date(a.fechaObj);
                         const dateB = new Date(b.fechaObj);
@@ -1055,7 +1053,6 @@
                         dateA.setHours(hA, mA);
                         dateB.setHours(hB, mB);
 
-                        // b - a para orden descendente (más nuevo primero)
                         return dateB.getTime() - dateA.getTime(); 
                     });
 
@@ -1080,7 +1077,6 @@
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
             
-            // El array 'appointments' ya está ordenado globalmente
             return appointments.filter(appointment => {
                 if (!appointment.fechaObj) return false;
                 const fechaCita = new Date(appointment.fechaObj);
@@ -1102,8 +1098,6 @@
                 container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-alt"></i><p>No hay citas en esta categoría</p></div>`;
                 return;
             }
-
-            // ⬇️ SE ELIMINA EL .sort() DE AQUÍ. AHORA SE ORDENA EN loadAppointments() ⬇️
             
             container.innerHTML = filteredAppointments.map(appointment => `
                 <div class="appointment-item" data-id="${appointment.id}">
@@ -1120,7 +1114,6 @@
                     <div class="appointment-controls">
                         <span class="status-badge ${getStatusClass(appointment.status)}">${getStatusText(appointment.status)}</span>
                         
-                        <!-- ⬇️ CORRECCIÓN: Añadido 'dropup' para que el menú salga hacia arriba ⬇️ -->
                         <div class="btn-group dropup">
                             <button class="action-btn" data-toggle="dropdown" title="Cambiar Estado" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-sync-alt"></i>
@@ -1238,14 +1231,65 @@
             document.getElementById('submitAppointmentBtn').innerHTML = '<i class="fas fa-calendar-check mr-2"></i>Agendar Cita';
         }
 
-        function sendNotification(id) {
+        // ⬇️ MODIFICADO: Envía al NÚMERO DEL CLIENTE ⬇️
+        async function sendNotification(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
-            showNotification(`🔔 Enviando recordatorio para ${appointment.patient}...`, 'info');
-            // Simulación
-            setTimeout(() => {
-                showNotification(`✓ Recordatorio (simulado) enviado para ${appointment.patient}`, 'success');
-            }, 1500);
+            
+            showNotification(`🔔 Obteniendo datos del cliente...`, 'info');
+
+            try {
+                // 1. Buscar los datos del cliente (incluyendo el teléfono)
+                const response = await fetch(`/api/citas/buscar-cliente?cod=${appointment.codCliente}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('No se pudo encontrar la información del cliente.');
+                }
+
+                const clientData = await response.json();
+                
+                // 2. Extraer el número de teléfono
+                const phoneData = clientData.telefonos.length > 0 ? clientData.telefonos[0] : null;
+                if (!phoneData || !phoneData.Numero) {
+                    showNotification(`❌ Error: El cliente ${appointment.patient} no tiene un número de teléfono registrado.`, 'error');
+                    return;
+                }
+
+                // 3. Formatear el número (Asumiendo 504 para Honduras, quitar guiones)
+                let phoneNumber = phoneData.Numero.replace(/[^0-9]/g, ''); // Quitar guiones, espacios, etc.
+                const countryCode = phoneData.Cod_Pais || '504';
+                
+                // Evitar duplicar el código de país si ya está
+                if (!phoneNumber.startsWith(countryCode)) {
+                    phoneNumber = countryCode + phoneNumber;
+                }
+
+                // 4. Crear el mensaje
+                // Formatear la fecha (ej: "lunes, 1 de diciembre de 2025")
+                const prettyDate = new Date(appointment.fechaObj).toLocaleDateString('es-ES', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                const text = `¡Hola ${appointment.patient}! 👋 Te recordamos tu cita en Salus para un servicio de *${appointment.service}* el próximo *${prettyDate}* a las *${appointment.time}*. ¡Te esperamos!`;
+                
+                // 5. Crear y abrir la URL de WhatsApp
+                const encodedText = encodeURIComponent(text);
+                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedText}`;
+                
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification(`✓ Abriendo WhatsApp para ${appointment.patient}...`, 'success');
+
+            } catch (error) {
+                console.error('Error al enviar notificación:', error);
+                showNotification(`❌ Error: ${error.message}`, 'error');
+            }
         }
 
         async function deleteAppointment(id) {
