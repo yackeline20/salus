@@ -9,6 +9,7 @@ use App\Http\Controllers\CitasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
+use App\Http\Controllers\ServicioController; // <--- CORRECCIÓN: Usando el nombre correcto (Singular)
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
@@ -74,79 +75,44 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
-
     // ----------------------------------------
     // B. MÓDULOS PROTEGIDOS POR POLICIES (Rutas Web)
     // ----------------------------------------
 
-    // 🔴 Módulo de Facturación: Se mantiene solo la vista de índice, ya que el CRUD es API.
-    Route::get('/facturas', function () {
-        return view('factura.index'); // O el nombre de tu vista principal de facturas
-    })->name('factura.index')
-      ->middleware('can:viewAny,App\Models\Factura');
+    // Módulo de Facturación (Ruta Web de la Vista Principal)
+    Route::get('/facturas', [FacturaController::class, 'index'])->name('factura.index')
+        ->middleware('can:viewAny,App\Models\Factura');
 
-    // ========================================
-    // 🟢 MÓDULO DE CITAS - CON PUNTO Y COMA
-    // ========================================
+    // RUTA AÑADIDA: Vista del formulario para crear una nueva factura
+    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create')
+        ->middleware('can:create,App\Models\Factura');
 
+
+    // MÓDULO DE CITAS
     // Vista principal de citas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
         ->middleware('can:viewAny,App\Models\Cita');
 
-    // Búsqueda y creación de clientes
-    Route::get('/api/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
-        ->name('api.citas.buscar-cliente')
-        ->middleware('can:viewAny,App\Models\Cita');
-
-    Route::post('/api/citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])
-        ->name('api.citas.crear-cliente')
-        ->middleware('can:create,App\Models\Cita');
-
-    // API CRUD de Citas
-    Route::get('/api/citas', [CitasController::class, 'getCitas'])
-        ->name('api.citas.get')
-        ->middleware('can:viewAny,App\Models\Cita');
-
-    Route::post('/api/citas', [CitasController::class, 'storeCita'])
-        ->name('api.citas.store')
-        ->middleware('can:create,App\Models\Cita');
-
-    Route::put('/api/citas/{id}', [CitasController::class, 'updateCita'])
-        ->name('api.citas.update');
-
-    Route::delete('/api/citas/{id}', [CitasController::class, 'deleteCita'])
-        ->name('api.citas.delete');
-
-    Route::put('/api/citas/estado/{id}', [CitasController::class, 'updateStatus'])
-        ->name('api.citas.update-status');
-
-
-    // 🟢 Módulo de Inventario
+    // Módulo de Inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-          ->middleware('can:viewAny,App\Models\Product');
+             ->middleware('can:viewAny,App\Models\Product');
 
-    // 🟢 Módulo de Gestión de Servicios
-    Route::get('/servicios', function () {
-        return view('gestion-servicios');
-    })->name('servicios')
+    // Módulo de Gestión de Servicios (Ajustado para usar el controller)
+    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios') // <--- CORRECCIÓN A SERVICIOCONTROLLER
       ->middleware('can:viewAny,App\Models\Tratamiento');
 
     // Módulo de Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-          ->middleware('can:viewAny,App\Models\Reporte');
+             ->middleware('can:viewAny,App\Models\Reporte');
 
     // Módulo de Gestión de Personal
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
-          ->middleware('can:viewAny,App\Models\Empleado');
+             ->middleware('can:viewAny,App\Models\Empleado');
 
 
-    // ========================================
     // MÓDULO DE ADMINISTRACIÓN
-    // ========================================
-
-    // Ruta principal de Administración
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-          ->middleware('can:viewAny,App\Models\Cliente');
+             ->middleware('can:viewAny,App\Models\Cliente');
 
     // SUB-RUTAS DE ADMINISTRACIÓN
     Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
@@ -162,29 +128,106 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
     }); // Cierre de prefix 'administracion'
 
-    // ========================================
     // RUTAS DEL MÓDULO DE BITÁCORA
+    Route::prefix('bitacora')->name('bitacora.')->group(function () {
+        Route::get('/', [BitacoraController::class, 'index'])->name('index');
+        Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
+        Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
+        Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
+        Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
+    }); // Cierre de prefix 'bitacora'
+
+
+    // ========================================
+    // 🟠 RUTAS DE API (CRUD de Facturación, Citas, Inventario, Servicios, Personal)
+    // Estas rutas actúan como un intermediario (proxy) para las APIs de Node.js (puerto 3000).
     // ========================================
 
-    // Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
-    Route::prefix('bitacora')->name('bitacora.')->group(function () {
+    Route::group(['prefix' => 'api'], function () {
 
-        // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
-        Route::get('/', [BitacoraController::class, 'index'])->name('index');
+        // ----------------------------------------
+        // CRUD DE CABECERA DE FACTURA
+        // ----------------------------------------
+        // POST /api/factura (Creación)
+        Route::post('factura', [FacturaController::class, 'storeCabecera'])->name('api.factura.store');
+        // GET /api/factura (Listado/Búsqueda por Cod_Factura)
+        Route::get('factura', [FacturaController::class, 'index'])->name('api.factura.index');
+        // PUT /api/factura (Actualización/Cambio de estado/pago)
+        Route::put('factura', [FacturaController::class, 'update'])->name('api.factura.update');
+        // DELETE /api/factura/{factura} (Eliminación/Anulación)
+        Route::delete('factura/{factura}', [FacturaController::class, 'destroy'])->name('api.factura.destroy');
 
-        // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
-        Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
 
-        // 3. Mostrar los detalles de un registro
-        Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
+        // ----------------------------------------
+        // CRUD DE DETALLE DE FACTURA (PRODUCTOS Y TRATAMIENTOS)
+        // ----------------------------------------
 
-        // 4. Elimina un registro de la bitácora
-        Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
+        // GET y POST
+        Route::get('detalle_factura_tratamiento', [FacturaController::class, 'getDetalleTratamiento'])->name('api.factura.detalle_tratamiento');
+        Route::get('detalle_factura_producto', [FacturaController::class, 'getDetalleProducto'])->name('api.factura.detalle_producto');
+        Route::post('detalle_factura_producto', [FacturaController::class, 'storeDetalleProducto'])->name('api.detalle_producto.store');
+        Route::post('detalle_factura_tratamiento', [FacturaController::class, 'storeDetalleTratamiento'])->name('api.detalle_tratamiento.store');
 
-        // 5. Procesa la restauración de un registro
-        Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
+        // PUT y DELETE AÑADIDOS para Detalle de Factura
+        Route::put('detalle_factura_producto/{id}', [FacturaController::class, 'updateDetalleProducto'])->name('api.detalle_producto.update');
+        Route::delete('detalle_factura_producto/{id}', [FacturaController::class, 'destroyDetalleProducto'])->name('api.detalle_producto.destroy');
+        Route::put('detalle_factura_tratamiento/{id}', [FacturaController::class, 'updateDetalleTratamiento'])->name('api.detalle_tratamiento.update');
+        Route::delete('detalle_factura_tratamiento/{id}', [FacturaController::class, 'destroyDetalleTratamiento'])->name('api.detalle_tratamiento.destroy');
 
-    }); // Cierre de prefix 'bitacora'
+
+        // ----------------------------------------
+        // CRUD DE INVENTARIO (PRODUCTOS)
+        // ----------------------------------------
+        Route::get('productos', [InventarioController::class, 'getProducts'])->name('api.productos.index');
+        Route::post('productos', [InventarioController::class, 'storeProduct'])->name('api.productos.store');
+        Route::put('productos/{id}', [InventarioController::class, 'updateProduct'])->name('api.productos.update');
+        Route::delete('productos/{id}', [InventarioController::class, 'destroyProduct'])->name('api.productos.destroy');
+
+
+        // ----------------------------------------
+        // CRUD DE SERVICIOS (TRATAMIENTOS)
+        // ----------------------------------------
+        Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('api.tratamientos.index'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
+        Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('api.tratamientos.store'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
+        Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('api.tratamientos.update'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
+        Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('api.tratamientos.destroy'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
+
+
+        // ----------------------------------------
+        // CRUD DE GESTIÓN DE PERSONAL (EMPLEADOS)
+        // ----------------------------------------
+        Route::get('empleados', [GestionPersonalController::class, 'getEmpleados'])->name('api.empleados.index');
+        Route::post('empleados', [GestionPersonalController::class, 'storeEmpleado'])->name('api.empleados.store');
+        Route::put('empleados/{id}', [GestionPersonalController::class, 'updateEmpleado'])->name('api.empleados.update');
+        Route::delete('empleados/{id}', [GestionPersonalController::class, 'destroyEmpleado'])->name('api.empleados.destroy');
+
+
+        // ----------------------------------------
+        // CRUD DE CITAS (Mantengo las suyas originales)
+        // ----------------------------------------
+        Route::get('/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
+            ->name('api.citas.buscar-cliente');
+
+        Route::post('/citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])
+            ->name('api.citas.crear-cliente')
+            ->middleware('can:create,App\Models\Cita');
+
+        Route::get('/citas', [CitasController::class, 'getCitas'])
+            ->name('api.citas.get');
+
+        Route::post('/citas', [CitasController::class, 'storeCita'])
+            ->name('api.citas.store');
+
+        Route::put('/citas/{id}', [CitasController::class, 'updateCita'])
+            ->name('api.citas.update');
+
+        Route::delete('/citas/{id}', [CitasController::class, 'deleteCita'])
+            ->name('api.citas.delete');
+
+        Route::put('/citas/estado/{id}', [CitasController::class, 'updateStatus'])
+            ->name('api.citas.update-status');
+
+    }); // CIERRE DEL GRUPO 'api'
 
 
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'

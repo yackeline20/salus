@@ -13,14 +13,14 @@ use App\Models\Cliente;
 use App\Models\Tratamiento;
 use App\Models\Empleado;
 use App\Models\Reporte;
-use App\Models\Usuario;
+use App\Models\Usuario; // Asegúrese de que este modelo exista o esté bien ubicado
 
 // 2. IMPORTA las Clases de Policies que vas a crear (de app/Policies/)
 use App\Policies\CitaPolicy;
 use App\Policies\FacturaPolicy;
 use App\Policies\InventarioPolicy;
 use App\Policies\ClientePolicy;
-use App\Policies\TratamientoPolicy; // 🟢 Usamos el nombre TratamientoPolicy
+use App\Policies\TratamientoPolicy;
 use App\Policies\PersonalPolicy;
 use App\Policies\ReportePolicy;
 
@@ -32,20 +32,26 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        Factura::class      => FacturaPolicy::class,
-        Cita::class         => CitaPolicy::class,
-        Product::class      => InventarioPolicy::class, // ✅ CORRECCIÓN: Usamos Product::class, el modelo importado
-        Cliente::class      => ClientePolicy::class,
-        Tratamiento::class  => TratamientoPolicy::class,
-        Empleado::class     => PersonalPolicy::class,
-        Reporte::class      => ReportePolicy::class,
+        // CRÍTICO: Registramos Factura::class con su política correspondiente.
+        Factura::class          => FacturaPolicy::class,
+
+        // El resto de políticas registradas:
+        Cita::class             => CitaPolicy::class,
+        Product::class          => InventarioPolicy::class,
+        Cliente::class          => ClientePolicy::class,
+        Tratamiento::class      => TratamientoPolicy::class,
+        Empleado::class         => PersonalPolicy::class,
+        Reporte::class          => ReportePolicy::class,
     ];
 
+    /**
+     * Register any authentication / authorization services.
+     */
     public function boot(): void
     {
         $this->registerPolicies();
 
-        // Gates existentes
+        // Gates existentes (se mantienen para permisos de alto nivel)
         Gate::define('access-dashboard', function ($user) {
             return $user->hasPermission('select', 'Dashboard');
         });

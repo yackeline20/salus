@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // ===============================================
+    // Configuración de la API Externa de SALUS (Node.js)
+    // ===============================================
+    'salus_api' => [
+        // Esta URL se leerá de su archivo .env (SALUS_API_BASE_URL)
+        'base_url' => env('SALUS_API_BASE_URL'),
+    ],
+
 ];
