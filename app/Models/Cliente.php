@@ -4,25 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // Necesario para la relación inversa con Persona
+use Illuminate\Database\Eloquent\Relations\HasMany;   // Necesario para la relación con Factura
+
+// Importamos el trait para el sistema de Bitácora
+use App\Traits\BitacoraTrait;
+
+// Importamos los modelos relacionados
+use App\Models\Persona;
+use App\Models\Factura; // Asumimos que existe un modelo Factura para la relación HasMany
 
 class Cliente extends Model
 {
-    use HasFactory;
+    // Usamos los Traits HasFactory y BitacoraTrait
+    use HasFactory, BitacoraTrait;
 
-    protected $table = 'cliente'; // Nombre de tu tabla de clientes
+    protected $table = 'cliente';
     protected $primaryKey = 'Cod_Cliente';
-    public $timestamps = false; // Confirmado con tu esquema
+    public $timestamps = false; // Deshabilitar timestamps
 
     protected $fillable = [
         'Cod_Persona',
         'Tipo_Cliente',
         'Nota_Preferencia',
-        'Fecha_Registro' // Agregué este campo según la imagen de tu tabla
+        'Fecha_Registro'
     ];
 
-    // --- Relaciones ---
+    // --- Relaciones Eloquent ---
 
     /**
      * Relación UNO a UNO inversa (MUCHOS a UNO) con Persona.
@@ -38,7 +46,7 @@ class Cliente extends Model
 
     /**
      * Relación UNO a MUCHOS con Factura.
-     * Un cliente puede tener muchas facturas. CRÍTICA para el módulo de facturación.
+     * Un cliente puede tener muchas facturas.
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function facturas(): HasMany

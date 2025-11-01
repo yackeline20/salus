@@ -7,14 +7,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+// Importamos el trait para el sistema de Bitácora
+use App\Traits\BitacoraTrait;
+
+// Importamos los modelos relacionados para las relaciones
+use App\Models\Cliente;
+use App\Models\Correo;
+use App\Models\Telefono;
+use App\Models\Direccion;
+use App\Models\Usuario;
+
 class Persona extends Model
 {
-    use HasFactory;
+    // Usamos los Traits HasFactory y BitacoraTrait
+    use HasFactory, BitacoraTrait;
 
+    // Nombre de la tabla y clave primaria
     protected $table = 'persona';
     protected $primaryKey = 'Cod_Persona';
     public $timestamps = false; // Deshabilitar timestamps
 
+    // Campos que se pueden asignar masivamente
     protected $fillable = [
         'Nombre',
         'Apellido',
@@ -38,7 +51,6 @@ class Persona extends Model
      */
     public function usuario(): HasOne
     {
-
         return $this->hasOne(Usuario::class, 'Cod_Persona', 'Cod_Persona');
     }
 
@@ -67,11 +79,11 @@ class Persona extends Model
     }
 
 
-    // --- ACCESORES (Usar como $persona->nombre_completo) ---
+    // --- ACCESORES ---
+    // Permiten acceder a un valor calculado como una propiedad ($persona->nombre_completo)
 
     /**
      * Accesor para obtener el nombre completo (Forma idiomática de Laravel).
-     * Se accede en la vista como: $persona->nombre_completo
      * @return string
      */
     public function getNombreCompletoAttribute(): string
@@ -79,18 +91,17 @@ class Persona extends Model
         return trim($this->Nombre . ' ' . $this->Apellido);
     }
 
-    // --- CORRECCIÓN DEL ERROR DE LA VISTA (getnombreCompleto()) ---
+    // --- CORRECCIÓN DE LEGADO ---
+    // Método para soportar la llamada a función que podría existir en alguna vista
+    // ($persona->getnombreCompleto())
 
     /**
-     * CORRECCIÓN DEL ERROR: Método simple para coincidir con la llamada de la vista.
-     * La llamada en la vista es: $persona->getnombreCompleto()
-     * Nota: Este método tiene la 'n' de nombre en minúscula, como se ve en la imagen de error.
-     * Es mejor cambiar la vista para usar el Accesor (getNombreCompletoAttribute).
+     * Método de compatibilidad para llamadas tipo función.
      * @return string
      */
     public function getnombreCompleto(): string
     {
-        // Llamamos al Accesor real para mantener la lógica centralizada
+        // Llama al Accesor real para centralizar la lógica
         return $this->getNombreCompletoAttribute();
     }
 
@@ -109,10 +120,10 @@ class Persona extends Model
     }
 
     // --- Scopes ---
+    // Permiten construir consultas sencillas (Persona::byDni('...'))
 
     /**
      * Scope para buscar personas por DNI.
-     * Uso: Persona::byDni('123456')->first()
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string $dni
      * @return \Illuminate\Database\Eloquent\Builder
@@ -121,5 +132,4 @@ class Persona extends Model
     {
         return $query->where('DNI', $dni);
     }
-
 }

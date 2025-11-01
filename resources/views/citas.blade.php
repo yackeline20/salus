@@ -8,11 +8,10 @@
 
 @section('content')
     <div class="container-fluid p-0">
-        <!-- Header Welcome -->
         <div class="welcome-header">
             <div class="welcome-content">
-                <h1>Citas</h1>
-                <p>Administra tus citas manera eficiente.</p>
+                <h1>Gestión de Citas</h1>
+                <p>Administra tus citas de manera eficiente.</p>
             </div>
             <div class="welcome-date">
                 <span class="date"></span>
@@ -20,86 +19,220 @@
             </div>
         </div>
 
-        <!-- Formulario de Nueva Cita -->
         <div class="appointment-card mb-4">
             <div class="appointment-header">
                 <i class="fas fa-calendar-plus" style="color: #c9a876; font-size: 24px;"></i>
-                <h2>Agendar Nueva Cita</h2>
+                <h2 id="formTitle">Agendar Nueva Cita</h2>
             </div>
 
             <form id="appointmentForm">
                 @csrf
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="patient">Nombre del Paciente</label>
-                            <input type="text" class="form-control custom-input" id="patient" name="patient" placeholder="Nombre completo" required>
+                
+                <input type="hidden" id="editingAppointmentId">
+
+                <div class="client-search-section" id="searchSection">
+                    <h4><i class="fas fa-user-search mr-2"></i>Buscar Cliente Existente</h4>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="searchClientCode">Código de Cliente</label>
+                                <input type="number" class="form-control custom-input" id="searchClientCode" placeholder="Ingrese código de cliente">
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="button" class="btn btn-salus btn-block" id="btnSearchClient">
+                                <i class="fas fa-search mr-2"></i>Buscar Cliente
+                            </button>
                         </div>
                     </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" id="btnNewClient">
+                            <i class="fas fa-user-plus mr-1"></i>¿Cliente nuevo? Haga clic aquí para registrar
+                        </button>
+                    </div>
+                </div>
 
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="service">Servicio</label>
-                            <select class="form-control custom-input" id="service" name="service" required>
-                                <option value="">Seleccionar servicio</option>
-                                <option value="otro">Otro servicio (especificar)</option>
-                                <option value="botox">Botox</option>
-                                <option value="rellenos">Rellenos Dérmicos</option>
-                                <option value="limpieza">Limpieza Facial</option>
-                                <option value="peeling">Peeling Químico</option>
-                                <option value="laser">Tratamiento Láser</option>
-                                <option value="mesoterapia">Mesoterapia</option>
-                            </select>
-                            <input type="text" 
-                                   id="customService" 
-                                   class="form-control custom-input custom-service-input mt-2" 
-                                   placeholder="Escriba el nombre del servicio">
-                        </div>
+                <hr class="my-4">
+
+                <div id="clientDataSection" style="display: none;">
+                    <h4 class="text-success"><i class="fas fa-check-circle mr-2"></i>Cliente Encontrado</h4>
+                    
+                    <input type="hidden" id="codCliente" name="codCliente">
+                    <input type="hidden" id="codPersona" name="codPersona">
+
+                    <div class="alert alert-success">
+                        <strong><i class="fas fa-user mr-2"></i><span id="clientFullName"></span></strong>
+                        <br>
+                        <small><strong>DNI:</strong> <span id="displayDNI"></span></small> | 
+                        <small><strong>Teléfono:</strong> <span id="displayPhone"></span></small> | 
+                        <small><strong>Email:</strong> <span id="displayEmail"></span></small>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="date">Fecha</label>
-                            <input type="date" class="form-control custom-input" id="date" name="date" min="{{ date('Y-m-d') }}" required>
-                        </div>
-                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnChangeClient">
+                        <i class="fas fa-redo mr-1"></i>Buscar otro cliente
+                    </button>
+                </div>
 
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="time">Hora</label>
-                            <select class="form-control custom-input" id="time" name="time" required>
-                                <option value="">Seleccionar hora</option>
-                                <option value="09:00">09:00 AM</option>
-                                <option value="10:00">10:00 AM</option>
-                                <option value="11:00">11:00 AM</option>
-                                <option value="12:00">12:00 PM</option>
-                                <option value="14:00">02:00 PM</option>
-                                <option value="15:00">03:00 PM</option>
-                                <option value="16:00">04:00 PM</option>
-                                <option value="17:00">05:00 PM</option>
-                            </select>
+                <div id="newClientForm" style="display: none;">
+                    <h4 class="text-primary"><i class="fas fa-user-plus mr-2"></i>Registro de Nuevo Cliente</h4>
+                    
+                    <div class="card card-body bg-light">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientName">Nombre <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control custom-input" id="newClientName" placeholder="Nombre del cliente">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientLastName">Apellido <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control custom-input" id="newClientLastName" placeholder="Apellido del cliente">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientDNI">DNI <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control custom-input" id="newClientDNI" placeholder="0801-1990-12345">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientBirthDate">Fecha de Nacimiento <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control custom-input" id="newClientBirthDate">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientGender">Género <span class="text-danger">*</span></label>
+                                    <select class="form-control custom-input" id="newClientGender">
+                                        <option value="">Seleccionar</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                        <option value="O">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientPhone">Teléfono</label>
+                                    <input type="text" class="form-control custom-input" id="newClientPhone" placeholder="9876-5432">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientEmail">Correo Electrónico</label>
+                                    <input type="email" class="form-control custom-input" id="newClientEmail" placeholder="cliente@ejemplo.com">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="newClientAddress">Dirección</label>
+                                    <input type="text" class="form-control custom-input" id="newClientAddress" placeholder="Colonia, Calle, Número">
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label for="notes">Notas Adicionales</label>
-                            <textarea class="form-control custom-input" id="notes" name="notes" rows="3" placeholder="Alguna observación especial..."></textarea>
+                        <div class="text-right mt-3">
+                            <button type="button" class="btn btn-secondary" id="btnCancelNewClient">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </button>
+                            <button type="button" class="btn btn-success" id="btnSaveNewClient">
+                                <i class="fas fa-save mr-2"></i>Guardar Cliente
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-salus">
-                    <i class="fas fa-calendar-check mr-2"></i>
-                    Agendar Cita
-                </button>
+                <hr class="my-4">
+
+                <div id="appointmentDataSection" style="display: none;">
+                    <h4><i class="fas fa-calendar-check mr-2"></i>Datos de la Cita</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="service">Servicio <span class="text-danger">*</span></label>
+                                <select class="form-control custom-input" id="service" name="service" required>
+                                    <option value="">Seleccionar servicio</option>
+                                    <option value="Botox">Botox</option>
+                                    <option value="Rellenos Dérmicos">Rellenos Dérmicos</option>
+                                    <option value="Limpieza Facial">Limpieza Facial</option>
+                                    <option value="Peeling Químico">Peeling Químico</option>
+                                    <option value="Tratamiento Láser">Tratamiento Láser</option>
+                                    <option value="Mesoterapia">Mesoterapia</option>
+                                    <option value="HydraFacial">HydraFacial</option>
+                                    <option value="Microneedling">Microneedling</option>
+                                    <option value="otro">Otro servicio (especificar)</option>
+                                </select>
+                                <input type="text" 
+                                    id="customService" 
+                                    class="form-control custom-input custom-service-input mt-2" 
+                                    placeholder="Escriba el nombre del servicio">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control custom-input" id="date" name="date" min="{{ date('Y-m-d') }}" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="time">Hora <span class="text-danger">*</span></label>
+                                <select class="form-control custom-input" id="time" name="time" required>
+                                    <option value="">Seleccionar hora</option>
+                                    <option value="09:00">09:00 AM</option>
+                                    <option value="10:00">10:00 AM</option>
+                                    <option value="11:00">11:00 AM</option>
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="13:00">01:00 PM</option>
+                                    <option value="14:00">02:00 PM</option>
+                                    <option value="15:00">03:00 PM</option>
+                                    <option value="16:00">04:00 PM</option>
+                                    <option value="17:00">05:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="duration">Duración Estimada</label>
+                                <select class="form-control custom-input" id="duration" name="duration">
+                                    <option value="1">1 hora</option>
+                                    <option value="1.5">1 hora 30 min</option>
+                                    <option value="2">2 horas</option>
+                                    <option value="2.5">2 horas 30 min</option>
+                                    <option value="3">3 horas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="notes">Notas Adicionales / Observaciones</label>
+                                <textarea class="form-control custom-input" id="notes" name="notes" rows="3" placeholder="Alguna observación especial sobre el tratamiento, alergias, o requerimientos del paciente..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <button type="button" class="btn btn-secondary" id="btnResetForm">
+                            <i class="fas fa-redo mr-2"></i>Reiniciar Formulario
+                        </button>
+                        <button type="submit" class="btn btn-salus" id="submitAppointmentBtn">
+                            <i class="fas fa-calendar-check mr-2"></i>Agendar Cita
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
 
-        <!-- Lista de Citas -->
         <div class="appointments-list">
             <div class="list-header">
-                <h2>Mis Citas</h2>
+                <h2><i class="fas fa-list mr-2"></i>Mis Citas</h2>
                 <div class="filter-tabs">
                     <button class="filter-tab active" data-filter="todas">Todas</button>
                     <button class="filter-tab" data-filter="hoy">Hoy</button>
@@ -112,17 +245,17 @@
         </div>
     </div>
 
-    <!-- Modal de confirmación de eliminación -->
+    <!-- ⬇️ MODAL GENÉRICO MEJORADO ⬇️ -->
     <div id="confirmModal" class="custom-modal-overlay">
         <div class="custom-modal">
-            <div class="modal-icon">
+            <div class="modal-icon" id="modalIcon"> 
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <h3>Confirmar Eliminación</h3>
-            <p id="modalMessage">¿Está seguro de que desea eliminar esta cita?</p>
+            <h3 id="modalTitle">Confirmar Acción</h3> 
+            <p id="modalMessage">¿Está seguro?</p>
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
-                <button class="modal-btn modal-btn-confirm" id="confirmDeleteBtn">Sí, eliminar</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmActionBtn">Sí, confirmar</button> 
             </div>
         </div>
     </div>
@@ -155,14 +288,71 @@
         .welcome-date .date { display: block; font-size: 14px; opacity: 0.9; }
         .welcome-date .time { display: block; font-size: 24px; font-weight: 600; margin-top: 5px; }
 
-        .appointment-card { background: white; border-radius: 20px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); padding: 30px; }
-        .appointment-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
-        .appointment-header h2 { color: #2C3E50; font-size: 20px; font-weight: 600; margin: 0; }
+        .appointment-card { 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); 
+            padding: 30px; 
+        }
+        
+        .appointment-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin-bottom: 30px; 
+            padding-bottom: 20px; 
+            border-bottom: 1px solid #e5e7eb; 
+        }
+        
+        .appointment-header h2 { 
+            color: #2C3E50; 
+            font-size: 20px; 
+            font-weight: 600; 
+            margin: 0; 
+        }
 
-        .custom-input { border-radius: 10px; border: 1px solid #e0e0e0; padding: 10px 15px; transition: all 0.3s; }
-        .custom-input:focus { border-color: #c9a876; box-shadow: 0 0 0 3px rgba(201, 168, 118, 0.1); }
-        .custom-service-input { display: none; }
-        .custom-service-input.show { display: block; }
+        .client-search-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px dashed #c9a876;
+        }
+
+        .client-search-section h4 {
+            color: #2C3E50;
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        #clientDataSection, #newClientForm, #appointmentDataSection {
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .custom-input { 
+            border-radius: 10px; 
+            border: 1px solid #e0e0e0; 
+            padding: 10px 15px; 
+            transition: all 0.3s; 
+        }
+        
+        .custom-input:focus { 
+            border-color: #c9a876; 
+            box-shadow: 0 0 0 3px rgba(201, 168, 118, 0.1); 
+        }
+        
+        .custom-service-input { 
+            display: none; 
+        }
+        
+        .custom-service-input.show { 
+            display: block; 
+        }
 
         .btn-salus {
             background: linear-gradient(135deg, #c9a876, #d4b896);
@@ -173,7 +363,12 @@
             font-weight: 500;
             transition: all 0.3s;
         }
-        .btn-salus:hover { color: white; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3); }
+        
+        .btn-salus:hover { 
+            color: white; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3); 
+        }
 
         .appointments-list { 
             background: white; 
@@ -181,16 +376,46 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); 
             padding: 30px;
         }
-        .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
-        .list-header h2 { color: #2C3E50; font-size: 20px; font-weight: 600; margin: 0; }
+        
+        .list-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            padding-bottom: 20px; 
+            border-bottom: 1px solid #e5e7eb; 
+        }
+        
+        .list-header h2 { 
+            color: #2C3E50; 
+            font-size: 20px; 
+            font-weight: 600; 
+            margin: 0; 
+        }
 
-        .filter-tabs { display: flex; gap: 8px; }
-        .filter-tab { padding: 8px 16px; background: #f3f4f6; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; color: #6b7280; font-size: 14px; }
-        .filter-tab.active { background: linear-gradient(135deg, #c9a876, #d4b896); color: white; }
-        .filter-tab:hover:not(.active) { background: #e5e7eb; }
-
-        #appointmentsList {
-            position: relative;
+        .filter-tabs { 
+            display: flex; 
+            gap: 8px; 
+        }
+        
+        .filter-tab { 
+            padding: 8px 16px; 
+            background: #f3f4f6; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            color: #6b7280; 
+            font-size: 14px; 
+        }
+        
+        .filter-tab.active { 
+            background: linear-gradient(135deg, #c9a876, #d4b896); 
+            color: white; 
+        }
+        
+        .filter-tab:hover:not(.active) { 
+            background: #e5e7eb; 
         }
 
         .appointment-item {
@@ -207,14 +432,18 @@
             z-index: 1;
         }
         
-        .appointment-item:has(.status-options.show) {
-            z-index: 1000;
+        .appointment-item:hover { 
+            background: #f5efe6; 
+            transform: translateX(5px); 
         }
         
-        .appointment-item:hover { background: #f5efe6; transform: translateX(5px); }
-        .appointment-item.editing { background: #f5efe6; border: 1px solid #c9a876; }
-
-        .appointment-info { display: flex; gap: 20px; align-items: center; flex: 1; }
+        .appointment-info { 
+            display: flex; 
+            gap: 20px; 
+            align-items: center; 
+            flex: 1; 
+        }
+        
         .appointment-time {
             display: flex;
             flex-direction: column;
@@ -225,26 +454,39 @@
             min-width: 80px;
             border: 1px solid #e5e7eb;
         }
-        .appointment-time .hour { font-size: 16px; font-weight: 600; color: #2C3E50; }
-        .appointment-time .date { font-size: 12px; color: #6b7280; margin-top: 2px; }
+        
+        .appointment-time .hour { 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: #2C3E50; 
+        }
+        
+        .appointment-time .date { 
+            font-size: 12px; 
+            color: #6b7280; 
+            margin-top: 2px; 
+        }
 
-        .appointment-details { flex: 1; }
-        .appointment-details h4 { color: #2C3E50; font-size: 16px; margin-bottom: 5px; }
-        .appointment-details p { color: #6b7280; font-size: 14px; margin: 0; }
-        .appointment-details input { width: 100%; padding: 8px 12px; border: 1px solid #c9a876; border-radius: 6px; margin-bottom: 5px; }
-
-        .edit-date-time { display: flex; gap: 10px; margin-bottom: 10px; }
-        .edit-date-time input { flex: 1; }
+        .appointment-details { 
+            flex: 1; 
+        }
+        
+        .appointment-details h4 { 
+            color: #2C3E50; 
+            font-size: 16px; 
+            margin-bottom: 5px; 
+        }
+        
+        .appointment-details p { 
+            color: #6b7280; 
+            font-size: 14px; 
+            margin: 0; 
+        }
 
         .appointment-controls { 
             display: flex; 
             gap: 8px; 
             align-items: center;
-            position: relative;
-        }
-        
-        .status-dropdown { 
-            position: relative;
         }
         
         .status-badge { 
@@ -252,109 +494,201 @@
             border-radius: 20px; 
             font-size: 12px; 
             font-weight: 500; 
-            cursor: pointer; 
-            transition: all 0.3s; 
-            border: none; 
             min-width: 100px; 
             text-align: center; 
         }
         
         .status-programada {
-            background: #dbeafe;
-            color: #1e40af;
+            background: #e0f2fe; /* Azul claro */
+            color: #0c54a8; /* Azul oscuro */
         }
-
         .status-confirmed {
-            background: #d4f4dd;
-            color: #2d7a4e;
+            background: #dcfce7; /* Verde claro */
+            color: #15803d; /* Verde oscuro */
         }
-
         .status-realizada {
-            background: #d1fae5;
-            color: #065f46;
+            background: #f3f4f6; /* Gris claro */
+            color: #4b5563; /* Gris oscuro */
         }
-
         .status-cancelled {
-            background: #ffd6d6;
-            color: #d32f2f;
+            background: #fee2e2; /* Rojo claro */
+            color: #b91c1c; /* Rojo oscuro */
         }
 
-        .status-options { 
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); 
-            display: none; 
-            z-index: 99999; 
-            min-width: 160px; 
-            border: 1px solid #e5e7eb;
-            padding: 4px 0;
-        }
-        
-        .status-options.show { 
-            display: block; 
-        }
-        
-        .status-option { 
-            padding: 10px 16px; 
+        .action-btn { 
+            padding: 8px 12px; 
+            background: transparent; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
             cursor: pointer; 
-            transition: all 0.2s; 
-            font-size: 14px; 
-            display: flex; 
+            color: #6b7280; 
+            transition: all 0.3s; 
+        }
+        
+        .action-btn:hover { 
+            background: #f5efe6; 
+            border-color: #c9a876; 
+        }
+        
+        .action-btn.delete-btn { 
+            color: #ef4444; 
+            border-color: #ef4444; 
+        }
+
+        .empty-state { 
+            text-align: center; 
+            padding: 60px 20px; 
+            color: #6b7280; 
+        }
+        
+        .empty-state i { 
+            font-size: 80px; 
+            opacity: 0.3; 
+            margin-bottom: 20px; 
+        }
+
+        /* ⬇️ ESTILOS PARA EL MODAL MEJORADO ⬇️ */
+        .custom-modal-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.5); 
+            z-index: 99999; 
+            justify-content: center; 
             align-items: center; 
-            gap: 12px;
-            color: #374151;
+            backdrop-filter: blur(4px);
         }
-        .status-option:hover { 
-            background: #f3f4f6;
+        
+        .custom-modal-overlay.show { 
+            display: flex; 
         }
-        .status-option i { 
-            width: 16px; 
-            font-size: 14px;
+        
+        .custom-modal { 
+            background: white; 
+            border-radius: 20px; 
+            padding: 40px; 
+            max-width: 450px; 
+            width: 90%; 
+            text-align: center; 
+            animation: modalSlideIn 0.3s ease-out; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-
-        .action-btn { padding: 8px 12px; background: transparent; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; color: #6b7280; transition: all 0.3s; }
-        .action-btn:hover { background: #f5efe6; border-color: #c9a876; }
-        .action-btn.save-btn { background: #10b981; color: white; border-color: #10b981; }
-        .action-btn.cancel-btn { background: #ef4444; color: white; border-color: #ef4444; }
-        .action-btn.delete-btn { color: #ef4444; border-color: #ef4444; }
-        .action-btn.reminder-btn { background: #c9a876; color: white; border-color: #c9a876; }
-
-        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
-        .empty-state i { font-size: 80px; opacity: 0.3; margin-bottom: 20px; }
-
-        .custom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 99999; justify-content: center; align-items: center; }
-        .custom-modal-overlay.show { display: flex; }
-        .custom-modal { background: white; border-radius: 20px; padding: 40px; max-width: 450px; width: 90%; text-align: center; animation: modalSlideIn 0.3s ease-out; }
 
         @keyframes modalSlideIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from { transform: translateY(20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
         }
 
-        .modal-icon { width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
-        .modal-icon i { color: #dc2626; font-size: 40px; }
-        .custom-modal h3 { color: #2C3E50; font-size: 24px; font-weight: 600; margin-bottom: 15px; }
-        .custom-modal p { color: #6b7280; font-size: 16px; margin-bottom: 30px; }
+        .modal-icon { 
+            width: 80px; 
+            height: 80px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto 20px; 
+            transition: background-color 0.3s;
+        }
+        
+        .modal-icon i { 
+            font-size: 40px; 
+            transition: color 0.3s;
+        }
 
-        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
-        .modal-btn { padding: 12px 30px; border-radius: 10px; border: none; font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.3s; }
-        .modal-btn-cancel { background: #f3f4f6; color: #6b7280; }
-        .modal-btn-cancel:hover { background: #e5e7eb; }
-        .modal-btn-confirm { background: #dc2626; color: white; }
-        .modal-btn-confirm:hover { background: #b91c1c; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
+        /* Estilo Peligro (Eliminar) */
+        .modal-icon.icon-danger {
+            background: #fee2e2; /* Rojo claro */
+        }
+        .modal-icon.icon-danger i {
+            color: #dc2626; /* Rojo oscuro */
+        }
+        
+        /* Estilo Info (Resetear) */
+        .modal-icon.icon-info {
+            background: #e0f2fe; /* Azul claro */
+        }
+        .modal-icon.icon-info i {
+            color: #0c54a8; /* Azul oscuro */
+        }
+        
+        .custom-modal h3 { 
+            color: #2C3E50; 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 15px; 
+        }
+        
+        .custom-modal p { 
+            color: #6b7280; 
+            font-size: 16px; 
+            margin-bottom: 30px; 
+            line-height: 1.6;
+        }
+
+        .modal-buttons { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+        }
+        
+        .modal-btn { 
+            padding: 12px 30px; 
+            border-radius: 10px; 
+            border: none; 
+            font-size: 16px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+        }
+        
+        .modal-btn-cancel { 
+            background: #f3f4f6; 
+            color: #6b7280; 
+        }
+        
+        .modal-btn-cancel:hover { 
+            background: #e5e7eb; 
+        }
+        
+        /* Estilo Botón Peligro (Eliminar) */
+        .modal-btn-confirm.btn-danger { 
+            background: #dc2626; 
+            color: white; 
+        }
+        .modal-btn-confirm.btn-danger:hover { 
+            background: #b91c1c; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); 
+        }
+
+        /* Estilo Botón Info (Resetear) */
+        .modal-btn-confirm.btn-info { 
+            background: #0c54a8; 
+            color: white; 
+        }
+        .modal-btn-confirm.btn-info:hover { 
+            background: #0a438a; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(12, 84, 168, 0.3); 
+        }
 
         @media (max-width: 768px) {
-            .welcome-header { flex-direction: column; text-align: center; }
-            .welcome-date { margin-top: 20px; text-align: center; }
-            .list-header { flex-direction: column; gap: 15px; }
-            .filter-tabs { width: 100%; justify-content: center; }
-            .appointment-info { flex-direction: column; align-items: flex-start; gap: 15px; }
-            .appointment-controls { flex-direction: column; width: 100%; }
-            .status-badge { width: 100%; }
-            .edit-date-time { flex-direction: column; }
+            .welcome-header { 
+                flex-direction: column; 
+                text-align: center; 
+            }
+            .list-header { 
+                flex-direction: column; 
+                gap: 15px; 
+            }
+            .appointment-info { 
+                flex-direction: column; 
+                align-items: flex-start; 
+                gap: 15px; 
+            }
         }
     </style>
 @stop
@@ -363,6 +697,183 @@
     <script>
         let appointments = [];
         let currentFilter = 'todas';
+        let currentClientCode = null;
+        let confirmActionCallback = null; // Guardar la acción a ejecutar
+
+        function mapGenderToFullText(genderCode) {
+            switch (genderCode) {
+                case 'M': return 'Masculino';
+                case 'F': return 'Femenino';
+                case 'O': return 'Otro';
+                default: return '';
+            }
+        }
+
+        async function findClient(codCliente) {
+            if (!codCliente) {
+                showNotification('Por favor ingrese un código de cliente', 'error');
+                return false;
+            }
+            const btnSearch = document.getElementById('btnSearchClient');
+            const originalBtnHtml = btnSearch.innerHTML;
+            btnSearch.disabled = true;
+            btnSearch.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
+
+            try {
+                const response = await fetch(`/api/citas/buscar-cliente?cod=${codCliente}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentClientCode = data.cliente.Cod_Cliente;
+                    document.getElementById('codCliente').value = data.cliente.Cod_Cliente;
+                    document.getElementById('codPersona').value = data.persona.Cod_Persona;
+                    document.getElementById('clientFullName').textContent = `${data.persona.Nombre} ${data.persona.Apellido}`;
+                    document.getElementById('displayDNI').textContent = data.persona.DNI || 'No registrado';
+                    document.getElementById('displayPhone').textContent = data.telefonos.length > 0 ? data.telefonos[0].Numero : 'No registrado';
+                    document.getElementById('displayEmail').textContent = data.correos.length > 0 ? data.correos[0].Correo : 'No registrado';
+                    
+                    document.getElementById('searchSection').style.display = 'none';
+                    document.getElementById('clientDataSection').style.display = 'block';
+                    document.getElementById('appointmentDataSection').style.display = 'block';
+                    
+                    showNotification(`✓ Cliente encontrado: ${data.persona.Nombre} ${data.persona.Apellido}`);
+                    return true;
+                } else {
+                    showNotification('❌ Cliente no encontrado. Verifique el código o registre uno nuevo.', 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al buscar cliente', 'error');
+                return false;
+            } finally {
+                btnSearch.disabled = false;
+                btnSearch.innerHTML = originalBtnHtml;
+            }
+        }
+
+        document.getElementById('btnSearchClient').addEventListener('click', async function() {
+            const codCliente = document.getElementById('searchClientCode').value.trim();
+            await findClient(codCliente);
+        });
+
+        document.getElementById('btnNewClient').addEventListener('click', function() {
+            document.getElementById('searchSection').style.display = 'none';
+            document.getElementById('newClientForm').style.display = 'block';
+        });
+
+        document.getElementById('btnSaveNewClient').addEventListener('click', async function() {
+            const nombre = document.getElementById('newClientName').value.trim();
+            const apellido = document.getElementById('newClientLastName').value.trim();
+            const dni = document.getElementById('newClientDNI').value.trim();
+            const fechaNacimiento = document.getElementById('newClientBirthDate').value;
+            const generoCode = document.getElementById('newClientGender').value;
+            const generoTexto = mapGenderToFullText(generoCode); 
+            const telefono = document.getElementById('newClientPhone').value.trim();
+            const correo = document.getElementById('newClientEmail').value.trim();
+            const direccion = document.getElementById('newClientAddress').value.trim();
+
+            if (!nombre || !apellido || !dni || !fechaNacimiento || !generoCode) {
+                showNotification('⚠️ Complete todos los campos obligatorios (marcados con *)', 'error');
+                return;
+            }
+
+            const btnSave = this;
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+
+            try {
+                const response = await fetch('/api/citas/crear-cliente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        nombre: nombre, apellido: apellido, dni: dni, fechaNacimiento: fechaNacimiento,
+                        genero: generoTexto, telefono: telefono, correo: correo, direccion: direccion
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    currentClientCode = result.cod_cliente;
+                    document.getElementById('codCliente').value = result.cod_cliente;
+                    document.getElementById('codPersona').value = result.cod_persona || '';
+                    document.getElementById('clientFullName').textContent = `${nombre} ${apellido}`;
+                    document.getElementById('displayDNI').textContent = dni;
+                    document.getElementById('displayPhone').textContent = telefono || 'No registrado';
+                    document.getElementById('displayEmail').textContent = correo || 'No registrado';
+                    
+                    document.getElementById('newClientForm').style.display = 'none';
+                    document.getElementById('clientDataSection').style.display = 'block';
+                    document.getElementById('appointmentDataSection').style.display = 'block';
+                    
+                    showNotification(`✓ Cliente registrado exitosamente: ${nombre} ${apellido} (Código: ${result.cod_cliente})`);
+                    
+                    // Limpiar formulario de nuevo cliente
+                    document.getElementById('newClientName').value = '';
+                    document.getElementById('newClientLastName').value = '';
+                    document.getElementById('newClientDNI').value = '';
+                    document.getElementById('newClientBirthDate').value = '';
+                    document.getElementById('newClientGender').value = '';
+                    document.getElementById('newClientPhone').value = '';
+                    document.getElementById('newClientEmail').value = '';
+                    document.getElementById('newClientAddress').value = '';
+
+                } else {
+                    showNotification('❌ Error al registrar cliente: ' + (result.error || 'Error desconocido'), 'error'); 
+                }
+            } catch (error) {
+                console.error('Error completo:', error);
+                showNotification('❌ Error de conexión: ' + error.message, 'error');
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cliente';
+            }
+        });
+
+        document.getElementById('btnCancelNewClient').addEventListener('click', function() {
+            document.getElementById('newClientForm').style.display = 'none';
+            document.getElementById('searchSection').style.display = 'block';
+        });
+
+        document.getElementById('btnChangeClient').addEventListener('click', function() {
+            document.getElementById('clientDataSection').style.display = 'none';
+            document.getElementById('appointmentDataSection').style.display = 'none';
+            document.getElementById('searchSection').style.display = 'block';
+            document.getElementById('searchClientCode').value = '';
+            currentClientCode = null;
+        });
+
+        document.getElementById('btnResetForm').addEventListener('click', function() {
+            openConfirmModal(
+                'Confirmar Reinicio',
+                '¿Está seguro de que desea reiniciar el formulario? Se perderán todos los datos ingresados.',
+                'Sí, reiniciar',
+                'info', 
+                function() {
+                    document.getElementById('appointmentForm').reset();
+                    document.getElementById('clientDataSection').style.display = 'none';
+                    document.getElementById('appointmentDataSection').style.display = 'none';
+                    document.getElementById('newClientForm').style.display = 'none';
+                    document.getElementById('searchSection').style.display = 'block';
+                    document.getElementById('searchClientCode').value = '';
+                    document.getElementById('customService').classList.remove('show');
+                    currentClientCode = null;
+                    resetFormToCreateMode();
+                    closeConfirmModal();
+                }
+            );
+        });
 
         document.getElementById('service').addEventListener('change', function() {
             const customInput = document.getElementById('customService');
@@ -376,32 +887,97 @@
             }
         });
 
+        document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const codCliente = document.getElementById('codCliente').value;
+            if (!codCliente) {
+                showNotification('⚠️ Debe seleccionar o registrar un cliente primero', 'error');
+                return;
+            }
+
+            const serviceSelect = document.getElementById('service');
+            const customService = document.getElementById('customService');
+            let serviceValue = serviceSelect.value === 'otro' 
+                ? customService.value 
+                : serviceSelect.options[serviceSelect.selectedIndex].text;
+            
+            const horaInicio = document.getElementById('time').value;
+            const duration = parseFloat(document.getElementById('duration').value);
+            const [horas, minutos] = horaInicio.split(':');
+            const horaFinHoras = parseInt(horas) + Math.floor(duration);
+            const horaFinMinutos = parseInt(minutos) + ((duration % 1) * 60);
+            
+            const citaData = {
+                codCliente: parseInt(codCliente),
+                codEmpleado: 1, 
+                fechaCita: document.getElementById('date').value,
+                horaInicio: horaInicio + ':00',
+                horaFin: `${String(horaFinHoras).padStart(2, '0')}:${String(horaFinMinutos).padStart(2, '0')}:00`,
+                notasInternas: `Paciente: ${document.getElementById('clientFullName').textContent} - Servicio: ${serviceValue} - ${document.getElementById('notes').value}`.trim()
+            };
+
+            const editingId = document.getElementById('editingAppointmentId').value;
+            const method = editingId ? 'PUT' : 'POST';
+            const url = editingId ? `/api/citas/${editingId}` : '/api/citas'; 
+            
+            if (editingId) {
+                const currentAppointment = appointments.find(a => a.id == editingId);
+                citaData.estadoCita = currentAppointment.estadoCita; 
+            } else {
+                citaData.estadoCita = 'Programada';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(citaData)
+                });
+
+                if (response.ok) {
+                    const message = editingId ? '✓ Cita actualizada exitosamente' : '✓ Cita agendada exitosamente';
+                    showNotification(message);
+                    document.getElementById('btnResetForm').dispatchEvent(new Event('click_internal'));
+                    loadAppointments();
+                } else {
+                    const error = await response.json();
+                    showNotification(`❌ Error: ${error.error || 'No se pudo guardar la cita'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('❌ Error de conexión al guardar la cita', 'error');
+            }
+        });
+        
+        document.getElementById('btnResetForm').addEventListener('click_internal', function() {
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('clientDataSection').style.display = 'none';
+            document.getElementById('appointmentDataSection').style.display = 'none';
+            document.getElementById('newClientForm').style.display = 'none';
+            document.getElementById('searchSection').style.display = 'block';
+            document.getElementById('searchClientCode').value = '';
+            document.getElementById('customService').classList.remove('show');
+            currentClientCode = null;
+            resetFormToCreateMode();
+        });
+
         function showNotification(message, type = 'success') {
             const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
             const notification = document.createElement('div');
             notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: ${bgColor};
-                color: white;
-                padding: 15px 25px;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                z-index: 100000;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                animation: slideInRight 0.3s ease-out;
+                position: fixed; bottom: 20px; right: 20px; background: ${bgColor}; color: white;
+                padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                z-index: 100000; display: flex; align-items: center; gap: 10px;
+                animation: slideInRight 0.3s ease-out; max-width: 400px;
             `;
-            notification.innerHTML = `<i class="fas fa-check-circle"></i>${message}`;
-            
-            const style = document.createElement('style');
-            style.textContent = `@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
-            document.head.appendChild(style);
-            
+            notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
             document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+            setTimeout(() => notification.remove(), 4000);
         }
 
         function formatTime12Hour(time24) {
@@ -415,14 +991,14 @@
 
         function parseMySQLDate(fechaStr) {
             if (!fechaStr) return null;
-            const parts = fechaStr.split('-');
+            const dateOnly = fechaStr.split('T')[0];
+            const parts = dateOnly.split('-');
             return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         }
 
         function getDateText(fechaObj) {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-            
             const fecha = new Date(fechaObj);
             fecha.setHours(0, 0, 0, 0);
             
@@ -431,58 +1007,8 @@
             
             if (daysDiff === 0) return 'Hoy';
             if (daysDiff === 1) return 'Mañana';
-            
-            const opciones = { day: 'numeric', month: 'short' };
-            return fecha.toLocaleDateString('es-ES', opciones);
+            return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         }
-
-        document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const serviceSelect = document.getElementById('service');
-            const customService = document.getElementById('customService');
-            
-            let serviceValue = serviceSelect.value === 'otro' 
-                ? customService.value 
-                : serviceSelect.options[serviceSelect.selectedIndex].text;
-            
-            const horaInicio = document.getElementById('time').value;
-            const [horas, minutos] = horaInicio.split(':');
-            const horaFin = (parseInt(horas) + 1).toString().padStart(2, '0');
-            const horaFinCompleta = `${horaFin}:${minutos}:00`;
-            
-            const citaData = {
-                codCliente: 105,
-                codEmpleado: 1,
-                fechaCita: document.getElementById('date').value,
-                horaInicio: horaInicio + ':00',
-                horaFin: horaFinCompleta,
-                estadoCita: 'Programada',
-                notasInternas: `Paciente: ${document.getElementById('patient').value} - Servicio: ${serviceValue} - ${document.getElementById('notes').value}`
-            };
-
-            try {
-                const response = await fetch('/api/citas', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify(citaData)
-                });
-
-                if (response.ok) {
-                    showNotification(`Cita agendada - ${document.getElementById('patient').value} registrado exitosamente`);
-                    this.reset();
-                    customService.classList.remove('show');
-                    loadAppointments();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showNotification('Error al agendar la cita', 'error');
-            }
-        });
 
         async function loadAppointments() {
             try {
@@ -490,29 +1016,44 @@
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
-
                 if (response.ok) {
                     const citas = await response.json();
-                    
                     appointments = citas.map(cita => {
                         const fechaObj = parseMySQLDate(cita.Fecha_Cita);
-                        
+                        const notasPartes = (cita.Notas_Internas || '').split(' - ');
+                        const patient = (notasPartes[0] || '').replace('Paciente: ', '') || 'Sin nombre';
+                        const service = (notasPartes[1] || '').replace('Servicio: ', '') || 'Sin servicio';
+                        const notes = notasPartes.slice(2).join(' - ') || ''; 
+
                         return {
                             id: cita.Cod_Cita,
                             codCita: cita.Cod_Cita,
                             codCliente: cita.Cod_Cliente,
                             codEmpleado: cita.Cod_Empleado,
-                            fechaCita: cita.Fecha_Cita,
+                            fechaCita: cita.Fecha_Cita.split('T')[0], 
                             fechaObj: fechaObj,
                             horaInicio: cita.Hora_Inicio,
                             horaFin: cita.Hora_Fin,
                             estadoCita: cita.Estado_Cita,
-                            patient: cita.Notas_Internas ? cita.Notas_Internas.split(' - ')[0].replace('Paciente: ', '') : 'Sin nombre',
-                            service: cita.Notas_Internas ? (cita.Notas_Internas.split(' - ')[1] || 'Sin servicio').replace('Servicio: ', '') : 'Sin servicio',
+                            patient: patient,
+                            service: service,
+                            notes: notes,
                             time: cita.Hora_Inicio ? formatTime12Hour(cita.Hora_Inicio.substring(0, 5)) : '',
                             dateText: getDateText(fechaObj),
                             status: mapearEstado(cita.Estado_Cita)
                         };
+                    });
+                    
+                    appointments.sort((a, b) => {
+                        const dateA = new Date(a.fechaObj);
+                        const dateB = new Date(b.fechaObj);
+                        
+                        const [hA, mA] = a.horaInicio ? a.horaInicio.split(':') : [0,0];
+                        const [hB, mB] = b.horaInicio ? b.horaInicio.split(':') : [0,0];
+                        dateA.setHours(hA, mA);
+                        dateB.setHours(hB, mB);
+
+                        return dateB.getTime() - dateA.getTime(); 
                     });
 
                     renderAppointments();
@@ -535,22 +1076,16 @@
         function filterAppointments() {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-
+            
             return appointments.filter(appointment => {
                 if (!appointment.fechaObj) return false;
-                
                 const fechaCita = new Date(appointment.fechaObj);
                 fechaCita.setHours(0, 0, 0, 0);
-
                 switch(currentFilter) {
-                    case 'hoy':
-                        return fechaCita.getTime() === hoy.getTime();
-                    case 'proximas':
-                        return fechaCita.getTime() > hoy.getTime();
-                    case 'pasadas':
-                        return fechaCita.getTime() < hoy.getTime();
-                    default:
-                        return true;
+                    case 'hoy': return fechaCita.getTime() === hoy.getTime();
+                    case 'proximas': return fechaCita.getTime() > hoy.getTime();
+                    case 'pasadas': return fechaCita.getTime() < hoy.getTime();
+                    default: return true;
                 }
             });
         }
@@ -563,13 +1098,7 @@
                 container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-alt"></i><p>No hay citas en esta categoría</p></div>`;
                 return;
             }
-
-            filteredAppointments.sort((a, b) => {
-                const fechaA = new Date(a.fechaObj);
-                const fechaB = new Date(b.fechaObj);
-                return fechaA - fechaB;
-            });
-
+            
             container.innerHTML = filteredAppointments.map(appointment => `
                 <div class="appointment-item" data-id="${appointment.id}">
                     <div class="appointment-info">
@@ -578,36 +1107,33 @@
                             <span class="date">${appointment.dateText}</span>
                         </div>
                         <div class="appointment-details">
-                            <h4>${appointment.patient}</h4>
-                            <p>${appointment.service}</p>
+                            <h4><i class="fas fa-user mr-2"></i>${appointment.patient}</h4>
+                            <p><i class="fas fa-briefcase-medical mr-2"></i>${appointment.service}</p>
                         </div>
                     </div>
                     <div class="appointment-controls">
-                        <div class="status-dropdown">
-                            <button class="status-badge ${getStatusClass(appointment.status)}" onclick="toggleStatusDropdown(${appointment.id})">
-                                ${getStatusText(appointment.status)}
+                        <span class="status-badge ${getStatusClass(appointment.status)}">${getStatusText(appointment.status)}</span>
+                        
+                        <div class="btn-group dropup">
+                            <button class="action-btn" data-toggle="dropdown" title="Cambiar Estado" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-sync-alt"></i>
                             </button>
-                            <div class="status-options" id="status-options-${appointment.id}">
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'programada')">
-                                    <i class="fas fa-calendar-alt"></i> Programada
-                                </div>
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'confirmed')">
-                                    <i class="fas fa-check-circle"></i> Confirmada
-                                </div>
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'realizada')">
-                                    <i class="fas fa-check-double"></i> Realizada
-                                </div>
-                                <div class="status-option" onclick="changeStatus(${appointment.id}, 'cancelled')">
-                                    <i class="fas fa-times-circle"></i> Cancelada
-                                </div>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Programada');">Programada</a>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Confirmada');">Confirmada</a>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Realizada');">Realizada</a>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Cancelada');">Cancelada</a>
                             </div>
                         </div>
-                        <button class="action-btn reminder-btn" onclick="sendReminder(${appointment.id})" title="Enviar Recordatorio">
+
+                        <button class="action-btn" onclick="sendNotification(${appointment.id})" title="Enviar Notificación">
                             <i class="fas fa-bell"></i>
                         </button>
-                        <button class="action-btn edit-btn" onclick="editAppointment(${appointment.id})" title="Editar">
+
+                        <button class="action-btn" onclick="editAppointment(${appointment.id})" title="Editar Cita">
                             <i class="fas fa-edit"></i>
                         </button>
+
                         <button class="action-btn delete-btn" onclick="deleteAppointment(${appointment.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -617,139 +1143,152 @@
         }
 
         function getStatusClass(status) {
-            switch(status) {
-                case 'programada': return 'status-programada';
-                case 'confirmed': return 'status-confirmed';
-                case 'realizada': return 'status-realizada';
-                case 'cancelled': return 'status-cancelled';
-                default: return 'status-programada';
-            }
+            const classes = {
+                'programada': 'status-programada', 'confirmed': 'status-confirmed',
+                'realizada': 'status-realizada', 'cancelled': 'status-cancelled'
+            };
+            return classes[status] || 'status-programada';
         }
 
         function getStatusText(status) {
-            switch(status) {
-                case 'programada': return 'Programada';
-                case 'confirmed': return 'Confirmada';
-                case 'realizada': return 'Realizada';
-                case 'cancelled': return 'Cancelada';
-                default: return 'Programada';
-            }
-        }
-
-        function toggleStatusDropdown(id) {
-            const dropdown = document.getElementById(`status-options-${id}`);
-            document.querySelectorAll('.status-options').forEach(d => {
-                if (d.id !== `status-options-${id}`) d.classList.remove('show');
-            });
-            dropdown.classList.toggle('show');
+            const texts = {
+                'programada': 'Programada', 'confirmed': 'Confirmada',
+                'realizada': 'Realizada', 'cancelled': 'Cancelada'
+            };
+            return texts[status] || 'Programada';
         }
 
         async function changeStatus(id, newStatus) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
+            showNotification(`🔄 Cambiando estado a ${newStatus}...`, 'info');
 
             try {
-                let estadoCita = 'Programada';
-                if (newStatus === 'confirmed') estadoCita = 'Confirmada';
-                if (newStatus === 'realizada') estadoCita = 'Realizada';
-                if (newStatus === 'cancelled') estadoCita = 'Cancelada';
+                const response = await fetch(`/api/citas/estado/${id}`, { 
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json', 'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ estado: newStatus })
+                });
+
+                if (response.ok) {
+                    showNotification(`✓ Estado actualizado a ${newStatus}`, 'success');
+                    loadAppointments();
+                } else {
+                    const error = await response.json();
+                    showNotification(`❌ Error al cambiar estado: ${error.error || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error al cambiar estado:', error);
+                showNotification('❌ Error de conexión al cambiar estado', 'error');
+            }
+        }
+
+        async function editAppointment(id) {
+            const appointment = appointments.find(a => a.id === id);
+            if (!appointment) return;
+            
+            showNotification('Cargando datos de la cita...', 'info');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const clientFound = await findClient(appointment.codCliente);
+            
+            if (clientFound) {
+                document.getElementById('editingAppointmentId').value = appointment.id;
+                document.getElementById('date').value = appointment.fechaCita; // Usar la fecha YYYY-MM-DD guardada
+                document.getElementById('time').value = appointment.horaInicio.substring(0, 5);
+                document.getElementById('notes').value = appointment.notes;
+
+                const serviceSelect = document.getElementById('service');
+                const customServiceInput = document.getElementById('customService');
+                let optionFound = Array.from(serviceSelect.options).some(option => {
+                    if (option.text === appointment.service) {
+                        option.selected = true;
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (!optionFound && appointment.service) {
+                    serviceSelect.value = 'otro';
+                    customServiceInput.value = appointment.service;
+                    customServiceInput.classList.add('show');
+                } else {
+                    customServiceInput.classList.remove('show');
+                    customServiceInput.value = '';
+                }
                 
-                const response = await fetch('/api/citas', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        Cod_Cita: appointment.codCita,
-                        Cod_Cliente: appointment.codCliente,
-                        Cod_Empleado: appointment.codEmpleado,
-                        Fecha_Cita: appointment.fechaCita,
-                        Hora_Inicio: appointment.horaInicio,
-                        Hora_Fin: appointment.horaFin,
-                        Estado_Cita: estadoCita,
-                        Notas_Internas: `Paciente: ${appointment.patient} - Servicio: ${appointment.service}`
-                    })
-                });
-
-                if (response.ok) {
-                    document.querySelectorAll('.status-options').forEach(d => d.classList.remove('show'));
-                    loadAppointments();
-                }
-            } catch (error) {
-                console.error('Error:', error);
+                document.getElementById('formTitle').textContent = 'Editar Cita';
+                document.getElementById('submitAppointmentBtn').innerHTML = '<i class="fas fa-save mr-2"></i>Actualizar Cita';
             }
         }
 
-        function editAppointment(id) {
-            const appointment = appointments.find(a => a.id === id);
-            if (!appointment) return;
-
-            const item = document.querySelector(`[data-id="${id}"]`);
-            if (item.classList.contains('editing')) {
-                renderAppointments();
-                return;
-            }
-
-            const time24 = appointment.horaInicio.substring(0, 5);
-
-            item.classList.add('editing');
-            item.querySelector('.appointment-details').innerHTML = `
-                <input type="text" value="${appointment.patient}" id="edit-patient-${id}" placeholder="Nombre del paciente" />
-                <input type="text" value="${appointment.service}" id="edit-service-${id}" placeholder="Servicio" />
-                <div class="edit-date-time">
-                    <input type="date" value="${appointment.fechaCita}" id="edit-date-${id}" />
-                    <input type="time" value="${time24}" id="edit-time-${id}" />
-                </div>
-            `;
-
-            item.querySelector('.appointment-controls').innerHTML = `
-                <button class="action-btn save-btn" onclick="saveAppointment(${id})">Guardar</button>
-                <button class="action-btn cancel-btn" onclick="renderAppointments()">Cancelar</button>
-            `;
+        function resetFormToCreateMode() {
+            document.getElementById('editingAppointmentId').value = '';
+            document.getElementById('formTitle').textContent = 'Agendar Nueva Cita';
+            document.getElementById('submitAppointmentBtn').innerHTML = '<i class="fas fa-calendar-check mr-2"></i>Agendar Cita';
         }
 
-        async function saveAppointment(id) {
+        // ⬇️ MODIFICADO: Envía al NÚMERO DEL CLIENTE ⬇️
+        async function sendNotification(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
-
-            const newPatient = document.getElementById(`edit-patient-${id}`).value;
-            const newService = document.getElementById(`edit-service-${id}`).value;
-            const newDate = document.getElementById(`edit-date-${id}`).value;
-            const newTime = document.getElementById(`edit-time-${id}`).value;
-
-            const [horas, minutos] = newTime.split(':');
-            const horaFin = (parseInt(horas) + 1).toString().padStart(2, '0');
-            const horaFinCompleta = `${horaFin}:${minutos}:00`;
+            
+            showNotification(`🔔 Obteniendo datos del cliente...`, 'info');
 
             try {
-                const response = await fetch('/api/citas', {
-                    method: 'PUT',
+                // 1. Buscar los datos del cliente (incluyendo el teléfono)
+                const response = await fetch(`/api/citas/buscar-cliente?cod=${appointment.codCliente}`, {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        Cod_Cita: appointment.codCita,
-                        Cod_Cliente: appointment.codCliente,
-                        Cod_Empleado: appointment.codEmpleado,
-                        Fecha_Cita: newDate,
-                        Hora_Inicio: newTime + ':00',
-                        Hora_Fin: horaFinCompleta,
-                        Estado_Cita: appointment.estadoCita,
-                        Notas_Internas: `Paciente: ${newPatient} - Servicio: ${newService}`
-                    })
+                    }
                 });
 
-                if (response.ok) {
-                    showNotification(`Cita actualizada - ${newPatient} modificado exitosamente`);
-                    loadAppointments();
+                if (!response.ok) {
+                    throw new Error('No se pudo encontrar la información del cliente.');
                 }
+
+                const clientData = await response.json();
+                
+                // 2. Extraer el número de teléfono
+                const phoneData = clientData.telefonos.length > 0 ? clientData.telefonos[0] : null;
+                if (!phoneData || !phoneData.Numero) {
+                    showNotification(`❌ Error: El cliente ${appointment.patient} no tiene un número de teléfono registrado.`, 'error');
+                    return;
+                }
+
+                // 3. Formatear el número (Asumiendo 504 para Honduras, quitar guiones)
+                let phoneNumber = phoneData.Numero.replace(/[^0-9]/g, ''); // Quitar guiones, espacios, etc.
+                const countryCode = phoneData.Cod_Pais || '504';
+                
+                // Evitar duplicar el código de país si ya está
+                if (!phoneNumber.startsWith(countryCode)) {
+                    phoneNumber = countryCode + phoneNumber;
+                }
+
+                // 4. Crear el mensaje
+                // Formatear la fecha (ej: "lunes, 1 de diciembre de 2025")
+                const prettyDate = new Date(appointment.fechaObj).toLocaleDateString('es-ES', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                const text = `¡Hola ${appointment.patient}! 👋 Te recordamos tu cita en Salus para un servicio de *${appointment.service}* el próximo *${prettyDate}* a las *${appointment.time}*. ¡Te esperamos!`;
+                
+                // 5. Crear y abrir la URL de WhatsApp
+                const encodedText = encodeURIComponent(text);
+                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedText}`;
+                
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification(`✓ Abriendo WhatsApp para ${appointment.patient}...`, 'success');
+
             } catch (error) {
-                console.error('Error:', error);
-                showNotification('Error al actualizar la cita', 'error');
+                console.error('Error al enviar notificación:', error);
+                showNotification(`❌ Error: ${error.message}`, 'error');
             }
         }
 
@@ -757,49 +1296,79 @@
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
 
-            const modal = document.getElementById('confirmModal');
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            const modalMessage = document.getElementById('modalMessage');
-            
-            modalMessage.innerHTML = `¿Está seguro de que desea eliminar la cita de <strong>${appointment.patient}</strong>?`;
-            modal.classList.add('show');
+            openConfirmModal(
+                'Confirmar Eliminación',
+                `¿Está seguro de que desea eliminar la cita de <strong>${appointment.patient}</strong>?`,
+                'Sí, eliminar',
+                'danger', 
+                async function() {
+                    try {
+                        const response = await fetch(`/api/citas/${appointment.codCita}`, { 
+                            method: 'DELETE',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
 
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-            newConfirmBtn.onclick = async function() {
-                try {
-                    const response = await fetch(`/api/citas?cod=${appointment.codCita}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        if (response.ok) {
+                            closeConfirmModal();
+                            showNotification(`✓ Cita eliminada: ${appointment.patient}`);
+                            loadAppointments();
+                        } else {
+                            const error = await response.json();
+                            throw new Error(error.error || 'No se pudo eliminar la cita');
                         }
-                    });
-
-                    if (response.ok) {
+                    } catch (error) {
+                        console.error('Error:', error);
                         closeConfirmModal();
-                        showNotification(`Cita eliminada - ${appointment.patient} ha sido eliminado del sistema`);
-                        loadAppointments();
+                        showNotification(`❌ Error al eliminar la cita: ${error.message}`, 'error');
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                    closeConfirmModal();
-                    showNotification('Error al eliminar la cita', 'error');
                 }
-            };
+            );
+        }
+
+        function openConfirmModal(title, message, confirmText, type = 'danger', callback) {
+            const modal = document.getElementById('confirmModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            const modalIcon = document.getElementById('modalIcon');
+
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message;
+            confirmBtn.textContent = confirmText;
+            
+            modalIcon.className = 'modal-icon';
+            confirmBtn.className = 'modal-btn modal-btn-confirm';
+
+            if (type === 'danger') {
+                modalIcon.classList.add('icon-danger');
+                confirmBtn.classList.add('btn-danger');
+            } else if (type === 'info') {
+                modalIcon.classList.add('icon-info');
+                confirmBtn.classList.add('btn-info');
+                modalIcon.querySelector('i').className = 'fas fa-question-circle';
+            }
+            
+            if(type !== 'info') {
+                 modalIcon.querySelector('i').className = 'fas fa-exclamation-triangle';
+            }
+
+            confirmActionCallback = callback;
+            modal.classList.add('show');
         }
 
         function closeConfirmModal() {
             document.getElementById('confirmModal').classList.remove('show');
+            confirmActionCallback = null;
         }
 
-        function sendReminder(id) {
-            const appointment = appointments.find(a => a.id === id);
-            if (appointment) {
-                showNotification(`Recordatorio enviado a ${appointment.patient}`, 'info');
+        document.getElementById('confirmActionBtn').addEventListener('click', () => {
+            if (typeof confirmActionCallback === 'function') {
+                confirmActionCallback();
             }
-        }
+        });
 
         const filterTabs = document.querySelectorAll('.filter-tab');
         filterTabs.forEach(tab => {
@@ -811,19 +1380,11 @@
             });
         });
 
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.status-dropdown')) {
-                document.querySelectorAll('.status-options').forEach(d => d.classList.remove('show'));
-            }
-        });
-
         function updateClock() {
             const now = new Date();
             const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
             const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            
             const dateStr = `${dias[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]} ${now.getFullYear()}`;
-            
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -832,7 +1393,6 @@
             
             const dateElement = document.querySelector('.welcome-date .date');
             const timeElement = document.querySelector('.welcome-date .time');
-            
             if (dateElement) dateElement.textContent = dateStr;
             if (timeElement) timeElement.textContent = timeStr;
         }

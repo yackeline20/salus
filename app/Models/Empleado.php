@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BitacoraTrait;  // ← AGREGAR ESTA LÍNEA
 
 class Empleado extends Model
 {
     use HasFactory;
+    use BitacoraTrait;  // ← AGREGAR ESTA LÍNEA
 
     protected $table = 'empleado';
     protected $primaryKey = 'Cod_Empleado';

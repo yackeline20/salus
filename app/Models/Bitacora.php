@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Bitacora extends Model
 {
@@ -20,28 +22,64 @@ class Bitacora extends Model
         'Observaciones',
         'Modulo',
         'IP_Address',
-    ];
-
-    protected $dates = [
         'Fecha_Registro'
     ];
 
-    // Relación con Usuario
-    public function usuario()
+    protected $casts = [
+        'Fecha_Registro' => 'datetime',
+    ];
+
+    /**
+     * Método para registrar acciones manualmente
+     */
+    public static function registrar($accion, $modulo, $observaciones = '')
     {
-        return $this->belongsTo(Usuario::class, 'Cod_Usuario', 'Cod_Usuario');
+        try {
+            // Establecer variables para triggers
+            self::setMySQLVariables();
+
+            self::create([
+                'Cod_Usuario' => Auth::id() ?? 0,
+                'Nombre_Usuario' => Auth::user()->name ?? 'Sistema',
+                'Accion' => $accion,
+                'Observaciones' => $observaciones,
+                'Modulo' => $modulo,
+                'IP_Address' => request()->ip() ?? '0.0.0.0',
+                'Fecha_Registro' => now()
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Error en bitácora: ' . $e->getMessage());
+            return false;
+        }
     }
 
-    // Método helper para registrar acciones fácilmente
-    public static function registrar($accion, $modulo = null, $observaciones = null)
+    /**
+     * Establecer variables MySQL
+     */
+    public static function setMySQLVariables()
     {
-        return self::create([
-            'Cod_Usuario' => auth()->user()->Cod_Usuario ?? 0,
-            'Nombre_Usuario' => auth()->user()->Nombre_Usuario ?? 'Sistema',
-            'Accion' => $accion,
-            'Modulo' => $modulo,
-            'Observaciones' => $observaciones,
-            'IP_Address' => request()->ip(),
-        ]);
+        try {
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $userName = Auth::user()->name ?? 'Usuario';
+                $userIp = request()->ip() ?? '0.0.0.0';
+                
+                DB::unprepared("SET @usuario_id = {$userId}");
+                DB::unprepared("SET @usuario_nombre = '{$userName}'");
+                DB::unprepared("SET @usuario_ip = '{$userIp}'");
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error setting MySQL variables: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Relación con usuario (si tienes tabla usuarios)
+     */
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'Cod_Usuario', 'id');
     }
 }

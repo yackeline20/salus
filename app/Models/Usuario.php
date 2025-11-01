@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\Traits\BitacoraTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,7 +20,7 @@ use App\Models\Correo;
 class Usuario extends Authenticatable implements CanResetPassword
 {
     use HasApiTokens, HasFactory, Notifiable;
-
+use BitacoraTrait;
     protected $table = 'usuarios';
     protected $primaryKey = 'Cod_Usuario';
 

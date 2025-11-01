@@ -12,11 +12,10 @@ use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
-// 🟢 Importar el controlador de Facturas (Se mantiene por si se usa en otras rutas web)
 use App\Http\Controllers\FacturaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\BitacoraController;
 
 // Ruta raíz - SIEMPRE muestra la vista de bienvenida.
 Route::get('/', function () {
@@ -80,50 +79,65 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // B. MÓDULOS PROTEGIDOS POR POLICIES (Rutas Web)
     // ----------------------------------------
 
-    // 🔴 Módulo de Facturación: RUTA ELIMINADA.
-    // La funcionalidad CRUD de Facturas ahora se maneja completamente en routes/api.php
-    // y usa el FacturaController que devuelve JSON. Si necesitas una vista de
-    // "Listado de Facturas", agrégala manualmente:
+    // 🔴 Módulo de Facturación: Se mantiene solo la vista de índice, ya que el CRUD es API.
     Route::get('/facturas', function () {
         return view('factura.index'); // O el nombre de tu vista principal de facturas
     })->name('factura.index')
       ->middleware('can:viewAny,App\Models\Factura');
 
-    // 🟢 Módulo de Citas (CRÍTICO: Usamos Route::resource si tienes CitaController)
-    // Ya que usaste rutas API, asumiremos que el index de Citas es la vista principal,
-    // pero incluiremos el Route::resource si necesitas CRUD
-    // NOTA: Dejo las rutas API ya que son específicas
-    Route::get('/citas', [CitasController::class, 'index'])->name('citas')
-        ->middleware('can:viewAny,App\Models\Cita'); // 🟢 Usamos @can y Policy
+    // ========================================
+    // 🟢 MÓDULO DE CITAS - CON PUNTO Y COMA
+    // ========================================
 
-    // Rutas API de citas: Revisa si estas APIs deben seguir usando 'check.permissions' o policies
-    // NOTA: Estas rutas API deberían estar idealmente en routes/api.php
-    Route::get('/api/citas', [CitasController::class, 'getCitas'])->name('api.citas.get')
-         ->middleware('check.permissions:Citas,select');
-    Route::post('/api/citas', [CitasController::class, 'storeCita'])->name('api.citas.store')
-         ->middleware('check.permissions:Citas,insert');
-    Route::put('/api/citas', [CitasController::class, 'updateCita'])->name('api.citas.update')
-         ->middleware('check.permissions:Citas,update');
-    Route::delete('/api/citas', [CitasController::class, 'deleteCita'])->name('api.citas.delete')
-         ->middleware('check.permissions:Citas,delete');
+    // Vista principal de citas
+    Route::get('/citas', [CitasController::class, 'index'])->name('citas')
+        ->middleware('can:viewAny,App\Models\Cita');
+
+    // Búsqueda y creación de clientes
+    Route::get('/api/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
+        ->name('api.citas.buscar-cliente')
+        ->middleware('can:viewAny,App\Models\Cita');
+
+    Route::post('/api/citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])
+        ->name('api.citas.crear-cliente')
+        ->middleware('can:create,App\Models\Cita');
+
+    // API CRUD de Citas
+    Route::get('/api/citas', [CitasController::class, 'getCitas'])
+        ->name('api.citas.get')
+        ->middleware('can:viewAny,App\Models\Cita');
+
+    Route::post('/api/citas', [CitasController::class, 'storeCita'])
+        ->name('api.citas.store')
+        ->middleware('can:create,App\Models\Cita');
+
+    Route::put('/api/citas/{id}', [CitasController::class, 'updateCita'])
+        ->name('api.citas.update');
+
+    Route::delete('/api/citas/{id}', [CitasController::class, 'deleteCita'])
+        ->name('api.citas.delete');
+
+    Route::put('/api/citas/estado/{id}', [CitasController::class, 'updateStatus'])
+        ->name('api.citas.update-status');
+
 
     // 🟢 Módulo de Inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-         ->middleware('can:viewAny,App\Models\Product'); // 🟢 Usamos @can y Policy
+          ->middleware('can:viewAny,App\Models\Product');
 
     // 🟢 Módulo de Gestión de Servicios
     Route::get('/servicios', function () {
         return view('gestion-servicios');
     })->name('servicios')
-      ->middleware('can:viewAny,App\Models\Tratamiento'); // 🟢 Usamos @can y Policy
+      ->middleware('can:viewAny,App\Models\Tratamiento');
 
     // Módulo de Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-         ->middleware('can:viewAny,App\Models\Reporte'); // 🟢 Usamos @can y Policy
+          ->middleware('can:viewAny,App\Models\Reporte');
 
     // Módulo de Gestión de Personal
     Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
-         ->middleware('can:viewAny,App\Models\Empleado'); // 🟢 Usamos @can y Policy
+          ->middleware('can:viewAny,App\Models\Empleado');
 
 
     // ========================================
@@ -132,7 +146,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
     // Ruta principal de Administración
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-         ->middleware('can:viewAny,App\Models\Cliente'); // 🟢 Usamos @can y Policy
+          ->middleware('can:viewAny,App\Models\Cliente');
 
     // SUB-RUTAS DE ADMINISTRACIÓN
     Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
@@ -146,12 +160,32 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::get('/password', [AdministracionController::class, 'password'])->name('administracion.password');
         Route::post('/password/cambiar', [AdministracionController::class, 'cambiarPassword'])->name('administracion.password.cambiar');
 
-        // Bitácora
-        Route::get('/bitacora', [AdministracionController::class, 'bitacora'])->name('administracion.bitacora');
-        Route::get('/bitacora/export-pdf', [AdministracionController::class, 'exportPdf'])->name('administracion.bitacora.export.pdf');
-        Route::get('/bitacora/export-excel', [AdministracionController::class, 'exportExcel'])->name('administracion.bitacora.export.excel');
-        Route::post('/bitacora', [AdministracionController::class, 'exportExcel'])->name('administracion.bitacora.insert'); // <--- PENDING: Falta definir qué hace esta ruta
-    });
+    }); // Cierre de prefix 'administracion'
+
+    // ========================================
+    // RUTAS DEL MÓDULO DE BITÁCORA
+    // ========================================
+
+    // Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
+    Route::prefix('bitacora')->name('bitacora.')->group(function () {
+
+        // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
+        Route::get('/', [BitacoraController::class, 'index'])->name('index');
+
+        // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
+        Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
+
+        // 3. Mostrar los detalles de un registro
+        Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
+
+        // 4. Elimina un registro de la bitácora
+        Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
+
+        // 5. Procesa la restauración de un registro
+        Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
+
+    }); // Cierre de prefix 'bitacora'
+
 
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
 
