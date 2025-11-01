@@ -7,19 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-// Importamos los modelos relacionados que usaremos
-use App\Models\Correo;
-use App\Models\Telefono;
-use App\Models\Direccion;
-use App\Models\Usuario;
-
 class Persona extends Model
 {
     use HasFactory;
 
     protected $table = 'persona';
     protected $primaryKey = 'Cod_Persona';
-    public $timestamps = false;
+    public $timestamps = false; // Deshabilitar timestamps
 
     protected $fillable = [
         'Nombre',
@@ -29,12 +23,27 @@ class Persona extends Model
         'Genero',
     ];
 
-    // --- Relaciones ---
+    // --- Relaciones Eloquent ---
+
+    /**
+     * Relación UNO a UNO con Cliente.
+     */
+    public function cliente(): HasOne
+    {
+        return $this->hasOne(Cliente::class, 'Cod_Persona', 'Cod_Persona');
+    }
+
+    /**
+     * Relación UNO a UNO con Usuario.
+     */
+    public function usuario(): HasOne
+    {
+
+        return $this->hasOne(Usuario::class, 'Cod_Persona', 'Cod_Persona');
+    }
 
     /**
      * Relación UNO a MUCHOS con Correo.
-     * CRÍTICA para el funcionamiento de scopeWhereEmail en Usuario.php
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function correos(): HasMany
     {
@@ -43,7 +52,6 @@ class Persona extends Model
 
     /**
      * Relación UNO a MUCHOS con Telefono
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function telefonos(): HasMany
     {
@@ -52,48 +60,66 @@ class Persona extends Model
 
     /**
      * Relación UNO a MUCHOS con Direccion
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function direcciones(): HasMany
     {
         return $this->hasMany(Direccion::class, 'Cod_Persona', 'Cod_Persona');
     }
 
+
+    // --- ACCESORES (Usar como $persona->nombre_completo) ---
+
     /**
-     * Relación UNO a UNO con Usuario
-     * IMPORTANTE: Una persona puede tener un usuario en el sistema
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * Accesor para obtener el nombre completo (Forma idiomática de Laravel).
+     * Se accede en la vista como: $persona->nombre_completo
+     * @return string
      */
-    public function usuario(): HasOne
+    public function getNombreCompletoAttribute(): string
     {
-        return $this->hasOne(Usuario::class, 'Cod_Persona', 'Cod_Persona');
+        return trim($this->Nombre . ' ' . $this->Apellido);
     }
 
-    // --- Métodos Auxiliares ---
+    // --- CORRECCIÓN DEL ERROR DE LA VISTA (getnombreCompleto()) ---
+
+    /**
+     * CORRECCIÓN DEL ERROR: Método simple para coincidir con la llamada de la vista.
+     * La llamada en la vista es: $persona->getnombreCompleto()
+     * Nota: Este método tiene la 'n' de nombre en minúscula, como se ve en la imagen de error.
+     * Es mejor cambiar la vista para usar el Accesor (getNombreCompletoAttribute).
+     * @return string
+     */
+    public function getnombreCompleto(): string
+    {
+        // Llamamos al Accesor real para mantener la lógica centralizada
+        return $this->getNombreCompletoAttribute();
+    }
+
+
+    // --- Métodos Auxiliares/Funciones ---
 
     /**
      * Método auxiliar para obtener el modelo Correo principal (Personal o el primero).
-     * IMPORTANTE: Este método devuelve el MODELO Correo, no el string del correo.
      * @return \App\Models\Correo|null
      */
     public function getCorreoPrincipal()
     {
-        // Buscamos el tipo 'Personal' (insensible a mayúsculas/minúsculas)
-        $personal = $this->correos()
-                         ->whereRaw('LOWER(Tipo_correo) = ?', ['personal'])
-                         ->first();
-
-        // Si no hay Personal, devuelve el primero que encuentre la relación
-        return $personal ?? $this->correos()->first();
+        // Busca el correo tipo 'Personal' o el primer correo disponible.
+        return $this->correos()->where('Tipo_correo', 'Personal')->first() ??
+               $this->correos()->first();
     }
+
+    // --- Scopes ---
 
     /**
-     * Método auxiliar para obtener el nombre completo
-     * @return string
+     * Scope para buscar personas por DNI.
+     * Uso: Persona::byDni('123456')->first()
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $dni
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function getNombreCompleto(): string
+    public function scopeByDni($query, $dni)
     {
-        return trim($this->Nombre . ' ' . $this->Apellido);
+        return $query->where('DNI', $dni);
     }
-}
 
+}

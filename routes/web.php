@@ -12,7 +12,7 @@ use App\Http\Controllers\GestionPersonalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
-// 🟢 Importar el controlador de Facturas
+// 🟢 Importar el controlador de Facturas (Se mantiene por si se usa en otras rutas web)
 use App\Http\Controllers\FacturaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -77,12 +77,17 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
 
     // ----------------------------------------
-    // B. MÓDULOS PROTEGIDOS POR POLICIES (Route::resource)
-    // Usar Route::resource activa FacturaPolicy, CitaPolicy, etc.
+    // B. MÓDULOS PROTEGIDOS POR POLICIES (Rutas Web)
     // ----------------------------------------
 
-    // 🟢 Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
-    Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+    // 🔴 Módulo de Facturación: RUTA ELIMINADA.
+    // La funcionalidad CRUD de Facturas ahora se maneja completamente en routes/api.php
+    // y usa el FacturaController que devuelve JSON. Si necesitas una vista de
+    // "Listado de Facturas", agrégala manualmente:
+    Route::get('/facturas', function () {
+        return view('factura.index'); // O el nombre de tu vista principal de facturas
+    })->name('factura.index')
+      ->middleware('can:viewAny,App\Models\Factura');
 
     // 🟢 Módulo de Citas (CRÍTICO: Usamos Route::resource si tienes CitaController)
     // Ya que usaste rutas API, asumiremos que el index de Citas es la vista principal,
@@ -92,6 +97,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->middleware('can:viewAny,App\Models\Cita'); // 🟢 Usamos @can y Policy
 
     // Rutas API de citas: Revisa si estas APIs deben seguir usando 'check.permissions' o policies
+    // NOTA: Estas rutas API deberían estar idealmente en routes/api.php
     Route::get('/api/citas', [CitasController::class, 'getCitas'])->name('api.citas.get')
          ->middleware('check.permissions:Citas,select');
     Route::post('/api/citas', [CitasController::class, 'storeCita'])->name('api.citas.store')
@@ -144,6 +150,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::get('/bitacora', [AdministracionController::class, 'bitacora'])->name('administracion.bitacora');
         Route::get('/bitacora/export-pdf', [AdministracionController::class, 'exportPdf'])->name('administracion.bitacora.export.pdf');
         Route::get('/bitacora/export-excel', [AdministracionController::class, 'exportExcel'])->name('administracion.bitacora.export.excel');
+        Route::post('/bitacora', [AdministracionController::class, 'exportExcel'])->name('administracion.bitacora.insert'); // <--- PENDING: Falta definir qué hace esta ruta
     });
 
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
