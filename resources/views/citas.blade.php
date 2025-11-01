@@ -854,13 +854,12 @@
             currentClientCode = null;
         });
 
-        // ⬇️ MODIFICADO: Usar el modal personalizado
         document.getElementById('btnResetForm').addEventListener('click', function() {
             openConfirmModal(
                 'Confirmar Reinicio',
                 '¿Está seguro de que desea reiniciar el formulario? Se perderán todos los datos ingresados.',
                 'Sí, reiniciar',
-                'info', // 'info' usará el estilo azul
+                'info', 
                 function() {
                     document.getElementById('appointmentForm').reset();
                     document.getElementById('clientDataSection').style.display = 'none';
@@ -911,7 +910,7 @@
             
             const citaData = {
                 codCliente: parseInt(codCliente),
-                codEmpleado: 1, // Debes obtener esto dinámicamente si hay varios empleados
+                codEmpleado: 1, 
                 fechaCita: document.getElementById('date').value,
                 horaInicio: horaInicio + ':00',
                 horaFin: `${String(horaFinHoras).padStart(2, '0')}:${String(horaFinMinutos).padStart(2, '0')}:00`,
@@ -943,12 +942,10 @@
                 if (response.ok) {
                     const message = editingId ? '✓ Cita actualizada exitosamente' : '✓ Cita agendada exitosamente';
                     showNotification(message);
-                    // Simular clic en reset para limpiar todo
                     document.getElementById('btnResetForm').dispatchEvent(new Event('click_internal'));
                     loadAppointments();
                 } else {
                     const error = await response.json();
-                    // ⬇️ CORREGIDO: Usar error.error
                     showNotification(`❌ Error: ${error.error || 'No se pudo guardar la cita'}`, 'error');
                 }
             } catch (error) {
@@ -957,7 +954,6 @@
             }
         });
         
-        // Listener interno para el reset sin confirmación
         document.getElementById('btnResetForm').addEventListener('click_internal', function() {
             document.getElementById('appointmentForm').reset();
             document.getElementById('clientDataSection').style.display = 'none';
@@ -969,7 +965,6 @@
             currentClientCode = null;
             resetFormToCreateMode();
         });
-
 
         function showNotification(message, type = 'success') {
             const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
@@ -996,7 +991,8 @@
 
         function parseMySQLDate(fechaStr) {
             if (!fechaStr) return null;
-            const parts = fechaStr.split('-');
+            const dateOnly = fechaStr.split('T')[0];
+            const parts = dateOnly.split('-');
             return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         }
 
@@ -1027,14 +1023,14 @@
                         const notasPartes = (cita.Notas_Internas || '').split(' - ');
                         const patient = (notasPartes[0] || '').replace('Paciente: ', '') || 'Sin nombre';
                         const service = (notasPartes[1] || '').replace('Servicio: ', '') || 'Sin servicio';
-                        const notes = notasPartes.slice(2).join(' - ') || ''; // Todo lo demás son notas
+                        const notes = notasPartes.slice(2).join(' - ') || ''; 
 
                         return {
                             id: cita.Cod_Cita,
                             codCita: cita.Cod_Cita,
                             codCliente: cita.Cod_Cliente,
                             codEmpleado: cita.Cod_Empleado,
-                            fechaCita: cita.Fecha_Cita,
+                            fechaCita: cita.Fecha_Cita.split('T')[0], 
                             fechaObj: fechaObj,
                             horaInicio: cita.Hora_Inicio,
                             horaFin: cita.Hora_Fin,
@@ -1047,6 +1043,22 @@
                             status: mapearEstado(cita.Estado_Cita)
                         };
                     });
+                    
+                    // ⬇️ CORRECCIÓN DE ORDENAMIENTO ⬇️
+                    // Ordena de la fecha más futura a la más pasada
+                    appointments.sort((a, b) => {
+                        const dateA = new Date(a.fechaObj);
+                        const dateB = new Date(b.fechaObj);
+                        
+                        const [hA, mA] = a.horaInicio ? a.horaInicio.split(':') : [0,0];
+                        const [hB, mB] = b.horaInicio ? b.horaInicio.split(':') : [0,0];
+                        dateA.setHours(hA, mA);
+                        dateB.setHours(hB, mB);
+
+                        // b - a para orden descendente (más nuevo primero)
+                        return dateB.getTime() - dateA.getTime(); 
+                    });
+
                     renderAppointments();
                 }
             } catch (error) {
@@ -1067,6 +1079,8 @@
         function filterAppointments() {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
+            
+            // El array 'appointments' ya está ordenado globalmente
             return appointments.filter(appointment => {
                 if (!appointment.fechaObj) return false;
                 const fechaCita = new Date(appointment.fechaObj);
@@ -1089,8 +1103,8 @@
                 return;
             }
 
-            filteredAppointments.sort((a, b) => new Date(a.fechaObj) - new Date(b.fechaObj));
-
+            // ⬇️ SE ELIMINA EL .sort() DE AQUÍ. AHORA SE ORDENA EN loadAppointments() ⬇️
+            
             container.innerHTML = filteredAppointments.map(appointment => `
                 <div class="appointment-item" data-id="${appointment.id}">
                     <div class="appointment-info">
@@ -1106,8 +1120,9 @@
                     <div class="appointment-controls">
                         <span class="status-badge ${getStatusClass(appointment.status)}">${getStatusText(appointment.status)}</span>
                         
-                        <div class="btn-group">
-                            <button class="action-btn" data-toggle="dropdown" title="Cambiar Estado">
+                        <!-- ⬇️ CORRECCIÓN: Añadido 'dropup' para que el menú salga hacia arriba ⬇️ -->
+                        <div class="btn-group dropup">
+                            <button class="action-btn" data-toggle="dropdown" title="Cambiar Estado" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-right">
@@ -1170,7 +1185,6 @@
                     loadAppointments();
                 } else {
                     const error = await response.json();
-                    // ⬇️ CORREGIDO: Usar error.error
                     showNotification(`❌ Error al cambiar estado: ${error.error || 'Error desconocido'}`, 'error');
                 }
             } catch (error) {
@@ -1190,7 +1204,7 @@
             
             if (clientFound) {
                 document.getElementById('editingAppointmentId').value = appointment.id;
-                document.getElementById('date').value = appointment.fechaCita;
+                document.getElementById('date').value = appointment.fechaCita; // Usar la fecha YYYY-MM-DD guardada
                 document.getElementById('time').value = appointment.horaInicio.substring(0, 5);
                 document.getElementById('notes').value = appointment.notes;
 
@@ -1234,7 +1248,6 @@
             }, 1500);
         }
 
-        // ⬇️ MODIFICADO: Usar el modal personalizado
         async function deleteAppointment(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
@@ -1243,7 +1256,7 @@
                 'Confirmar Eliminación',
                 `¿Está seguro de que desea eliminar la cita de <strong>${appointment.patient}</strong>?`,
                 'Sí, eliminar',
-                'danger', // 'danger' usará el estilo rojo
+                'danger', 
                 async function() {
                     try {
                         const response = await fetch(`/api/citas/${appointment.codCita}`, { 
@@ -1260,7 +1273,6 @@
                             loadAppointments();
                         } else {
                             const error = await response.json();
-                            // ⬇️ CORREGIDO: Usar error.error
                             throw new Error(error.error || 'No se pudo eliminar la cita');
                         }
                     } catch (error) {
@@ -1272,7 +1284,6 @@
             );
         }
 
-        // ⬇️ NUEVAS FUNCIONES PARA EL MODAL GENÉRICO ⬇️
         function openConfirmModal(title, message, confirmText, type = 'danger', callback) {
             const modal = document.getElementById('confirmModal');
             const modalTitle = document.getElementById('modalTitle');
@@ -1284,41 +1295,36 @@
             modalMessage.innerHTML = message;
             confirmBtn.textContent = confirmText;
             
-            // Limpiar clases
             modalIcon.className = 'modal-icon';
             confirmBtn.className = 'modal-btn modal-btn-confirm';
 
-            // Aplicar clases de tipo
             if (type === 'danger') {
                 modalIcon.classList.add('icon-danger');
                 confirmBtn.classList.add('btn-danger');
             } else if (type === 'info') {
                 modalIcon.classList.add('icon-info');
                 confirmBtn.classList.add('btn-info');
-                modalIcon.querySelector('i').className = 'fas fa-question-circle'; // Cambiar ícono a pregunta
+                modalIcon.querySelector('i').className = 'fas fa-question-circle';
             }
             
-            // Poner el ícono de peligro por defecto si no es info
             if(type !== 'info') {
                  modalIcon.querySelector('i').className = 'fas fa-exclamation-triangle';
             }
 
-            confirmActionCallback = callback; // Guardar el callback
+            confirmActionCallback = callback;
             modal.classList.add('show');
         }
 
         function closeConfirmModal() {
             document.getElementById('confirmModal').classList.remove('show');
-            confirmActionCallback = null; // Limpiar callback
+            confirmActionCallback = null;
         }
 
-        // Añadir listener al botón de confirmar UNA SOLA VEZ
         document.getElementById('confirmActionBtn').addEventListener('click', () => {
             if (typeof confirmActionCallback === 'function') {
                 confirmActionCallback();
             }
         });
-
 
         const filterTabs = document.querySelectorAll('.filter-tab');
         filterTabs.forEach(tab => {
@@ -1352,4 +1358,3 @@
         loadAppointments();
     </script>
 @stop
-
