@@ -41,8 +41,11 @@ class CitasController extends Controller
             $persona = $responsePersona->json()[0] ?? null;
             $responseCorreo = Http::get($this->apiUrl . '/correo');
             $correos = collect($responseCorreo->json())->where('Cod_Persona', $codPersona)->values()->all();
-            $responseTelefono = Http::get($this->apiUrl . '/telefono');
+            
+            // ⬇️ MODIFICADO: Ahora usa la API /telefonos (plural)
+            $responseTelefono = Http::get($this->apiUrl . '/telefonos'); 
             $telefonos = collect($responseTelefono->json())->where('Cod_Persona', $codPersona)->values()->all();
+            
             $responseDireccion = Http::get($this->apiUrl . '/direccion');
             $direcciones = collect($responseDireccion->json())->where('Cod_Persona', $codPersona)->values()->all();
 
@@ -108,9 +111,19 @@ class CitasController extends Controller
             if ($request->correo) {
                 Http::post($this->apiUrl . '/correo', ['Cod_Persona' => $codPersona, 'Correo' => $request->correo, 'Tipo_Correo' => 'Personal']);
             }
+            
+            // ⬇️ MODIFICACIÓN CLAVE AQUÍ ⬇️
             if ($request->telefono) {
-                Http::post($this->apiUrl . '/telefono', ['Cod_Persona' => $codPersona, 'Numero' => $request->telefono, 'Cod_Pais' => '504', 'Tipo' => 'Celular', 'Descripcion' => 'Principal']);
+                Http::post($this->apiUrl . '/telefonos', [ // 1. Corregido a /telefonos (plural)
+                    'Cod_Persona' => $codPersona, 
+                    'Numero' => $request->telefono, 
+                    'Cod_Pais' => '504', 
+                    'Tipo' => 'Movil', // 2. Corregido a 'Movil' (para coincidir con el ENUM)
+                    'Descripcion' => 'Principal'
+                ]);
             }
+            // ⬆️ FIN DE LA MODIFICACIÓN ⬆️
+
             if ($request->direccion) {
                 Http::post($this->apiUrl . '/direccion', ['Cod_Persona' => $codPersona, 'Direccion' => $request->direccion, 'Descripcion' => 'Principal']);
             }
@@ -201,45 +214,38 @@ class CitasController extends Controller
         }
     }
 
-    // ⬇️ CORREGIDO: PUT - Actualizar SOLO el estado
+    // PUT - Actualizar SOLO el estado
     public function updateStatus(Request $request, $id)
     {
         $this->authorize('update', Cita::class);
 
         try {
-            // 1. Obtener los datos actuales de la cita
             $responseGet = Http::get($this->apiUrl . '/cita?cod=' . $id);
             if (!$responseGet->successful() || empty($responseGet->json())) {
                 return response()->json(['error' => 'Cita no encontrada para actualizar estado'], 404);
             }
             $citaActual = $responseGet->json()[0];
 
-            // 2. Obtener el nuevo estado de la solicitud
             $nuevoEstado = $request->input('estado');
             if (!in_array($nuevoEstado, ['Programada', 'Confirmada', 'Realizada', 'Cancelada'])) {
                  return response()->json(['error' => 'Estado no válido'], 400);
             }
             
-            // 3. ✳️ CORRECCIÓN: Formatear la fecha Y LAS HORAS ✳️
-            // La API (GET) puede devolver '...T00:00:00.000Z'
-            // El SP (PUT) espera 'YYYY-MM-DD' y 'HH:MM:SS'
             $fechaFormateada = date('Y-m-d', strtotime($citaActual['Fecha_Cita']));
             $horaInicioFormateada = $citaActual['Hora_Inicio'] ? date('H:i:s', strtotime($citaActual['Hora_Inicio'])) : null;
             $horaFinFormateada = $citaActual['Hora_Fin'] ? date('H:i:s', strtotime($citaActual['Hora_Fin'])) : null;
 
-            // 4. CONSTRUIR MANUALMENTE EL OBJETO
             $apiData = [
                 'Cod_Cita'       => $citaActual['Cod_Cita'],
                 'Cod_Cliente'    => $citaActual['Cod_Cliente'],
                 'Cod_Empleado'   => $citaActual['Cod_Empleado'],
-                'Fecha_Cita'     => $fechaFormateada, // <-- Se usa la fecha formateada
-                'Hora_Inicio'    => $horaInicioFormateada, // <-- Se usa la hora formateada
-                'Hora_Fin'       => $horaFinFormateada, // <-- Se usa la hora formateada
-                'Estado_Cita'    => $nuevoEstado, // <-- Único campo modificado
+                'Fecha_Cita'     => $fechaFormateada,
+                'Hora_Inicio'    => $horaInicioFormateada,
+                'Hora_Fin'       => $horaFinFormateada,
+                'Estado_Cita'    => $nuevoEstado,
                 'Notas_Internas' => $citaActual['Notas_Internas']
             ];
 
-            // 5. Enviar el objeto COMPLETO de 8 campos
             $responsePut = Http::put($this->apiUrl . '/cita', $apiData);
 
             if ($responsePut->successful()) {
