@@ -68,11 +68,11 @@ class CitasController extends Controller
 
         try {
             $responsePersona = Http::post($this->apiUrl . '/persona', [
-                'Nombre'           => $request->nombre,
-                'Apellido'         => $request->apellido,
-                'DNI'              => $request->dni,
+                'Nombre'          => $request->nombre,
+                'Apellido'        => $request->apellido,
+                'DNI'             => $request->dni,
                 'Fecha_Nacimiento' => $request->fechaNacimiento,
-                'Genero'           => $request->genero
+                'Genero'          => $request->genero
             ]);
 
             if (!$responsePersona->successful()) {
@@ -136,6 +136,62 @@ class CitasController extends Controller
             return response()->json(['success' => false, 'error' => 'Error del servidor: ' . $e->getMessage()], 500);
         }
     }
+
+    // ⬇️ --- NUEVA FUNCIÓN AÑADIDA --- ⬇️
+    /**
+     * Devuelve un listado de todos los clientes (código, nombre, dni)
+     * consumiendo la API.
+     */
+    public function listado()
+    {
+        $this->authorize('viewAny', Cita::class);
+
+        try {
+            // 1. Obtener todos los clientes
+            $responseClientes = Http::get($this->apiUrl . '/cliente');
+            if (!$responseClientes->successful()) {
+                throw new \Exception('Error al obtener clientes de la API: ' . $responseClientes->body());
+            }
+            $clientes = $responseClientes->json();
+
+            // 2. Obtener todas las personas
+            $responsePersonas = Http::get($this->apiUrl . '/persona');
+            if (!$responsePersonas->successful()) {
+                throw new \Exception('Error al obtener personas de la API: ' . $responsePersonas->body());
+            }
+            $personas = $responsePersonas->json();
+
+            // 3. Mapear personas por Cod_Persona para una búsqueda eficiente
+            $personasMap = collect($personas)->keyBy('Cod_Persona');
+
+            // 4. Combinar los datos
+            $listadoCompleto = [];
+            foreach ($clientes as $cliente) {
+                $codPersona = $cliente['Cod_Persona'];
+                // Buscar la persona correspondiente en el mapa
+                if (isset($personasMap[$codPersona])) {
+                    $persona = $personasMap[$codPersona];
+                    $listadoCompleto[] = [
+                        'cod_cliente' => $cliente['Cod_Cliente'],
+                        'nombre'      => $persona['Nombre'],
+                        'apellido'    => $persona['Apellido'],
+                        'dni'         => $persona['DNI']
+                    ];
+                }
+            }
+            
+            // 5. Ordenar la lista final por nombre
+            $sortedListado = collect($listadoCompleto)->sortBy('nombre')->values()->all();
+
+            return response()->json($sortedListado);
+
+        } catch (\Exception $e) {
+            Log::error('Error en listado de clientes: ' . $e->getMessage());
+            return response()->json(['error' => 'Error del servidor al obtener la lista.'], 500);
+        }
+    }
+    // ⬆️ --- FIN DE LA NUEVA FUNCIÓN --- ⬆️
+
 
     // GET - Obtener citas
     public function getCitas(Request $request)

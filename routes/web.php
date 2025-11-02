@@ -120,6 +120,12 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::put('/api/citas/estado/{id}', [CitasController::class, 'updateStatus'])
         ->name('api.citas.update-status');
 
+    // ⬇️ --- RUTA AÑADIDA QUE FALTABA --- ⬇️
+    // Esta ruta es la que usa el modal "Lista de Clientes" y causaba el 404
+    Route::get('/api/clientes/listado', [CitasController::class, 'listado'])
+        ->name('api.clientes.listado')
+        ->middleware('can:viewAny,App\Models\Cita');
+
 
     // 🟢 Módulo de Inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
@@ -187,9 +193,4 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     }); // Cierre de prefix 'bitacora'
 
 
-}); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
-
-// ========================================
-// RUTAS DE AUTENTICACIÓN PREDETERMINADAS
-// ========================================
-require __DIR__ . '/auth.php';
+}); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor's

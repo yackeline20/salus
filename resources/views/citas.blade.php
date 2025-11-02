@@ -49,7 +49,11 @@
                         <button type="button" class="btn btn-link" id="btnNewClient">
                             <i class="fas fa-user-plus mr-1"></i>¿Cliente nuevo? Haga clic aquí para registrar
                         </button>
-                    </div>
+                        
+                        <button type="button" class="btn btn-link" id="btnShowClientList">
+                            <i class="fas fa-address-book mr-1"></i>Ver Lista de Clientes
+                        </button>
+                        </div>
                 </div>
 
                 <hr class="my-4">
@@ -245,7 +249,6 @@
         </div>
     </div>
 
-    <!-- ⬇️ MODAL GENÉRICO MEJORADO ⬇️ -->
     <div id="confirmModal" class="custom-modal-overlay">
         <div class="custom-modal">
             <div class="modal-icon" id="modalIcon"> 
@@ -259,7 +262,43 @@
             </div>
         </div>
     </div>
-@stop
+
+    <div class="modal fade" id="clientListModal" tabindex="-1" role="dialog" aria-labelledby="clientListModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clientListModalLabel"><i class="fas fa-users mr-2"></i>Lista de Clientes</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="text" class="form-control custom-input" id="clientSearchInput" placeholder="Buscar por código, nombre o DNI...">
+                    </div>
+                    <div class="table-responsive modal-body-scrollable">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre Completo</th>
+                                    <th>DNI</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientListTableBody">
+                                <tr><td colspan="4" class="text-center">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @stop
 
 @section('css')
     <style>
@@ -369,6 +408,13 @@
             transform: translateY(-2px); 
             box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3); 
         }
+        
+        /* ⬇️ NUEVO ESTILO PARA SCROLL DE MODAL ⬇️ */
+        .modal-body-scrollable {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        /* ⬆️ FIN NUEVO ESTILO ⬆️ */
 
         .appointments-list { 
             background: white; 
@@ -700,6 +746,9 @@
         let currentClientCode = null;
         let confirmActionCallback = null; // Guardar la acción a ejecutar
 
+        // ⬇️ NUEVA VARIABLE GLOBAL PARA CACHÉ DE CLIENTES ⬇️
+        let allClients = [];
+
         function mapGenderToFullText(genderCode) {
             switch (genderCode) {
                 case 'M': return 'Masculino';
@@ -829,6 +878,7 @@
                     document.getElementById('newClientEmail').value = '';
                     document.getElementById('newClientAddress').value = '';
 
+                    allClients = []; // Invalidar caché de clientes
                 } else {
                     showNotification('❌ Error al registrar cliente: ' + (result.error || 'Error desconocido'), 'error'); 
                 }
@@ -1231,7 +1281,6 @@
             document.getElementById('submitAppointmentBtn').innerHTML = '<i class="fas fa-calendar-check mr-2"></i>Agendar Cita';
         }
 
-        // ⬇️ MODIFICADO: Envía al NÚMERO DEL CLIENTE ⬇️
         async function sendNotification(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
@@ -1271,7 +1320,6 @@
                 }
 
                 // 4. Crear el mensaje
-                // Formatear la fecha (ej: "lunes, 1 de diciembre de 2025")
                 const prettyDate = new Date(appointment.fechaObj).toLocaleDateString('es-ES', {
                     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                 });
@@ -1397,8 +1445,111 @@
             if (timeElement) timeElement.textContent = timeStr;
         }
 
+        // ⬇️ NUEVAS FUNCIONES Y EVENTOS PARA EL MODAL DE CLIENTES ⬇️
+
+        /**
+         * Carga la lista de clientes desde la API y muestra el modal.
+         * Utiliza la caché 'allClients' para evitar peticiones innecesarias.
+         */
+        async function loadClientList() {
+            const tableBody = document.getElementById('clientListTableBody');
+            $('#clientListModal').modal('show'); // Muestra el modal inmediatamente
+
+            if (allClients.length > 0) {
+                renderClientList(); // Renderiza desde la caché si ya la tenemos
+                return;
+            }
+
+            // Muestra estado de carga
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando lista de clientes...</td></tr>';
+            
+            try {
+                // *** IMPORTANTE: Asegúrate de crear este endpoint en tu backend ***
+                const response = await fetch('/api/clientes/listado', {
+                     headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                }); 
+                
+                if (!response.ok) {
+                    throw new Error('No se pudo cargar la lista de clientes. (Error ' + response.status + ')');
+                }
+                
+                const data = await response.json();
+                // Asumiendo que la data es un array de clientes
+                // Ej: [{ "cod_cliente": 1, "nombre": "Ana", "apellido": "Pérez", "dni": "0801..." }, ...]
+                allClients = data; 
+                renderClientList(); // Renderiza la lista fresca
+
+            } catch (error) {
+                console.error('Error al cargar lista de clientes:', error);
+                showNotification(error.message, 'error');
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger"><i class="fas fa-exclamation-triangle mr-2"></i>${error.message}</td></tr>`;
+            }
+        }
+
+        /**
+         * Renderiza la lista de clientes en la tabla del modal, aplicando un filtro.
+         */
+        function renderClientList(filter = '') {
+            const tableBody = document.getElementById('clientListTableBody');
+            const filterLower = filter.toLowerCase();
+            
+            const filteredClients = allClients.filter(client => {
+                const fullName = `${client.nombre || ''} ${client.apellido || ''}`.toLowerCase();
+                const dni = (client.dni || '').toLowerCase();
+                const code = String(client.cod_cliente || '').toLowerCase();
+                
+                return fullName.includes(filterLower) || dni.includes(filterLower) || code.includes(filterLower);
+            });
+
+            if (filteredClients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No se encontraron clientes con ese criterio.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = filteredClients.map(client => `
+                <tr>
+                    <td><strong>${client.cod_cliente}</strong></td>
+                    <td>${client.nombre || ''} ${client.apellido || ''}</td>
+                    <td>${client.dni || 'No registrado'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-salus" onclick="selectClientFromList(${client.cod_cliente})" title="Seleccionar este cliente">
+                            <i class="fas fa-check mr-1"></i> Seleccionar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        /**
+         * Acción al hacer clic en 'Seleccionar' en el modal de clientes.
+         * Cierra el modal, pone el código en el input y busca al cliente.
+         */
+        async function selectClientFromList(codCliente) {
+            document.getElementById('searchClientCode').value = codCliente;
+            $('#clientListModal').modal('hide'); // Oculta el modal (usando jQuery)
+            await findClient(codCliente); // Llama a la función existente para buscar al cliente
+        }
+
+        // --- Event Listeners ---
+        
+        // Listener para el nuevo botón "Ver Lista de Clientes"
+        document.getElementById('btnShowClientList').addEventListener('click', loadClientList);
+
+        // Listener para el campo de búsqueda dentro del modal de clientes
+        document.getElementById('clientSearchInput').addEventListener('keyup', function() {
+            renderClientList(this.value);
+        });
+
+        // ⬆️ FIN NUEVAS FUNCIONES Y EVENTOS ⬆️
+
+
+        // --- INICIALIZACIÓN ---
         updateClock();
         setInterval(updateClock, 1000);
         loadAppointments();
+
     </script>
 @stop
