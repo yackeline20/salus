@@ -9,7 +9,7 @@ use App\Http\Controllers\CitasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
-use App\Http\Controllers\ServicioController;
+use App\Http\Controllers\ServicioController; // <--- Correcto
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
@@ -76,15 +76,8 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // B. MÓDULOS PROTEGIDOS POR POLICIES (Rutas Web)
     // ----------------------------------------
 
-    // Módulo de Facturación (Ruta Web de la Vista Principal)
-    Route::get('/facturas', [FacturaController::class, 'index'])->name('factura.index')
-        ->middleware('can:viewAny,App\Models\Factura');
-
-    // RUTA AÑADIDA: Vista del formulario para crear una nueva factura
-    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create')
-        ->middleware('can:create,App\Models\Factura');
-
     // Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
+    // Route::resource ya crea las rutas 'index' y 'create', por lo que las anteriores eran redundantes.
     Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
     // ========================================
@@ -95,7 +88,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
         ->middleware('can:viewAny,App\Models\Cita');
 
-    // 🆕 NUEVAS RUTAS - Búsqueda y creación de clientes
+    // Búsqueda y creación de clientes
     Route::get('/api/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
         ->name('api.citas.buscar-cliente')
         ->middleware('can:viewAny,App\Models\Cita');
@@ -113,15 +106,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->name('api.citas.store')
         ->middleware('can:create,App\Models\Cita');
     
-    Route::put('/api/citas', [CitasController::class, 'updateCita'])
-        ->name('api.citas.update')
-        ->middleware('can:update,App\Models\Cita');
-    
-    Route::delete('/api/citas', [CitasController::class, 'deleteCita'])
-        ->name('api.citas.delete')
-        ->middleware('can:delete,App\Models\Cita');
-
-<<<<<<< HEAD
+    // --- ESTAS ERAN LAS RUTAS CORRECTAS DEL CONFLICTO ---
     Route::put('/api/citas/{id}', [CitasController::class, 'updateCita'])
         ->name('api.citas.update');
 
@@ -131,17 +116,12 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::put('/api/citas/estado/{id}', [CitasController::class, 'updateStatus'])
         ->name('api.citas.update-status');
 
-    // ⬇️ --- RUTA AÑADIDA QUE FALTABA --- ⬇️
-    // Esta ruta es la que usa el modal "Lista de Clientes" y causaba el 404
+    // Esta ruta es la que usa el modal "Lista de Clientes"
     Route::get('/api/clientes/listado', [CitasController::class, 'listado'])
         ->name('api.clientes.listado')
         ->middleware('can:viewAny,App\Models\Cita');
 
-
     // 🟢 Módulo de Inventario
-=======
-    // Módulo de Inventario
->>>>>>> 56385d2d12dd48247d4ecd36b0e7f1c3a4ea0d5f
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
         ->middleware('can:viewAny,App\Models\Product');
 
@@ -211,7 +191,8 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     });
 
     // ========================================
-    // 🟠 RUTAS DE API (CRUD de Facturación, Citas, Inventario, Servicios, Personal)
+    // 🟠 RUTAS DE API (CRUD de Facturación, Inventario, Servicios, Personal)
+    //    NOTA: Las rutas de Citas se eliminaron de aquí porque ya estaban definidas arriba.
     // ========================================
 
     Route::group(['prefix' => 'api'], function () {
@@ -259,39 +240,11 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::put('empleados/{id}', [GestionPersonalController::class, 'updateEmpleado'])->name('api.empleados.update');
         Route::delete('empleados/{id}', [GestionPersonalController::class, 'destroyEmpleado'])->name('api.empleados.destroy');
 
-        // ----------------------------------------
-        // CRUD DE CITAS
-        // ----------------------------------------
-        Route::get('/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
-            ->name('api.citas.buscar-cliente');
-
-        Route::post('/citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])
-            ->name('api.citas.crear-cliente')
-            ->middleware('can:create,App\Models\Cita');
-
-        Route::get('/citas', [CitasController::class, 'getCitas'])
-            ->name('api.citas.get');
-
-        Route::post('/citas', [CitasController::class, 'storeCita'])
-            ->name('api.citas.store');
-
-        Route::put('/citas/{id}', [CitasController::class, 'updateCita'])
-            ->name('api.citas.update');
-
-        Route::delete('/citas/{id}', [CitasController::class, 'deleteCita'])
-            ->name('api.citas.delete');
-
-        Route::put('/citas/estado/{id}', [CitasController::class, 'updateStatus'])
-            ->name('api.citas.update-status');
     });
 
-<<<<<<< HEAD
-}); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor's
-=======
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
 
 // ========================================
 // RUTAS DE AUTENTICACIÓN PREDETERMINADAS
 // ========================================
 require __DIR__ . '/auth.php';
->>>>>>> 56385d2d12dd48247d4ecd36b0e7f1c3a4ea0d5f
