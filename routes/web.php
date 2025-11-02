@@ -133,6 +133,9 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
         ->middleware('can:viewAny,App\Models\Reporte');
 
+    Route::get('/reportes/export', [ReportesController::class, 'export'])
+    ->name('reportes.export');
+
     // ========================================
     // MÓDULO DE GESTIÓN DE PERSONAL
     // ========================================
