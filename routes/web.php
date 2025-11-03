@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\ServicioController;
+
 // Ruta raíz - SIEMPRE muestra la vista de bienvenida.
 Route::get('/', function () {
     return view('welcome');
@@ -87,7 +88,6 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // 🟢 MÓDULO DE CITAS - COMPLETO Y MEJORADO
     // ========================================
     
-});
     // Vista principal de citas
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
         ->middleware('can:viewAny,App\Models\Cita');
@@ -118,12 +118,51 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->name('api.citas.delete')
         ->middleware('can:delete,App\Models\Cita');
 
-    // 🟢 Módulo de Inventario
+    // ========================================
+    // 🟢 MÓDULO DE INVENTARIO - COMPLETO
+    // ========================================
+    
+    // Vista principal del inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
          ->middleware('can:viewAny,App\Models\Product');
 
+    // 🆕 RUTAS API DE INVENTARIO
+    Route::prefix('api/inventario')->group(function () {
+        // Obtener todos los productos
+        Route::get('/productos', [InventarioController::class, 'getProductos'])
+             ->name('api.inventario.productos')
+             ->middleware('can:viewAny,App\Models\Product');
+        
+        // Crear nuevo producto
+        Route::post('/productos', [InventarioController::class, 'store'])
+             ->name('api.inventario.store')
+             ->middleware('can:create,App\Models\Product');
+        
+        // Actualizar producto existente
+        Route::put('/productos/{id}', [InventarioController::class, 'update'])
+             ->name('api.inventario.update')
+             ->middleware('can:update,App\Models\Product');
+        
+        // Eliminar producto
+        Route::delete('/productos/{id}', [InventarioController::class, 'destroy'])
+             ->name('api.inventario.destroy')
+             ->middleware('can:delete,App\Models\Product');
+        
+        // Obtener proveedores (datos estáticos por ahora)
+        Route::get('/proveedores', [InventarioController::class, 'getProveedores'])
+             ->name('api.inventario.proveedores');
+        
+        // Obtener categorías (datos estáticos por ahora)
+        Route::get('/categorias', [InventarioController::class, 'getCategorias'])
+             ->name('api.inventario.categorias');
+        
+        // Obtener estadísticas del inventario
+        Route::get('/estadisticas', [InventarioController::class, 'getEstadisticas'])
+             ->name('api.inventario.estadisticas')
+             ->middleware('can:viewAny,App\Models\Product');
+    });
 
-// ========================================
+    // ========================================
     // 🟢 MÓDULO DE GESTIÓN DE SERVICIOS
     // ========================================
     
@@ -164,34 +203,36 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::post('/password/cambiar', [AdministracionController::class, 'cambiarPassword'])->name('administracion.password.cambiar');
 
         // ========================================
-// RUTAS DEL MÓDULO DE BITÁCORA
-// ========================================
+        // RUTAS DEL MÓDULO DE BITÁCORA
+        // ========================================
 
-// Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
-// Asume que este bloque está dentro del middleware de autenticación que uses.
-Route::prefix('bitacora')->name('bitacora.')->group(function () {
-    
-    // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
-    // Nombre: bitacora.index
-    Route::get('/', [BitacoraController::class, 'index'])->name('index');
+        // Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
+        // Asume que este bloque está dentro del middleware de autenticación que uses.
+        Route::prefix('bitacora')->name('bitacora.')->group(function () {
+            
+            // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
+            // Nombre: bitacora.index
+            Route::get('/', [BitacoraController::class, 'index'])->name('index');
 
-    // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
-    // Nombre: bitacora.export.pdf (preferible sobre bitacora.pdf)
-    Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
+            // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
+            // Nombre: bitacora.export.pdf (preferible sobre bitacora.pdf)
+            Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
 
-    // 3. Mostrar los detalles de un registro (para la función actualizarRegistro en JS)
-    // Nombre: bitacora.show (URL: /bitacora/{id})
-    Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
-    
-    // 4. Elimina un registro de la bitácora (Eliminación física del log)
-    // Nombre: bitacora.destroy (URL: /bitacora/{id})
-    Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
+            // 3. Mostrar los detalles de un registro (para la función actualizarRegistro en JS)
+            // Nombre: bitacora.show (URL: /bitacora/{id})
+            Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
+            
+            // 4. Elimina un registro de la bitácora (Eliminación física del log)
+            // Nombre: bitacora.destroy (URL: /bitacora/{id})
+            Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
 
-    // 5. Procesa la restauración de un registro previamente eliminado
-    // Nombre: bitacora.restaurar (URL: /bitacora/restaurar/{id})
-    Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
+            // 5. Procesa la restauración de un registro previamente eliminado
+            // Nombre: bitacora.restaurar (URL: /bitacora/restaurar/{id})
+            Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
 
-});
+        });
+
+    }); // CIERRE DEL PREFIX 'administracion'
 
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
 
