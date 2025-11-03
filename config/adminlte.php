@@ -244,20 +244,14 @@ return [
             'icon' => 'fas fa-boxes',
         ],
 
-        // Gestión de Servicios
-        [
-            'text' => 'Gestión de Servicios',
-            'route' => 'servicios',
-            'icon' => 'fas fa-cogs',
-        ],
-
         // Gestión de Personal
-        [
-            'text' => 'Gestión de Personal',
-            'route' => 'gestion-personal',
-            'icon' => 'fas fa-users',
-        ],
+[
+    'text' => 'Gestión de Personal',
+    'route' => 'gestion-personal.index',  // ✅
+    'icon' => 'fas fa-users',
+],
 
+     
         // Administración
         [
             'text' => 'Administración',

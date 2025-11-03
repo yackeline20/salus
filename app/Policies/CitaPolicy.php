@@ -3,7 +3,8 @@
 
 namespace App\Policies;
 
-use App\Models\Usuario;
+// ⬇️ CORREGIDO: Usar el modelo de User de tu app, que parece ser 'Usuario'
+use App\Models\Usuario; 
 use App\Models\Cita;
 
 class CitaPolicy
@@ -12,7 +13,7 @@ class CitaPolicy
     protected $objetoName = 'Citas';
     // Nombre de los roles que necesitan acceso total a Citas
     private $rolCoordinador = 'Coordinador Operativo';
-    private $rolEsteticista = 'Esteticista'; // ⬅️ Rol añadido
+    private $rolEsteticista = 'Esteticista'; 
 
     public function before(Usuario $user, string $ability): ?bool
     {
@@ -49,18 +50,20 @@ class CitaPolicy
     }
 
     /**
-     * Determine whether the user can update the model (Editar Citas).
+     * ⬇️ CORREGIDO: Determine whether the user can update the model (Editar Citas).
+     * Se quitó el argumento (Cita $cita)
      */
-    public function update(Usuario $user, Cita $cita): bool
+    public function update(Usuario $user): bool
     {
         // Si no es un rol con acceso total, debe tener el permiso 'update'
         return $user->hasPermission('update', $this->objetoName);
     }
 
     /**
-     * Determine whether the user can delete the model (Eliminar Citas).
+     * ⬇️ CORREGIDO: Determine whether the user can delete the model (Eliminar Citas).
+     * Se quitó el argumento (Cita $cita)
      */
-    public function delete(Usuario $user, Cita $cita): bool
+    public function delete(Usuario $user): bool
     {
         // Si no es un rol con acceso total, debe tener el permiso 'delete'
         return $user->hasPermission('delete', $this->objetoName);

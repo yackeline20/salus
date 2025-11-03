@@ -11,7 +11,7 @@
     <!-- Header Welcome -->
     <div class="welcome-header">
         <div class="welcome-content">
-            <h1>¡Bienvenido/a, {{ $persona->getNombreCompleto() }}!</h1>
+            <h1 class="text-xl">¡Hola, {{ $persona->nombre_completo }}!</h1>
             <p>Aquí tienes un resumen de las actividades del día en tu clínica estética.</p>
         </div>
         <div class="welcome-date">

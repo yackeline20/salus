@@ -8,7 +8,6 @@
 
 @section('content')
     <div class="container-fluid p-0">
-        <!-- Header Welcome -->
         <div class="welcome-header">
             <div class="welcome-content">
                 <h1>Gestión de Citas</h1>
@@ -20,17 +19,17 @@
             </div>
         </div>
 
-        <!-- Formulario de Nueva Cita -->
         <div class="appointment-card mb-4">
             <div class="appointment-header">
                 <i class="fas fa-calendar-plus" style="color: #c9a876; font-size: 24px;"></i>
-                <h2>Agendar Nueva Cita</h2>
+                <h2 id="formTitle">Agendar Nueva Cita</h2>
             </div>
 
             <form id="appointmentForm">
                 @csrf
                 
-                <!-- 🔍 SECCIÓN DE BÚSQUEDA DE CLIENTE -->
+                <input type="hidden" id="editingAppointmentId">
+
                 <div class="client-search-section" id="searchSection">
                     <h4><i class="fas fa-user-search mr-2"></i>Buscar Cliente Existente</h4>
                     <div class="row">
@@ -50,12 +49,15 @@
                         <button type="button" class="btn btn-link" id="btnNewClient">
                             <i class="fas fa-user-plus mr-1"></i>¿Cliente nuevo? Haga clic aquí para registrar
                         </button>
-                    </div>
+                        
+                        <button type="button" class="btn btn-link" id="btnShowClientList">
+                            <i class="fas fa-address-book mr-1"></i>Ver Lista de Clientes
+                        </button>
+                        </div>
                 </div>
 
                 <hr class="my-4">
 
-                <!-- ✅ DATOS DEL CLIENTE ENCONTRADO -->
                 <div id="clientDataSection" style="display: none;">
                     <h4 class="text-success"><i class="fas fa-check-circle mr-2"></i>Cliente Encontrado</h4>
                     
@@ -75,7 +77,6 @@
                     </button>
                 </div>
 
-                <!-- 📝 FORMULARIO PARA NUEVO CLIENTE -->
                 <div id="newClientForm" style="display: none;">
                     <h4 class="text-primary"><i class="fas fa-user-plus mr-2"></i>Registro de Nuevo Cliente</h4>
                     
@@ -149,7 +150,6 @@
 
                 <hr class="my-4">
 
-                <!-- 📅 DATOS DE LA CITA -->
                 <div id="appointmentDataSection" style="display: none;">
                     <h4><i class="fas fa-calendar-check mr-2"></i>Datos de la Cita</h4>
                     
@@ -159,20 +159,20 @@
                                 <label for="service">Servicio <span class="text-danger">*</span></label>
                                 <select class="form-control custom-input" id="service" name="service" required>
                                     <option value="">Seleccionar servicio</option>
-                                    <option value="botox">Botox</option>
-                                    <option value="rellenos">Rellenos Dérmicos</option>
-                                    <option value="limpieza">Limpieza Facial</option>
-                                    <option value="peeling">Peeling Químico</option>
-                                    <option value="laser">Tratamiento Láser</option>
-                                    <option value="mesoterapia">Mesoterapia</option>
-                                    <option value="hidrafacial">HydraFacial</option>
-                                    <option value="microneedling">Microneedling</option>
+                                    <option value="Botox">Botox</option>
+                                    <option value="Rellenos Dérmicos">Rellenos Dérmicos</option>
+                                    <option value="Limpieza Facial">Limpieza Facial</option>
+                                    <option value="Peeling Químico">Peeling Químico</option>
+                                    <option value="Tratamiento Láser">Tratamiento Láser</option>
+                                    <option value="Mesoterapia">Mesoterapia</option>
+                                    <option value="HydraFacial">HydraFacial</option>
+                                    <option value="Microneedling">Microneedling</option>
                                     <option value="otro">Otro servicio (especificar)</option>
                                 </select>
                                 <input type="text" 
-                                       id="customService" 
-                                       class="form-control custom-input custom-service-input mt-2" 
-                                       placeholder="Escriba el nombre del servicio">
+                                    id="customService" 
+                                    class="form-control custom-input custom-service-input mt-2" 
+                                    placeholder="Escriba el nombre del servicio">
                             </div>
                         </div>
 
@@ -226,7 +226,7 @@
                         <button type="button" class="btn btn-secondary" id="btnResetForm">
                             <i class="fas fa-redo mr-2"></i>Reiniciar Formulario
                         </button>
-                        <button type="submit" class="btn btn-salus">
+                        <button type="submit" class="btn btn-salus" id="submitAppointmentBtn">
                             <i class="fas fa-calendar-check mr-2"></i>Agendar Cita
                         </button>
                     </div>
@@ -234,7 +234,6 @@
             </form>
         </div>
 
-        <!-- Lista de Citas -->
         <div class="appointments-list">
             <div class="list-header">
                 <h2><i class="fas fa-list mr-2"></i>Mis Citas</h2>
@@ -250,21 +249,56 @@
         </div>
     </div>
 
-    <!-- Modal de confirmación de eliminación -->
     <div id="confirmModal" class="custom-modal-overlay">
         <div class="custom-modal">
-            <div class="modal-icon">
+            <div class="modal-icon" id="modalIcon"> 
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <h3>Confirmar Eliminación</h3>
-            <p id="modalMessage">¿Está seguro de que desea eliminar esta cita?</p>
+            <h3 id="modalTitle">Confirmar Acción</h3> 
+            <p id="modalMessage">¿Está seguro?</p>
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
-                <button class="modal-btn modal-btn-confirm" id="confirmDeleteBtn">Sí, eliminar</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmActionBtn">Sí, confirmar</button> 
             </div>
         </div>
     </div>
-@stop
+
+    <div class="modal fade" id="clientListModal" tabindex="-1" role="dialog" aria-labelledby="clientListModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clientListModalLabel"><i class="fas fa-users mr-2"></i>Lista de Clientes</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="text" class="form-control custom-input" id="clientSearchInput" placeholder="Buscar por código, nombre o DNI...">
+                    </div>
+                    <div class="table-responsive modal-body-scrollable">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nombre Completo</th>
+                                    <th>DNI</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientListTableBody">
+                                <tr><td colspan="4" class="text-center">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @stop
 
 @section('css')
     <style>
@@ -374,6 +408,13 @@
             transform: translateY(-2px); 
             box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3); 
         }
+        
+        /* ⬇️ NUEVO ESTILO PARA SCROLL DE MODAL ⬇️ */
+        .modal-body-scrollable {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        /* ⬆️ FIN NUEVO ESTILO ⬆️ */
 
         .appointments-list { 
             background: white; 
@@ -504,23 +545,20 @@
         }
         
         .status-programada {
-            background: #dbeafe;
-            color: #1e40af;
+            background: #e0f2fe; /* Azul claro */
+            color: #0c54a8; /* Azul oscuro */
         }
-
         .status-confirmed {
-            background: #d4f4dd;
-            color: #2d7a4e;
+            background: #dcfce7; /* Verde claro */
+            color: #15803d; /* Verde oscuro */
         }
-
         .status-realizada {
-            background: #d1fae5;
-            color: #065f46;
+            background: #f3f4f6; /* Gris claro */
+            color: #4b5563; /* Gris oscuro */
         }
-
         .status-cancelled {
-            background: #ffd6d6;
-            color: #d32f2f;
+            background: #fee2e2; /* Rojo claro */
+            color: #b91c1c; /* Rojo oscuro */
         }
 
         .action-btn { 
@@ -555,6 +593,7 @@
             margin-bottom: 20px; 
         }
 
+        /* ⬇️ ESTILOS PARA EL MODAL MEJORADO ⬇️ */
         .custom-modal-overlay { 
             display: none; 
             position: fixed; 
@@ -566,6 +605,7 @@
             z-index: 99999; 
             justify-content: center; 
             align-items: center; 
+            backdrop-filter: blur(4px);
         }
         
         .custom-modal-overlay.show { 
@@ -580,27 +620,44 @@
             width: 90%; 
             text-align: center; 
             animation: modalSlideIn 0.3s ease-out; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         @keyframes modalSlideIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from { transform: translateY(20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
         }
 
         .modal-icon { 
             width: 80px; 
             height: 80px; 
-            background: #fee2e2; 
             border-radius: 50%; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             margin: 0 auto 20px; 
+            transition: background-color 0.3s;
         }
         
         .modal-icon i { 
-            color: #dc2626; 
             font-size: 40px; 
+            transition: color 0.3s;
+        }
+
+        /* Estilo Peligro (Eliminar) */
+        .modal-icon.icon-danger {
+            background: #fee2e2; /* Rojo claro */
+        }
+        .modal-icon.icon-danger i {
+            color: #dc2626; /* Rojo oscuro */
+        }
+        
+        /* Estilo Info (Resetear) */
+        .modal-icon.icon-info {
+            background: #e0f2fe; /* Azul claro */
+        }
+        .modal-icon.icon-info i {
+            color: #0c54a8; /* Azul oscuro */
         }
         
         .custom-modal h3 { 
@@ -614,6 +671,7 @@
             color: #6b7280; 
             font-size: 16px; 
             margin-bottom: 30px; 
+            line-height: 1.6;
         }
 
         .modal-buttons { 
@@ -641,15 +699,26 @@
             background: #e5e7eb; 
         }
         
-        .modal-btn-confirm { 
+        /* Estilo Botón Peligro (Eliminar) */
+        .modal-btn-confirm.btn-danger { 
             background: #dc2626; 
             color: white; 
         }
-        
-        .modal-btn-confirm:hover { 
+        .modal-btn-confirm.btn-danger:hover { 
             background: #b91c1c; 
             transform: translateY(-2px); 
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); 
+        }
+
+        /* Estilo Botón Info (Resetear) */
+        .modal-btn-confirm.btn-info { 
+            background: #0c54a8; 
+            color: white; 
+        }
+        .modal-btn-confirm.btn-info:hover { 
+            background: #0a438a; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(12, 84, 168, 0.3); 
         }
 
         @media (max-width: 768px) {
@@ -657,12 +726,10 @@
                 flex-direction: column; 
                 text-align: center; 
             }
-            
             .list-header { 
                 flex-direction: column; 
                 gap: 15px; 
             }
-            
             .appointment-info { 
                 flex-direction: column; 
                 align-items: flex-start; 
@@ -677,21 +744,29 @@
         let appointments = [];
         let currentFilter = 'todas';
         let currentClientCode = null;
+        let confirmActionCallback = null; // Guardar la acción a ejecutar
 
-        // ============================================
-        // 🔍 BÚSQUEDA DE CLIENTE EXISTENTE
-        // ============================================
-        document.getElementById('btnSearchClient').addEventListener('click', async function() {
-            const codCliente = document.getElementById('searchClientCode').value.trim();
-            
+        // ⬇️ NUEVA VARIABLE GLOBAL PARA CACHÉ DE CLIENTES ⬇️
+        let allClients = [];
+
+        function mapGenderToFullText(genderCode) {
+            switch (genderCode) {
+                case 'M': return 'Masculino';
+                case 'F': return 'Femenino';
+                case 'O': return 'Otro';
+                default: return '';
+            }
+        }
+
+        async function findClient(codCliente) {
             if (!codCliente) {
                 showNotification('Por favor ingrese un código de cliente', 'error');
-                return;
+                return false;
             }
-
-            // Mostrar loading
-            this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
+            const btnSearch = document.getElementById('btnSearchClient');
+            const originalBtnHtml = btnSearch.innerHTML;
+            btnSearch.disabled = true;
+            btnSearch.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
 
             try {
                 const response = await fetch(`/api/citas/buscar-cliente?cod=${codCliente}`, {
@@ -704,67 +779,60 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    
-                    // Guardar código de cliente
                     currentClientCode = data.cliente.Cod_Cliente;
-                    
-                    // Llenar datos ocultos
                     document.getElementById('codCliente').value = data.cliente.Cod_Cliente;
                     document.getElementById('codPersona').value = data.persona.Cod_Persona;
-                    
-                    // Mostrar información del cliente
                     document.getElementById('clientFullName').textContent = `${data.persona.Nombre} ${data.persona.Apellido}`;
                     document.getElementById('displayDNI').textContent = data.persona.DNI || 'No registrado';
                     document.getElementById('displayPhone').textContent = data.telefonos.length > 0 ? data.telefonos[0].Numero : 'No registrado';
                     document.getElementById('displayEmail').textContent = data.correos.length > 0 ? data.correos[0].Correo : 'No registrado';
                     
-                    // Ocultar búsqueda y mostrar datos del cliente
                     document.getElementById('searchSection').style.display = 'none';
                     document.getElementById('clientDataSection').style.display = 'block';
                     document.getElementById('appointmentDataSection').style.display = 'block';
                     
                     showNotification(`✓ Cliente encontrado: ${data.persona.Nombre} ${data.persona.Apellido}`);
+                    return true;
                 } else {
                     showNotification('❌ Cliente no encontrado. Verifique el código o registre uno nuevo.', 'error');
+                    return false;
                 }
             } catch (error) {
                 console.error('Error:', error);
                 showNotification('Error al buscar cliente', 'error');
+                return false;
             } finally {
-                // Restaurar botón
-                this.disabled = false;
-                this.innerHTML = '<i class="fas fa-search mr-2"></i>Buscar Cliente';
+                btnSearch.disabled = false;
+                btnSearch.innerHTML = originalBtnHtml;
             }
+        }
+
+        document.getElementById('btnSearchClient').addEventListener('click', async function() {
+            const codCliente = document.getElementById('searchClientCode').value.trim();
+            await findClient(codCliente);
         });
 
-        // ============================================
-        // 👤 MOSTRAR FORMULARIO DE NUEVO CLIENTE
-        // ============================================
         document.getElementById('btnNewClient').addEventListener('click', function() {
             document.getElementById('searchSection').style.display = 'none';
             document.getElementById('newClientForm').style.display = 'block';
         });
 
-        // ============================================
-        // 💾 GUARDAR NUEVO CLIENTE - CORREGIDO
-        // ============================================
         document.getElementById('btnSaveNewClient').addEventListener('click', async function() {
             const nombre = document.getElementById('newClientName').value.trim();
             const apellido = document.getElementById('newClientLastName').value.trim();
             const dni = document.getElementById('newClientDNI').value.trim();
             const fechaNacimiento = document.getElementById('newClientBirthDate').value;
-            const genero = document.getElementById('newClientGender').value;
+            const generoCode = document.getElementById('newClientGender').value;
+            const generoTexto = mapGenderToFullText(generoCode); 
             const telefono = document.getElementById('newClientPhone').value.trim();
             const correo = document.getElementById('newClientEmail').value.trim();
             const direccion = document.getElementById('newClientAddress').value.trim();
 
-            // Validaciones
-            if (!nombre || !apellido || !dni || !fechaNacimiento || !genero) {
+            if (!nombre || !apellido || !dni || !fechaNacimiento || !generoCode) {
                 showNotification('⚠️ Complete todos los campos obligatorios (marcados con *)', 'error');
                 return;
             }
 
-            // Mostrar loading
             const btnSave = this;
             btnSave.disabled = true;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
@@ -778,49 +846,29 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify({
-                        nombre: nombre,
-                        apellido: apellido,
-                        dni: dni,
-                        fechaNacimiento: fechaNacimiento,
-                        genero: genero,
-                        telefono: telefono,
-                        correo: correo,
-                        direccion: direccion
+                        nombre: nombre, apellido: apellido, dni: dni, fechaNacimiento: fechaNacimiento,
+                        genero: generoTexto, telefono: telefono, correo: correo, direccion: direccion
                     })
                 });
 
                 const result = await response.json();
 
-                console.log('Respuesta del servidor:', result); // Para debug
-
                 if (response.ok && result.success) {
-                    // Extraer código de cliente de la respuesta
-                    const codCliente = result.cod_cliente;
-                    
-                    if (!codCliente) {
-                        throw new Error('No se recibió el código de cliente del servidor');
-                    }
-
-                    currentClientCode = codCliente;
-                    
-                    // Llenar datos ocultos
-                    document.getElementById('codCliente').value = codCliente;
+                    currentClientCode = result.cod_cliente;
+                    document.getElementById('codCliente').value = result.cod_cliente;
                     document.getElementById('codPersona').value = result.cod_persona || '';
-                    
-                    // Mostrar información del cliente
                     document.getElementById('clientFullName').textContent = `${nombre} ${apellido}`;
                     document.getElementById('displayDNI').textContent = dni;
                     document.getElementById('displayPhone').textContent = telefono || 'No registrado';
                     document.getElementById('displayEmail').textContent = correo || 'No registrado';
                     
-                    // Ocultar formulario de nuevo cliente y mostrar datos
                     document.getElementById('newClientForm').style.display = 'none';
                     document.getElementById('clientDataSection').style.display = 'block';
                     document.getElementById('appointmentDataSection').style.display = 'block';
                     
-                    showNotification(`✓ Cliente registrado exitosamente: ${nombre} ${apellido} (Código: ${codCliente})`);
+                    showNotification(`✓ Cliente registrado exitosamente: ${nombre} ${apellido} (Código: ${result.cod_cliente})`);
                     
-                    // Limpiar campos del formulario
+                    // Limpiar formulario de nuevo cliente
                     document.getElementById('newClientName').value = '';
                     document.getElementById('newClientLastName').value = '';
                     document.getElementById('newClientDNI').value = '';
@@ -829,44 +877,25 @@
                     document.getElementById('newClientPhone').value = '';
                     document.getElementById('newClientEmail').value = '';
                     document.getElementById('newClientAddress').value = '';
-                    
+
+                    allClients = []; // Invalidar caché de clientes
                 } else {
-                    const errorMsg = result.error || result.message || 'Error desconocido';
-                    console.error('Error del servidor:', result);
-                    showNotification('❌ Error al registrar cliente: ' + errorMsg, 'error');
+                    showNotification('❌ Error al registrar cliente: ' + (result.error || 'Error desconocido'), 'error'); 
                 }
             } catch (error) {
                 console.error('Error completo:', error);
                 showNotification('❌ Error de conexión: ' + error.message, 'error');
             } finally {
-                // Restaurar botón
                 btnSave.disabled = false;
                 btnSave.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cliente';
             }
         });
 
-        // ============================================
-        // ❌ CANCELAR NUEVO CLIENTE
-        // ============================================
         document.getElementById('btnCancelNewClient').addEventListener('click', function() {
-            // Limpiar campos
-            document.getElementById('newClientName').value = '';
-            document.getElementById('newClientLastName').value = '';
-            document.getElementById('newClientDNI').value = '';
-            document.getElementById('newClientBirthDate').value = '';
-            document.getElementById('newClientGender').value = '';
-            document.getElementById('newClientPhone').value = '';
-            document.getElementById('newClientEmail').value = '';
-            document.getElementById('newClientAddress').value = '';
-            
-            // Volver a búsqueda
             document.getElementById('newClientForm').style.display = 'none';
             document.getElementById('searchSection').style.display = 'block';
         });
 
-        // ============================================
-        // 🔄 CAMBIAR DE CLIENTE
-        // ============================================
         document.getElementById('btnChangeClient').addEventListener('click', function() {
             document.getElementById('clientDataSection').style.display = 'none';
             document.getElementById('appointmentDataSection').style.display = 'none';
@@ -875,25 +904,27 @@
             currentClientCode = null;
         });
 
-        // ============================================
-        // 🔄 REINICIAR FORMULARIO COMPLETO
-        // ============================================
         document.getElementById('btnResetForm').addEventListener('click', function() {
-            if (confirm('¿Está seguro de que desea reiniciar el formulario? Se perderán todos los datos ingresados.')) {
-                document.getElementById('appointmentForm').reset();
-                document.getElementById('clientDataSection').style.display = 'none';
-                document.getElementById('appointmentDataSection').style.display = 'none';
-                document.getElementById('newClientForm').style.display = 'none';
-                document.getElementById('searchSection').style.display = 'block';
-                document.getElementById('searchClientCode').value = '';
-                document.getElementById('customService').classList.remove('show');
-                currentClientCode = null;
-            }
+            openConfirmModal(
+                'Confirmar Reinicio',
+                '¿Está seguro de que desea reiniciar el formulario? Se perderán todos los datos ingresados.',
+                'Sí, reiniciar',
+                'info', 
+                function() {
+                    document.getElementById('appointmentForm').reset();
+                    document.getElementById('clientDataSection').style.display = 'none';
+                    document.getElementById('appointmentDataSection').style.display = 'none';
+                    document.getElementById('newClientForm').style.display = 'none';
+                    document.getElementById('searchSection').style.display = 'block';
+                    document.getElementById('searchClientCode').value = '';
+                    document.getElementById('customService').classList.remove('show');
+                    currentClientCode = null;
+                    resetFormToCreateMode();
+                    closeConfirmModal();
+                }
+            );
         });
 
-        // ============================================
-        // 📝 MANEJO DEL SERVICIO PERSONALIZADO
-        // ============================================
         document.getElementById('service').addEventListener('change', function() {
             const customInput = document.getElementById('customService');
             if (this.value === 'otro') {
@@ -906,59 +937,50 @@
             }
         });
 
-        // ============================================
-        // 📅 ENVÍO DEL FORMULARIO DE CITA
-        // ============================================
         document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const codCliente = document.getElementById('codCliente').value;
-            
             if (!codCliente) {
                 showNotification('⚠️ Debe seleccionar o registrar un cliente primero', 'error');
                 return;
             }
 
-            // Validar campos de cita
-            const service = document.getElementById('service').value;
-            const date = document.getElementById('date').value;
-            const time = document.getElementById('time').value;
-
-            if (!service || !date || !time) {
-                showNotification('⚠️ Complete todos los campos obligatorios de la cita', 'error');
-                return;
-            }
-
             const serviceSelect = document.getElementById('service');
             const customService = document.getElementById('customService');
-            
             let serviceValue = serviceSelect.value === 'otro' 
                 ? customService.value 
                 : serviceSelect.options[serviceSelect.selectedIndex].text;
             
-            const horaInicio = time;
+            const horaInicio = document.getElementById('time').value;
             const duration = parseFloat(document.getElementById('duration').value);
             const [horas, minutos] = horaInicio.split(':');
             const horaFinHoras = parseInt(horas) + Math.floor(duration);
             const horaFinMinutos = parseInt(minutos) + ((duration % 1) * 60);
-            const horaFin = `${String(horaFinHoras).padStart(2, '0')}:${String(horaFinMinutos).padStart(2, '0')}:00`;
-            
-            const clientName = document.getElementById('clientFullName').textContent;
-            const notes = document.getElementById('notes').value;
             
             const citaData = {
                 codCliente: parseInt(codCliente),
-                codEmpleado: 1,
-                fechaCita: date,
+                codEmpleado: 1, 
+                fechaCita: document.getElementById('date').value,
                 horaInicio: horaInicio + ':00',
-                horaFin: horaFin,
-                estadoCita: 'Programada',
-                notasInternas: `Paciente: ${clientName} - Servicio: ${serviceValue}${notes ? ' - ' + notes : ''}`
+                horaFin: `${String(horaFinHoras).padStart(2, '0')}:${String(horaFinMinutos).padStart(2, '0')}:00`,
+                notasInternas: `Paciente: ${document.getElementById('clientFullName').textContent} - Servicio: ${serviceValue} - ${document.getElementById('notes').value}`.trim()
             };
 
+            const editingId = document.getElementById('editingAppointmentId').value;
+            const method = editingId ? 'PUT' : 'POST';
+            const url = editingId ? `/api/citas/${editingId}` : '/api/citas'; 
+            
+            if (editingId) {
+                const currentAppointment = appointments.find(a => a.id == editingId);
+                citaData.estadoCita = currentAppointment.estadoCita; 
+            } else {
+                citaData.estadoCita = 'Programada';
+            }
+
             try {
-                const response = await fetch('/api/citas', {
-                    method: 'POST',
+                const response = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
@@ -968,58 +990,46 @@
                 });
 
                 if (response.ok) {
-                    showNotification(`✓ Cita agendada exitosamente para ${clientName}`);
-                    
-                    // Limpiar solo campos de cita
-                    document.getElementById('service').value = '';
-                    document.getElementById('date').value = '';
-                    document.getElementById('time').value = '';
-                    document.getElementById('duration').value = '1';
-                    document.getElementById('notes').value = '';
-                    document.getElementById('customService').classList.remove('show');
-                    
-                    // Recargar lista de citas
+                    const message = editingId ? '✓ Cita actualizada exitosamente' : '✓ Cita agendada exitosamente';
+                    showNotification(message);
+                    document.getElementById('btnResetForm').dispatchEvent(new Event('click_internal'));
                     loadAppointments();
                 } else {
-                    showNotification('❌ Error al agendar la cita', 'error');
+                    const error = await response.json();
+                    showNotification(`❌ Error: ${error.error || 'No se pudo guardar la cita'}`, 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('❌ Error al agendar la cita', 'error');
+                showNotification('❌ Error de conexión al guardar la cita', 'error');
             }
         });
+        
+        document.getElementById('btnResetForm').addEventListener('click_internal', function() {
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('clientDataSection').style.display = 'none';
+            document.getElementById('appointmentDataSection').style.display = 'none';
+            document.getElementById('newClientForm').style.display = 'none';
+            document.getElementById('searchSection').style.display = 'block';
+            document.getElementById('searchClientCode').value = '';
+            document.getElementById('customService').classList.remove('show');
+            currentClientCode = null;
+            resetFormToCreateMode();
+        });
 
-        // ============================================
-        // 🔔 FUNCIÓN DE NOTIFICACIONES
-        // ============================================
         function showNotification(message, type = 'success') {
             const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
             const notification = document.createElement('div');
             notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: ${bgColor};
-                color: white;
-                padding: 15px 25px;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                z-index: 100000;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                animation: slideInRight 0.3s ease-out;
-                max-width: 400px;
+                position: fixed; bottom: 20px; right: 20px; background: ${bgColor}; color: white;
+                padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                z-index: 100000; display: flex; align-items: center; gap: 10px;
+                animation: slideInRight 0.3s ease-out; max-width: 400px;
             `;
             notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
-            
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 4000);
         }
 
-        // ============================================
-        // 📅 CARGAR Y MOSTRAR CITAS
-        // ============================================
         function formatTime12Hour(time24) {
             if (!time24) return '';
             const [hours, minutes] = time24.split(':');
@@ -1031,14 +1041,14 @@
 
         function parseMySQLDate(fechaStr) {
             if (!fechaStr) return null;
-            const parts = fechaStr.split('-');
+            const dateOnly = fechaStr.split('T')[0];
+            const parts = dateOnly.split('-');
             return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         }
 
         function getDateText(fechaObj) {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-            
             const fecha = new Date(fechaObj);
             fecha.setHours(0, 0, 0, 0);
             
@@ -1047,9 +1057,7 @@
             
             if (daysDiff === 0) return 'Hoy';
             if (daysDiff === 1) return 'Mañana';
-            
-            const opciones = { day: 'numeric', month: 'short' };
-            return fecha.toLocaleDateString('es-ES', opciones);
+            return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         }
 
         async function loadAppointments() {
@@ -1058,29 +1066,44 @@
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
-
                 if (response.ok) {
                     const citas = await response.json();
-                    
                     appointments = citas.map(cita => {
                         const fechaObj = parseMySQLDate(cita.Fecha_Cita);
-                        
+                        const notasPartes = (cita.Notas_Internas || '').split(' - ');
+                        const patient = (notasPartes[0] || '').replace('Paciente: ', '') || 'Sin nombre';
+                        const service = (notasPartes[1] || '').replace('Servicio: ', '') || 'Sin servicio';
+                        const notes = notasPartes.slice(2).join(' - ') || ''; 
+
                         return {
                             id: cita.Cod_Cita,
                             codCita: cita.Cod_Cita,
                             codCliente: cita.Cod_Cliente,
                             codEmpleado: cita.Cod_Empleado,
-                            fechaCita: cita.Fecha_Cita,
+                            fechaCita: cita.Fecha_Cita.split('T')[0], 
                             fechaObj: fechaObj,
                             horaInicio: cita.Hora_Inicio,
                             horaFin: cita.Hora_Fin,
                             estadoCita: cita.Estado_Cita,
-                            patient: cita.Notas_Internas ? cita.Notas_Internas.split(' - ')[0].replace('Paciente: ', '') : 'Sin nombre',
-                            service: cita.Notas_Internas ? (cita.Notas_Internas.split(' - ')[1] || 'Sin servicio').replace('Servicio: ', '') : 'Sin servicio',
+                            patient: patient,
+                            service: service,
+                            notes: notes,
                             time: cita.Hora_Inicio ? formatTime12Hour(cita.Hora_Inicio.substring(0, 5)) : '',
                             dateText: getDateText(fechaObj),
                             status: mapearEstado(cita.Estado_Cita)
                         };
+                    });
+                    
+                    appointments.sort((a, b) => {
+                        const dateA = new Date(a.fechaObj);
+                        const dateB = new Date(b.fechaObj);
+                        
+                        const [hA, mA] = a.horaInicio ? a.horaInicio.split(':') : [0,0];
+                        const [hB, mB] = b.horaInicio ? b.horaInicio.split(':') : [0,0];
+                        dateA.setHours(hA, mA);
+                        dateB.setHours(hB, mB);
+
+                        return dateB.getTime() - dateA.getTime(); 
                     });
 
                     renderAppointments();
@@ -1103,22 +1126,16 @@
         function filterAppointments() {
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
-
+            
             return appointments.filter(appointment => {
                 if (!appointment.fechaObj) return false;
-                
                 const fechaCita = new Date(appointment.fechaObj);
                 fechaCita.setHours(0, 0, 0, 0);
-
                 switch(currentFilter) {
-                    case 'hoy':
-                        return fechaCita.getTime() === hoy.getTime();
-                    case 'proximas':
-                        return fechaCita.getTime() > hoy.getTime();
-                    case 'pasadas':
-                        return fechaCita.getTime() < hoy.getTime();
-                    default:
-                        return true;
+                    case 'hoy': return fechaCita.getTime() === hoy.getTime();
+                    case 'proximas': return fechaCita.getTime() > hoy.getTime();
+                    case 'pasadas': return fechaCita.getTime() < hoy.getTime();
+                    default: return true;
                 }
             });
         }
@@ -1131,9 +1148,7 @@
                 container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-alt"></i><p>No hay citas en esta categoría</p></div>`;
                 return;
             }
-
-            filteredAppointments.sort((a, b) => new Date(a.fechaObj) - new Date(b.fechaObj));
-
+            
             container.innerHTML = filteredAppointments.map(appointment => `
                 <div class="appointment-item" data-id="${appointment.id}">
                     <div class="appointment-info">
@@ -1148,6 +1163,27 @@
                     </div>
                     <div class="appointment-controls">
                         <span class="status-badge ${getStatusClass(appointment.status)}">${getStatusText(appointment.status)}</span>
+                        
+                        <div class="btn-group dropup">
+                            <button class="action-btn" data-toggle="dropdown" title="Cambiar Estado" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Programada');">Programada</a>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Confirmada');">Confirmada</a>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Realizada');">Realizada</a>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); changeStatus(${appointment.id}, 'Cancelada');">Cancelada</a>
+                            </div>
+                        </div>
+
+                        <button class="action-btn" onclick="sendNotification(${appointment.id})" title="Enviar Notificación">
+                            <i class="fas fa-bell"></i>
+                        </button>
+
+                        <button class="action-btn" onclick="editAppointment(${appointment.id})" title="Editar Cita">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
                         <button class="action-btn delete-btn" onclick="deleteAppointment(${appointment.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -1158,66 +1194,230 @@
 
         function getStatusClass(status) {
             const classes = {
-                'programada': 'status-programada',
-                'confirmed': 'status-confirmed',
-                'realizada': 'status-realizada',
-                'cancelled': 'status-cancelled'
+                'programada': 'status-programada', 'confirmed': 'status-confirmed',
+                'realizada': 'status-realizada', 'cancelled': 'status-cancelled'
             };
             return classes[status] || 'status-programada';
         }
 
         function getStatusText(status) {
             const texts = {
-                'programada': 'Programada',
-                'confirmed': 'Confirmada',
-                'realizada': 'Realizada',
-                'cancelled': 'Cancelada'
+                'programada': 'Programada', 'confirmed': 'Confirmada',
+                'realizada': 'Realizada', 'cancelled': 'Cancelada'
             };
             return texts[status] || 'Programada';
+        }
+
+        async function changeStatus(id, newStatus) {
+            const appointment = appointments.find(a => a.id === id);
+            if (!appointment) return;
+            showNotification(`🔄 Cambiando estado a ${newStatus}...`, 'info');
+
+            try {
+                const response = await fetch(`/api/citas/estado/${id}`, { 
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json', 'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ estado: newStatus })
+                });
+
+                if (response.ok) {
+                    showNotification(`✓ Estado actualizado a ${newStatus}`, 'success');
+                    loadAppointments();
+                } else {
+                    const error = await response.json();
+                    showNotification(`❌ Error al cambiar estado: ${error.error || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error al cambiar estado:', error);
+                showNotification('❌ Error de conexión al cambiar estado', 'error');
+            }
+        }
+
+        async function editAppointment(id) {
+            const appointment = appointments.find(a => a.id === id);
+            if (!appointment) return;
+            
+            showNotification('Cargando datos de la cita...', 'info');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const clientFound = await findClient(appointment.codCliente);
+            
+            if (clientFound) {
+                document.getElementById('editingAppointmentId').value = appointment.id;
+                document.getElementById('date').value = appointment.fechaCita; // Usar la fecha YYYY-MM-DD guardada
+                document.getElementById('time').value = appointment.horaInicio.substring(0, 5);
+                document.getElementById('notes').value = appointment.notes;
+
+                const serviceSelect = document.getElementById('service');
+                const customServiceInput = document.getElementById('customService');
+                let optionFound = Array.from(serviceSelect.options).some(option => {
+                    if (option.text === appointment.service) {
+                        option.selected = true;
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (!optionFound && appointment.service) {
+                    serviceSelect.value = 'otro';
+                    customServiceInput.value = appointment.service;
+                    customServiceInput.classList.add('show');
+                } else {
+                    customServiceInput.classList.remove('show');
+                    customServiceInput.value = '';
+                }
+                
+                document.getElementById('formTitle').textContent = 'Editar Cita';
+                document.getElementById('submitAppointmentBtn').innerHTML = '<i class="fas fa-save mr-2"></i>Actualizar Cita';
+            }
+        }
+
+        function resetFormToCreateMode() {
+            document.getElementById('editingAppointmentId').value = '';
+            document.getElementById('formTitle').textContent = 'Agendar Nueva Cita';
+            document.getElementById('submitAppointmentBtn').innerHTML = '<i class="fas fa-calendar-check mr-2"></i>Agendar Cita';
+        }
+
+        async function sendNotification(id) {
+            const appointment = appointments.find(a => a.id === id);
+            if (!appointment) return;
+            
+            showNotification(`🔔 Obteniendo datos del cliente...`, 'info');
+
+            try {
+                // 1. Buscar los datos del cliente (incluyendo el teléfono)
+                const response = await fetch(`/api/citas/buscar-cliente?cod=${appointment.codCliente}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('No se pudo encontrar la información del cliente.');
+                }
+
+                const clientData = await response.json();
+                
+                // 2. Extraer el número de teléfono
+                const phoneData = clientData.telefonos.length > 0 ? clientData.telefonos[0] : null;
+                if (!phoneData || !phoneData.Numero) {
+                    showNotification(`❌ Error: El cliente ${appointment.patient} no tiene un número de teléfono registrado.`, 'error');
+                    return;
+                }
+
+                // 3. Formatear el número (Asumiendo 504 para Honduras, quitar guiones)
+                let phoneNumber = phoneData.Numero.replace(/[^0-9]/g, ''); // Quitar guiones, espacios, etc.
+                const countryCode = phoneData.Cod_Pais || '504';
+                
+                // Evitar duplicar el código de país si ya está
+                if (!phoneNumber.startsWith(countryCode)) {
+                    phoneNumber = countryCode + phoneNumber;
+                }
+
+                // 4. Crear el mensaje
+                const prettyDate = new Date(appointment.fechaObj).toLocaleDateString('es-ES', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                const text = `¡Hola ${appointment.patient}! 👋 Te recordamos tu cita en Salus para un servicio de *${appointment.service}* el próximo *${prettyDate}* a las *${appointment.time}*. ¡Te esperamos!`;
+                
+                // 5. Crear y abrir la URL de WhatsApp
+                const encodedText = encodeURIComponent(text);
+                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedText}`;
+                
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification(`✓ Abriendo WhatsApp para ${appointment.patient}...`, 'success');
+
+            } catch (error) {
+                console.error('Error al enviar notificación:', error);
+                showNotification(`❌ Error: ${error.message}`, 'error');
+            }
         }
 
         async function deleteAppointment(id) {
             const appointment = appointments.find(a => a.id === id);
             if (!appointment) return;
 
-            const modal = document.getElementById('confirmModal');
-            const modalMessage = document.getElementById('modalMessage');
-            
-            modalMessage.innerHTML = `¿Está seguro de que desea eliminar la cita de <strong>${appointment.patient}</strong>?`;
-            modal.classList.add('show');
+            openConfirmModal(
+                'Confirmar Eliminación',
+                `¿Está seguro de que desea eliminar la cita de <strong>${appointment.patient}</strong>?`,
+                'Sí, eliminar',
+                'danger', 
+                async function() {
+                    try {
+                        const response = await fetch(`/api/citas/${appointment.codCita}`, { 
+                            method: 'DELETE',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
 
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-            newConfirmBtn.onclick = async function() {
-                try {
-                    const response = await fetch(`/api/citas?cod=${appointment.codCita}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        if (response.ok) {
+                            closeConfirmModal();
+                            showNotification(`✓ Cita eliminada: ${appointment.patient}`);
+                            loadAppointments();
+                        } else {
+                            const error = await response.json();
+                            throw new Error(error.error || 'No se pudo eliminar la cita');
                         }
-                    });
-
-                    if (response.ok) {
+                    } catch (error) {
+                        console.error('Error:', error);
                         closeConfirmModal();
-                        showNotification(`✓ Cita eliminada: ${appointment.patient}`);
-                        loadAppointments();
+                        showNotification(`❌ Error al eliminar la cita: ${error.message}`, 'error');
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                    closeConfirmModal();
-                    showNotification('❌ Error al eliminar la cita', 'error');
                 }
-            };
+            );
+        }
+
+        function openConfirmModal(title, message, confirmText, type = 'danger', callback) {
+            const modal = document.getElementById('confirmModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            const modalIcon = document.getElementById('modalIcon');
+
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message;
+            confirmBtn.textContent = confirmText;
+            
+            modalIcon.className = 'modal-icon';
+            confirmBtn.className = 'modal-btn modal-btn-confirm';
+
+            if (type === 'danger') {
+                modalIcon.classList.add('icon-danger');
+                confirmBtn.classList.add('btn-danger');
+            } else if (type === 'info') {
+                modalIcon.classList.add('icon-info');
+                confirmBtn.classList.add('btn-info');
+                modalIcon.querySelector('i').className = 'fas fa-question-circle';
+            }
+            
+            if(type !== 'info') {
+                 modalIcon.querySelector('i').className = 'fas fa-exclamation-triangle';
+            }
+
+            confirmActionCallback = callback;
+            modal.classList.add('show');
         }
 
         function closeConfirmModal() {
             document.getElementById('confirmModal').classList.remove('show');
+            confirmActionCallback = null;
         }
 
-        // Filtros
+        document.getElementById('confirmActionBtn').addEventListener('click', () => {
+            if (typeof confirmActionCallback === 'function') {
+                confirmActionCallback();
+            }
+        });
+
         const filterTabs = document.querySelectorAll('.filter-tab');
         filterTabs.forEach(tab => {
             tab.addEventListener('click', function() {
@@ -1228,14 +1428,11 @@
             });
         });
 
-        // Reloj
         function updateClock() {
             const now = new Date();
             const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
             const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            
             const dateStr = `${dias[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]} ${now.getFullYear()}`;
-            
             let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -1244,14 +1441,115 @@
             
             const dateElement = document.querySelector('.welcome-date .date');
             const timeElement = document.querySelector('.welcome-date .time');
-            
             if (dateElement) dateElement.textContent = dateStr;
             if (timeElement) timeElement.textContent = timeStr;
         }
 
-        // Inicializar
+        // ⬇️ NUEVAS FUNCIONES Y EVENTOS PARA EL MODAL DE CLIENTES ⬇️
+
+        /**
+         * Carga la lista de clientes desde la API y muestra el modal.
+         * Utiliza la caché 'allClients' para evitar peticiones innecesarias.
+         */
+        async function loadClientList() {
+            const tableBody = document.getElementById('clientListTableBody');
+            $('#clientListModal').modal('show'); // Muestra el modal inmediatamente
+
+            if (allClients.length > 0) {
+                renderClientList(); // Renderiza desde la caché si ya la tenemos
+                return;
+            }
+
+            // Muestra estado de carga
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando lista de clientes...</td></tr>';
+            
+            try {
+                // *** IMPORTANTE: Asegúrate de crear este endpoint en tu backend ***
+                const response = await fetch('/api/clientes/listado', {
+                     headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                }); 
+                
+                if (!response.ok) {
+                    throw new Error('No se pudo cargar la lista de clientes. (Error ' + response.status + ')');
+                }
+                
+                const data = await response.json();
+                // Asumiendo que la data es un array de clientes
+                // Ej: [{ "cod_cliente": 1, "nombre": "Ana", "apellido": "Pérez", "dni": "0801..." }, ...]
+                allClients = data; 
+                renderClientList(); // Renderiza la lista fresca
+
+            } catch (error) {
+                console.error('Error al cargar lista de clientes:', error);
+                showNotification(error.message, 'error');
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger"><i class="fas fa-exclamation-triangle mr-2"></i>${error.message}</td></tr>`;
+            }
+        }
+
+        /**
+         * Renderiza la lista de clientes en la tabla del modal, aplicando un filtro.
+         */
+        function renderClientList(filter = '') {
+            const tableBody = document.getElementById('clientListTableBody');
+            const filterLower = filter.toLowerCase();
+            
+            const filteredClients = allClients.filter(client => {
+                const fullName = `${client.nombre || ''} ${client.apellido || ''}`.toLowerCase();
+                const dni = (client.dni || '').toLowerCase();
+                const code = String(client.cod_cliente || '').toLowerCase();
+                
+                return fullName.includes(filterLower) || dni.includes(filterLower) || code.includes(filterLower);
+            });
+
+            if (filteredClients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No se encontraron clientes con ese criterio.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = filteredClients.map(client => `
+                <tr>
+                    <td><strong>${client.cod_cliente}</strong></td>
+                    <td>${client.nombre || ''} ${client.apellido || ''}</td>
+                    <td>${client.dni || 'No registrado'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-salus" onclick="selectClientFromList(${client.cod_cliente})" title="Seleccionar este cliente">
+                            <i class="fas fa-check mr-1"></i> Seleccionar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        /**
+         * Acción al hacer clic en 'Seleccionar' en el modal de clientes.
+         * Cierra el modal, pone el código en el input y busca al cliente.
+         */
+        async function selectClientFromList(codCliente) {
+            document.getElementById('searchClientCode').value = codCliente;
+            $('#clientListModal').modal('hide'); // Oculta el modal (usando jQuery)
+            await findClient(codCliente); // Llama a la función existente para buscar al cliente
+        }
+
+        // --- Event Listeners ---
+        
+        // Listener para el nuevo botón "Ver Lista de Clientes"
+        document.getElementById('btnShowClientList').addEventListener('click', loadClientList);
+
+        // Listener para el campo de búsqueda dentro del modal de clientes
+        document.getElementById('clientSearchInput').addEventListener('keyup', function() {
+            renderClientList(this.value);
+        });
+
+        // ⬆️ FIN NUEVAS FUNCIONES Y EVENTOS ⬆️
+
+
+        // --- INICIALIZACIÓN ---
         updateClock();
         setInterval(updateClock, 1000);
         loadAppointments();
+
     </script>
 @stop
