@@ -16,7 +16,7 @@ use App\Http\Controllers\FacturaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\BitacoraController;
-
+use App\Http\Controllers\ServicioController;
 // Ruta raíz - SIEMPRE muestra la vista de bienvenida.
 Route::get('/', function () {
     return view('welcome');
@@ -122,20 +122,26 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
          ->middleware('can:viewAny,App\Models\Product');
 
-    // 🟢 Módulo de Gestión de Servicios
-    Route::get('/servicios', function () {
-        return view('gestion-servicios');
-    })->name('servicios')
-      ->middleware('can:viewAny,App\Models\Tratamiento');
 
-    // Módulo de Reportes
-    Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-         ->middleware('can:viewAny,App\Models\Reporte');
+// ========================================
+    // 🟢 MÓDULO DE GESTIÓN DE SERVICIOS
+    // ========================================
+    
+    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios')
+          ->middleware('can:viewAny,App\Models\Tratamiento');
 
-    // Módulo de Gestión de Personal
-    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
-         ->middleware('can:viewAny,App\Models\Empleado');
-
+    Route::prefix('api/servicios')->name('api.servicios.')->group(function () {
+        Route::get('/', [ServicioController::class, 'getTratamientos'])->name('get')
+            ->middleware('can:viewAny,App\Models\Tratamiento');
+        Route::post('/', [ServicioController::class, 'store'])->name('store')
+            ->middleware('can:create,App\Models\Tratamiento');
+        Route::get('/{id}', [ServicioController::class, 'show'])->name('show')
+            ->middleware('can:viewAny,App\Models\Tratamiento');
+        Route::put('/{id}', [ServicioController::class, 'update'])->name('update')
+            ->middleware('can:update,App\Models\Tratamiento');
+        Route::delete('/{id}', [ServicioController::class, 'destroy'])->name('destroy')
+            ->middleware('can:delete,App\Models\Tratamiento');
+    });
 
     // ========================================
     // MÓDULO DE ADMINISTRACIÓN
