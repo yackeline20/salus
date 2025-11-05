@@ -7,7 +7,7 @@
         <h1>
             <i class="fas fa-file-invoice-dollar text-info"></i> Gestión de Facturas
         </h1>
-        {{-- Botón rápido para crear una factura. Esta es la ruta que corregiremos después. --}}
+        {{-- ¡BOTÓN CORRECTO! Usa la ruta de vista de Laravel --}}
         <a href="{{ route('factura.create') }}" class="btn btn-info btn-lg shadow-sm">
             <i class="fas fa-plus-circle mr-2"></i> Crear Nueva Factura
         </a>
@@ -164,14 +164,15 @@
 @section('js')
     <script>
         // URL base de tu API Node.js (Asegúrate de que el puerto 3000 sea accesible)
-        const API_URL = 'http://localhost:3000';
+        const API_URL = 'http://localhost:3000'; // ⭐ URL de API externa RESTAURADA
         let facturaToDeleteId = null; // Variable global para almacenar el ID a eliminar
 
         // Función de ayuda para mostrar alertas de AdminLTE
         function showAdminlteAlert(message, type = 'success') {
+            const icon = type === 'danger' ? 'fas fa-exclamation-triangle' : 'fas fa-check';
             const alertHtml = `
                 <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="position: fixed; top: 10px; right: 10px; z-index: 1050; min-width: 300px;">
-                    <i class="icon fas fa-check mr-2"></i>${message}
+                    <i class="icon ${icon} mr-2"></i>${message}
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -194,7 +195,7 @@
             tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando facturas...</td></tr>';
 
             try {
-                // Llamada a la API GET /facturas
+                // Llamada a la API GET de Node.js
                 const response = await fetch(`${API_URL}/facturas`);
                 if (!response.ok) {
                     throw new Error(`Error en la API: ${response.statusText}`);
@@ -214,13 +215,9 @@
                     const rawDate = factura.Fecha_Factura ? new Date(factura.Fecha_Factura) : new Date();
                     const fecha = rawDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-                    // Total_Factura como Monto Final
                     const total = factura.Total_Factura ? parseFloat(factura.Total_Factura).toFixed(2) : '0.00';
-
-                    // Propiedades OBTENIDAS del JSON: Metodo_Pago, Estado_Pago, Descuento_Aplicado
                     const estado = factura.Estado_Pago || 'Pendiente';
                     const metodoPago = factura.Metodo_Pago || 'No especificado';
-                    // Descuento. Se asume que viene como número en su JSON.
                     const descuento = factura.Descuento_Aplicado ? parseFloat(factura.Descuento_Aplicado).toFixed(2) : '0.00';
 
 
@@ -248,10 +245,10 @@
                             </td>
                             <td>
                                 {{-- Los botones de edición y vista DEBEN usar rutas de Laravel, aquí simuladas --}}
-                                <a href="{{ url('factura') }}/${id}/show" class="btn btn-sm btn-outline-info mr-1" title="Ver Factura">
+                                <a href="{{ url('facturas') }}/${id}/show" class="btn btn-sm btn-outline-info mr-1" title="Ver Factura">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ url('factura') }}/${id}/edit" class="btn btn-sm btn-outline-secondary mr-1" title="Editar Factura">
+                                <a href="{{ url('facturas') }}/${id}/edit" class="btn btn-sm btn-outline-secondary mr-1" title="Editar Factura">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 {{-- Botón de eliminación llama a la función JS --}}
@@ -295,7 +292,7 @@
             $('#deleteConfirmationModal').modal('hide');
 
             try {
-                // Llamada a la API DELETE /facturas?cod={id}
+                // ⭐ LLamada a la API de Node.js con parámetro de consulta para DELETE
                 const response = await fetch(`${API_URL}/facturas?cod=${id}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' }

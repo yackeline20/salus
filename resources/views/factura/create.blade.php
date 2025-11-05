@@ -1,520 +1,667 @@
 @extends('adminlte::page')
 
+{{-- Asegúrese de que su layout principal (o AdminLTE) tiene <meta name="csrf-token" content="{{ csrf_token() }}"> en el <head> --}}
+
 @section('title', 'Crear Factura')
 
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
         <h1>
             <i class="fas fa-file-plus"></i> Crear Nueva Factura
-            <small>Generar factura para paciente</small>
+            <small>Generar factura para cliente/paciente</small>
         </h1>
-        <a href="{{ route('factura') }}" class="btn btn-secondary">
+        {{-- ¡IMPORTANTE! CORRECCIÓN: La ruta para el índice debe ser 'factura.index' --}}
+        <a href="{{ route('factura.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Regresar a Facturas
         </a>
     </div>
 @stop
 
 @section('content')
+{{-- Contenedor de mensajes de notificación (Ajustado para AdminLTE/Bootstrap) --}}
+<div id="message-box" class="fixed top-0 right-0 p-4 z-50" style="position: fixed; top: 1rem; right: 1rem; z-index: 1050; opacity: 0; transition: opacity 0.3s;"></div>
+
 <div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary">
-                <h3 class="card-title text-white">
-                    <i class="fas fa-file-invoice mr-2"></i>Información de la Factura
-                </h3>
-            </div>
-            <div class="card-body">
-                <form>
+    <div class="col-md-12">
+        <form id="invoice-form" class="space-y-4">
+            {{-- SECCIÓN 1: INFORMACIÓN DEL CLIENTE (Ajustada a la Card de AdminLTE) --}}
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-user-circle mr-2"></i>1. Información del Cliente</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="client-search">Buscar Cliente (Nombre o DNI):</label>
+                                {{-- El datalist se llenará con los clientes obtenidos de la API --}}
+                                <input type="text" id="client-search" list="client-options" class="form-control" placeholder="Escriba el nombre o DNI" autocomplete="off">
+                                <datalist id="client-options"></datalist>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Cliente Seleccionado:</label>
+                                <p id="selected-client-info" class="p-2 border rounded text-muted bg-light min-h-[38px]">
+                                    (Seleccione un cliente para continuar)
+                                </p>
+                                <input type="hidden" id="cod-cliente" name="Cod_Cliente">
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Los campos originales de Número de Factura y Fecha se eliminan de aquí para usar los del JS si es necesario, o puede mantenerlos como info fija --}}
+                    {{-- Suponiendo que la API genera el número de factura, he mantenido la fecha estática aquí por si la requiere --}}
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="numero_factura">Número de Factura</label>
-                                <input type="text" class="form-control" id="numero_factura" value="#F-005" readonly>
+                                <input type="text" class="form-control" id="numero_factura" value="Generado por API" readonly>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="fecha">Fecha</label>
-                                <input type="date" class="form-control" id="fecha" value="{{ date('Y-m-d') }}">
+                                <input type="date" class="form-control" id="fecha" name="Fecha_Factura_Display" value="{{ date('Y-m-d') }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- SECCIÓN 2: ARTÍCULOS DE LA FACTURA (Original de su código) --}}
+            <div class="card card-info">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-box-open mr-2"></i>2. Artículos de la Factura</h3>
+                </div>
+                <div class="card-body">
+                    {{-- Controles de selección de Artículo (Ajustado a AdminLTE/Bootstrap) --}}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="add-product-select">Agregar Producto:</label>
+                                <div class="input-group">
+                                    <select id="add-product-select" class="form-control form-control-sm">
+                                        <option value="">-- Seleccionar Producto --</option>
+                                    </select>
+                                    <div class="input-group-append">
+                                        <button type="button" onclick="addItemToInvoice('product')" class="btn btn-primary btn-sm">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="add-treatment-select">Agregar Tratamiento:</label>
+                                <div class="input-group">
+                                    <select id="add-treatment-select" class="form-control form-control-sm">
+                                        <option value="">-- Seleccionar Tratamiento --</option>
+                                    </select>
+                                    <div class="input-group-append">
+                                        <button type="button" onclick="addItemToInvoice('treatment')" class="btn btn-primary btn-sm">+</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="paciente">Seleccionar Paciente</label>
-                        <select class="form-control" id="paciente">
-                            <option value="">Seleccionar paciente...</option>
-                            <option value="1">María González - Cédula: 0801199012345</option>
-                            <option value="2">Ana Martínez - Cédula: 0801198567890</option>
-                            <option value="3">Carmen López - Cédula: 0801197123456</option>
-                            <option value="4">Sofía Rivera - Cédula: 0801196789012</option>
-                        </select>
-                    </div>
-
-                    <hr>
-
-                    <h5><i class="fas fa-list mr-2"></i>Servicios</h5>
-                    
+                    {{-- Tabla de Detalles de la Factura (Ajustada a la Card de AdminLTE) --}}
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="servicios-table">
+                        <table class="table table-bordered table-striped" style="min-width: 600px;">
                             <thead class="bg-light">
                                 <tr>
-                                    <th>Servicio/Tratamiento</th>
-                                    <th>Cantidad</th>
-                                    <th>Precio Unitario</th>
-                                    <th>Total</th>
-                                    <th>Acción</th>
+                                    <th class="w-1/12">Tipo</th>
+                                    <th class="w-5/12">Descripción</th>
+                                    <th class="w-2/12">Cant.</th>
+                                    <th class="w-2/12 text-right">Precio Unitario</th>
+                                    <th class="w-2/12 text-right">Subtotal</th>
+                                    <th class="w-1/12 text-right">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <select class="form-control servicio-select">
-                                            <option>Seleccionar servicio...</option>
-                                            <option data-precio="850">Botox Facial - $850.00</option>
-                                            <option data-precio="120">Limpieza Facial - $120.00</option>
-                                            <option data-precio="450">Relleno Labial - $450.00</option>
-                                            <option data-precio="300">Peeling Químico - $300.00</option>
-                                            <option data-precio="200">Hidratación Facial - $200.00</option>
-                                            <option data-precio="600">Tratamiento Antiarrugas - $600.00</option>
-                                            <option value="custom">📝 Servicio Personalizado</option>
-                                        </select>
-                                        <input type="text" class="form-control servicio-custom mt-2" placeholder="Escribir nombre del servicio..." style="display: none;">
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control cantidad" value="1" min="1">
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control precio" step="0.01" placeholder="0.00">
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control total" step="0.01" readonly>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-danger btn-sm eliminar-fila">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
+                            <tbody id="invoice-details">
+                                <tr><td colspan="6" class="text-center text-muted">No hay artículos en la factura.</td></tr>
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
 
-                    <div class="d-flex justify-content-between mb-3">
-                        <button type="button" class="btn btn-success" id="agregar-servicio">
-                            <i class="fas fa-plus"></i> Agregar Servicio
-                        </button>
+            {{-- SECCIÓN 3: DATOS DE PAGO Y RESUMEN (Ajuste de columnas) --}}
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-credit-card mr-2"></i>3. Datos de Pago</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <div class="form-group">
+                                        <label for="metodo-pago">Método de Pago:</label>
+                                        <select id="metodo-pago" name="Metodo_Pago" required class="form-control">
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Tarjeta">Tarjeta</option>
+                                            <option value="Transferencia">Transferencia</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-group">
+                                        <label for="estado-pago">Estado de Pago:</label>
+                                        <select id="estado-pago" name="Estado_Pago" required class="form-control">
+                                            <option value="Pagada">Pagada</option>
+                                            <option value="Pendiente">Pendiente</option>
+                                            <option value="Anulada">Anulada</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="form-group">
+                                        <label for="descuento-aplicado">Descuento Aplicado (%):</label>
+                                        <input type="number" id="descuento-aplicado" name="Descuento_Aplicado" value="0" min="0" max="100" class="form-control" oninput="calculateTotals()">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="observaciones">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" rows="3" placeholder="Notas adicionales sobre los servicios..."></textarea>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="observaciones">Observaciones</label>
-                        <textarea class="form-control" id="observaciones" rows="3" placeholder="Notas adicionales sobre los servicios..."></textarea>
+                <div class="col-md-4">
+                    {{-- Resumen de Factura --}}
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-calculator mr-2"></i>Resumen de Factura</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <span id="subtotal-display" class="font-weight-bold">$0.00</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Descuento (<span id="discount-percent">0</span>%):</span>
+                                <span id="discount-amount-display" class="font-weight-bold text-danger">-$0.00</span>
+                            </div>
+
+                            {{-- Si quiere agregar el ISV (IVA) de su código original: --}}
+                            {{-- <div class="d-flex justify-content-between mb-2">
+                                <span>ISV (15%):</span>
+                                <span id="isv-display" class="font-weight-bold">$0.00</span>
+                            </div> --}}
+
+                            <hr>
+
+                            <div class="d-flex justify-content-between text-lg">
+                                <strong>TOTAL:</strong>
+                                <strong id="total-factura-display" class="text-success">$0.00</strong>
+                                <input type="hidden" id="total-factura-input" name="Total_Factura">
+                            </div>
+
+                            <button type="submit" id="submit-button" class="btn btn-primary btn-lg btn-block mt-4" disabled>
+                                <span id="submit-text">Emitir Factura</span>
+                                <span id="loading-spinner" class="hidden spinner-border text-white" role="status" aria-hidden="true" style="display: none;"></span>
+                            </button>
+
+                            {{-- Botón de Imprimir (Si lo desea, aunque la impresión está manejada en JS) --}}
+                            {{-- <button type="button" class="btn btn-outline-secondary btn-block mt-2" onclick="generarFacturaImprimible()">
+                                <i class="fas fa-print mr-2"></i>Previsualizar Impresión
+                            </button> --}}
+
+                        </div>
                     </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <!-- Resumen de la factura -->
-        <div class="card">
-            <div class="card-header bg-success">
-                <h3 class="card-title text-white">
-                    <i class="fas fa-calculator mr-2"></i>Resumen
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Subtotal:</span>
-                    <span id="subtotal">$0.00</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>ISV (15%):</span>
-                    <span id="isv">$0.00</span>
-                </div>
-                <hr>
-                <div class="d-flex justify-content-between">
-                    <strong>Total a Pagar:</strong>
-                    <strong id="total-final" class="text-success">$0.00</strong>
                 </div>
             </div>
-        </div>
-
-        <!-- Información del paciente -->
-        <div class="card mt-3">
-            <div class="card-header bg-info">
-                <h3 class="card-title text-white">
-                    <i class="fas fa-user mr-2"></i>Datos del Paciente
-                </h3>
-            </div>
-            <div class="card-body" id="info-paciente">
-                <p class="text-muted">Seleccione un paciente para ver sus datos</p>
-            </div>
-        </div>
-
-        <!-- Acciones -->
-        <div class="card mt-3">
-            <div class="card-body">
-                <button type="button" class="btn btn-primary btn-block mb-2">
-                    <i class="fas fa-save mr-2"></i>Guardar Factura
-                </button>
-                <button type="button" class="btn btn-success btn-block mb-2" id="imprimir-factura">
-                    <i class="fas fa-print mr-2"></i>Guardar e Imprimir
-                </button>
-                <a href="{{ route('factura') }}" class="btn btn-secondary btn-block">
-                    <i class="fas fa-times mr-2"></i>Cancelar
-                </a>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
-@stop
+@endsection
 
 @section('css')
+    {{-- Estilos para el spinner de carga, si no están en AdminLTE --}}
     <style>
-        .card-header {
-            border-bottom: 1px solid #dee2e6;
+        .spinner-border {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            vertical-align: -0.125em;
+            border: 0.15em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: .75s linear infinite spinner-border;
         }
-        
-        .table th {
-            background-color: #f8f9fa;
-            font-weight: 600;
+        @keyframes spinner-border {
+            to { transform: rotate(360deg); }
         }
-        
-        #total-final {
-            font-size: 1.2em;
-        }
-        
-        /* Estilos para la factura imprimible */
-        .factura-print {
-            display: none;
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 20px;
-        }
-        
-        @media print {
-            /* Ocultar todo el contenido de la página */
-            .content-wrapper,
-            .main-sidebar,
-            .main-header,
-            .main-footer,
-            nav,
-            .navbar {
-                display: none !important;
-            }
-            
-            /* Mostrar solo la factura */
-            .factura-print {
-                display: block !important;
-                position: static !important;
-                margin: 0 !important;
-                padding: 20px !important;
-            }
-            
-            /* Resetear estilos para impresión */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-            
-            body {
-                margin: 0;
-                padding: 0;
-                background: white !important;
-            }
+        /* Estilos para la notificación */
+        .toast-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
     </style>
 @stop
 
 @section('js')
-    <script>
-        $(document).ready(function() {
-            // Datos de pacientes (en un proyecto real esto vendría de la base de datos)
-            const pacientes = {
-                '1': {
-                    nombre: 'María González',
-                    cedula: '0801199012345',
-                    telefono: '+504 9876-5432',
-                    email: 'maria.gonzalez@email.com'
-                },
-                '2': {
-                    nombre: 'Ana Martínez',
-                    cedula: '0801198567890',
-                    telefono: '+504 8765-4321',
-                    email: 'ana.martinez@email.com'
-                },
-                '3': {
-                    nombre: 'Carmen López',
-                    cedula: '0801197123456',
-                    telefono: '+504 7654-3210',
-                    email: 'carmen.lopez@email.com'
-                },
-                '4': {
-                    nombre: 'Sofía Rivera',
-                    cedula: '0801196789012',
-                    telefono: '+504 6543-2109',
-                    email: 'sofia.rivera@email.com'
-                }
+<script>
+    // URL BASE DE SU API DE LARAVEL. CAMBIAR SI ES NECESARIO
+    const API_BASE_URL = 'http://127.0.0.1:8000/api';
+    // Obtener CSRF Token de la meta-tag de AdminLTE/Laravel
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]') ?
+                       document.querySelector('meta[name="csrf-token"]').getAttribute('content') :
+                       '';
+
+    // Estado global de la factura
+    let invoiceItems = [];
+    let selectedClient = null;
+    let availableData = {
+        clients: [],
+        products: [],
+        treatments: []
+    };
+
+    // --- FUNCIONES DE UTILIDAD ---
+
+    function showMessage(message, type = 'success') {
+        const box = document.getElementById('message-box');
+        let colorClass;
+        if (type === 'success') {
+            colorClass = 'bg-success text-white';
+        } else if (type === 'error') {
+            colorClass = 'bg-danger text-white';
+        } else {
+            colorClass = 'bg-info text-white';
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast-message ${colorClass}`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = message;
+
+        box.innerHTML = ''; // Limpiar mensajes anteriores
+        box.appendChild(toast);
+        box.style.opacity = '1';
+
+        setTimeout(() => {
+            box.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300); // Eliminar después de la transición
+        }, 4000);
+    }
+
+    function formatCurrency(amount) {
+        // Formateo para moneda local, asumiendo una divisa con 2 decimales
+        const num = parseFloat(amount);
+        if (isNaN(num)) return '$0.00';
+        return `$${num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+    }
+
+    function toggleSubmitButton() {
+        const button = document.getElementById('submit-button');
+        const isReady = selectedClient !== null && invoiceItems.length > 0;
+        button.disabled = !isReady;
+        document.getElementById('submit-text').textContent = isReady ? 'Emitir Factura' : 'Pendiente Cliente o Artículos';
+    }
+
+    // --- LÓGICA DE OBTENCIÓN DE DATOS (REAL API FETCH) ---
+
+    async function fetchData(endpoint) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/${endpoint}`);
+            if (!response.ok) {
+                // Registrar el error en consola para depuración
+                const errorText = await response.text();
+                console.error(`Error de API en ${endpoint} (Status: ${response.status}):`, errorText);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`Error al obtener datos de ${endpoint}:`, error);
+            showMessage(`Error al cargar ${endpoint}. Verifique la URL de la API o la conexión.`, 'error');
+            return []; // Devolver array vacío en caso de error
+        }
+    }
+
+    async function loadInitialData() {
+        // Obtener todos los datos concurrentemente
+        const [clients, products, treatments] = await Promise.all([
+            fetchData('clientes'), // Su endpoint real para obtener clientes
+            fetchData('productos'), // Su endpoint real para obtener productos
+            fetchData('tratamientos') // Su endpoint real para obtener tratamientos
+        ]);
+
+        availableData.clients = Array.isArray(clients) ? clients : [];
+        availableData.products = Array.isArray(products) ? products : [];
+        availableData.treatments = Array.isArray(treatments) ? treatments : [];
+
+        // 1. Cargar Clientes para la búsqueda (datalist)
+        const clientDatalist = document.getElementById('client-options');
+        clientDatalist.innerHTML = availableData.clients.map(c =>
+            // Asumo que Cod_Cliente, Nombre, Apellido y DNI son campos válidos.
+            `<option value="${c.DNI} - ${c.Nombre} ${c.Apellido}" data-cod-cliente="${c.Cod_Cliente}">`
+        ).join('');
+
+        // 2. Cargar Productos para el select
+        const productSelect = document.getElementById('add-product-select');
+        productSelect.innerHTML += availableData.products.map(p =>
+            // Asumo Cod_Producto, Nombre_Producto y Precio_Venta.
+            `<option value="${p.Cod_Producto}" data-price="${p.Precio_Venta}">${p.Nombre_Producto} (${formatCurrency(p.Precio_Venta)})</option>`
+        ).join('');
+
+        // 3. Cargar Tratamientos para el select
+        const treatmentSelect = document.getElementById('add-treatment-select');
+        treatmentSelect.innerHTML += availableData.treatments.map(t =>
+            // Asumo Cod_Tratamiento, Nombre_Tratamiento y Precio_Estandar.
+            `<option value="${t.Cod_Tratamiento}" data-price="${t.Precio_Estandar}">${t.Nombre_Tratamiento} (${formatCurrency(t.Precio_Estandar)})</option>`
+        ).join('');
+
+        // Listener para seleccionar cliente
+        document.getElementById('client-search').addEventListener('input', handleClientSelection);
+        document.getElementById('invoice-form').addEventListener('submit', submitInvoice);
+
+        calculateTotals();
+    }
+
+    // --- LÓGICA DE CLIENTES ---
+
+    function handleClientSelection(event) {
+        const input = event.target;
+        const value = input.value;
+        const datalist = document.getElementById('client-options');
+        const infoDisplay = document.getElementById('selected-client-info');
+        const codClienteInput = document.getElementById('cod-cliente');
+
+        selectedClient = null;
+        codClienteInput.value = '';
+        infoDisplay.innerHTML = '(Seleccione un cliente para continuar)';
+        infoDisplay.classList.remove('text-success', 'font-weight-bold'); // Estilos de éxito en AdminLTE
+        infoDisplay.classList.add('text-muted');
+
+        // Buscar el cliente en el datalist para obtener el Cod_Cliente
+        const option = Array.from(datalist.options).find(opt => opt.value === value);
+
+        if (option) {
+            const codCliente = option.dataset.codCliente;
+            const clientData = availableData.clients.find(c => c.Cod_Cliente == codCliente);
+
+            if (clientData) {
+                selectedClient = clientData;
+                codClienteInput.value = clientData.Cod_Cliente;
+                // Asumo que también tiene campos Cedula/DNI/Teléfono
+                infoDisplay.innerHTML = `
+                    <p class="mb-0"><strong>${clientData.Nombre} ${clientData.Apellido}</strong></p>
+                    <small>DNI: ${clientData.DNI || 'N/A'}</small>
+                `;
+                infoDisplay.classList.add('text-success', 'font-weight-bold');
+                infoDisplay.classList.remove('text-muted');
+            }
+        }
+        toggleSubmitButton();
+    }
+
+    // --- LÓGICA DE ARTÍCULOS (DETALLES) ---
+
+    function addItemToInvoice(type) {
+        let selectElement, sourceItem, codKey, nameKey, priceKey, isProduct, sourceArray;
+
+        if (type === 'product') {
+            selectElement = document.getElementById('add-product-select');
+            sourceArray = availableData.products;
+            codKey = 'Cod_Producto';
+            nameKey = 'Nombre_Producto';
+            priceKey = 'Precio_Venta';
+            isProduct = true;
+        } else if (type === 'treatment') {
+            selectElement = document.getElementById('add-treatment-select');
+            sourceArray = availableData.treatments;
+            codKey = 'Cod_Tratamiento';
+            nameKey = 'Nombre_Tratamiento';
+            priceKey = 'Precio_Estandar';
+            isProduct = false;
+        } else {
+            return;
+        }
+
+        sourceItem = sourceArray.find(item => item[codKey] == selectElement.value);
+
+        if (!sourceItem) {
+            showMessage(`Debe seleccionar un ${type === 'product' ? 'producto' : 'tratamiento'} válido.`, 'error');
+            return;
+        }
+
+        const existingItem = invoiceItems.find(item =>
+            item.type === type && item.Cod_Item === sourceItem[codKey]
+        );
+
+        if (existingItem) {
+            // Si existe, aumentar la cantidad (solo aplica a productos, tratamientos siempre 1)
+            if (isProduct) {
+                existingItem.Cantidad++;
+                showMessage(`${sourceItem[nameKey]} Cantidad actualizada a ${existingItem.Cantidad}.`, 'info');
+            } else {
+                showMessage(`El tratamiento ${sourceItem[nameKey]} ya está agregado.`, 'error');
+            }
+        } else {
+            // Si no existe, agregar nuevo artículo
+            const newItem = {
+                id: Date.now(), // ID temporal para el manejo en el frontend
+                type: type,
+                Cod_Item: sourceItem[codKey], // Usa Cod_Item para generalizar (Cod_Producto o Cod_Tratamiento)
+                Nombre: sourceItem[nameKey],
+                Precio_Unitario_Venta: sourceItem[priceKey] || 0,
+                Cantidad: 1,
+                isProduct: isProduct
             };
+            invoiceItems.push(newItem);
+            showMessage(`${newItem.Nombre} agregado a la factura.`, 'success');
+        }
 
-            // Mostrar información del paciente seleccionado
-            $('#paciente').change(function() {
-                const pacienteId = $(this).val();
-                if (pacienteId && pacientes[pacienteId]) {
-                    const p = pacientes[pacienteId];
-                    $('#info-paciente').html(`
-                        <h6>${p.nombre}</h6>
-                        <p class="mb-1"><strong>Cédula:</strong> ${p.cedula}</p>
-                        <p class="mb-1"><strong>Teléfono:</strong> ${p.telefono}</p>
-                        <p class="mb-0"><strong>Email:</strong> ${p.email}</p>
-                    `);
-                } else {
-                    $('#info-paciente').html('<p class="text-muted">Seleccione un paciente para ver sus datos</p>');
-                }
+        renderInvoiceDetails();
+        selectElement.value = "";
+        calculateTotals();
+    }
+
+    function updateQuantity(id, newQuantity) {
+        const item = invoiceItems.find(i => i.id == id);
+        if (item && item.isProduct) {
+            const quantity = parseInt(newQuantity);
+            if (!isNaN(quantity) && quantity > 0) {
+                item.Cantidad = quantity;
+            } else if (quantity === 0) {
+                removeItem(id);
+            } else {
+                 // Revertir a la cantidad anterior si el input es inválido
+                 renderInvoiceDetails();
+                 return;
+            }
+            renderInvoiceDetails();
+            calculateTotals();
+        }
+    }
+
+    function removeItem(id) {
+        invoiceItems = invoiceItems.filter(item => item.id !== id);
+        renderInvoiceDetails();
+        calculateTotals();
+        showMessage('Artículo eliminado.', 'info');
+    }
+
+    function renderInvoiceDetails() {
+        const detailsTable = document.getElementById('invoice-details');
+        if (invoiceItems.length === 0) {
+            detailsTable.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-muted">No hay artículos en la factura.</td></tr>';
+            toggleSubmitButton();
+            return;
+        }
+
+        detailsTable.innerHTML = invoiceItems.map(item => {
+            const subtotal = item.Precio_Unitario_Venta * item.Cantidad;
+
+            const quantityInput = item.isProduct ?
+                `<input type="number" value="${item.Cantidad}" min="1" class="form-control form-control-sm text-right" style="width: 70px;" onchange="updateQuantity(${item.id}, this.value)" onfocus="this.select()">` :
+                `1 (Servicio)`;
+
+            const typeLabel = item.isProduct ?
+                `<span class="badge badge-warning">PRODUCTO</span>` :
+                `<span class="badge badge-info">TRATAMIENTO</span>`;
+
+            return `
+                <tr>
+                    <td class="align-middle">${typeLabel}</td>
+                    <td class="align-middle">${item.Nombre}</td>
+                    <td class="align-middle">${quantityInput}</td>
+                    <td class="align-middle text-right">${formatCurrency(item.Precio_Unitario_Venta)}</td>
+                    <td class="align-middle text-right font-weight-bold">${formatCurrency(subtotal)}</td>
+                    <td class="align-middle text-right">
+                        <button type="button" onclick="removeItem(${item.id})" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        toggleSubmitButton();
+    }
+
+    // --- LÓGICA DE CÁLCULO ---
+
+    function calculateTotals() {
+        const subtotal = invoiceItems.reduce((acc, item) =>
+            acc + (item.Precio_Unitario_Venta * item.Cantidad), 0
+        );
+
+        const discountPercent = parseFloat(document.getElementById('descuento-aplicado').value) || 0;
+
+        document.getElementById('discount-percent').textContent = discountPercent;
+
+        const discountFactor = discountPercent / 100;
+        const discountAmount = subtotal * discountFactor;
+
+        // **OPCIONAL: Lógica para incluir ISV (15%) de su código original**
+        // Si no usa ISV, mantenga solo:
+        const total = subtotal - discountAmount;
+
+
+        document.getElementById('subtotal-display').textContent = formatCurrency(subtotal);
+        document.getElementById('discount-amount-display').textContent = `-${formatCurrency(discountAmount)}`;
+        document.getElementById('total-factura-display').textContent = formatCurrency(total);
+        document.getElementById('total-factura-input').value = total.toFixed(2);
+    }
+
+    // --- LÓGICA DE ENVÍO DE FACTURA (REAL API FETCH) ---
+
+    async function submitInvoice(event) {
+        event.preventDefault();
+
+        if (!selectedClient || invoiceItems.length === 0) {
+            showMessage('Debe seleccionar un cliente y agregar al menos un artículo.', 'error');
+            return;
+        }
+
+        const button = document.getElementById('submit-button');
+        const spinner = document.getElementById('loading-spinner');
+
+        // Estado de carga ON
+        button.disabled = true;
+        document.getElementById('submit-text').textContent = 'Procesando...';
+        spinner.classList.remove('hidden');
+        spinner.style.display = 'inline-block'; // Asegurar visibilidad en AdminLTE
+
+        const form = event.target;
+        const facturaData = {
+            Cod_Cliente: parseInt(form.elements['Cod_Cliente'].value),
+            Fecha_Factura: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+            Total_Factura: parseFloat(form.elements['Total_Factura'].value),
+            Metodo_Pago: form.elements['Metodo_Pago'].value,
+            Estado_Pago: form.elements['Estado_Pago'].value,
+            Descuento_Aplicado: parseFloat(form.elements['Descuento_Aplicado'].value)
+            // Aquí puede agregar Observaciones si su API lo requiere
+        };
+
+        let codFactura;
+
+        try {
+            // 1. POST Factura (Cabecera)
+            const cabeceraResponse = await fetch(`${API_BASE_URL}/facturas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN // Esto es crucial para Laravel/API si no usa Sanctum
+                },
+                body: JSON.stringify(facturaData)
             });
 
-            // Actualizar precio cuando se selecciona un servicio
-            $(document).on('change', '.servicio-select', function() {
-                const fila = $(this).closest('tr');
-                const customInput = fila.find('.servicio-custom');
-                
-                if ($(this).val() === 'custom') {
-                    // Mostrar campo personalizado
-                    customInput.show().focus();
-                    fila.find('.precio').val('').removeAttr('readonly');
-                } else {
-                    // Ocultar campo personalizado y usar precio predefinido
-                    customInput.hide();
-                    const precio = $(this).find(':selected').data('precio') || 0;
-                    fila.find('.precio').val(precio);
-                }
-                
-                actualizarTotal(fila);
-            });
-
-            // Actualizar total cuando cambia la cantidad o el precio
-            $(document).on('input', '.cantidad, .precio', function() {
-                actualizarTotal($(this).closest('tr'));
-            });
-
-            // Eliminar fila
-            $(document).on('click', '.eliminar-fila', function() {
-                if ($('#servicios-table tbody tr').length > 1) {
-                    $(this).closest('tr').remove();
-                    actualizarResumen();
-                } else {
-                    alert('Debe mantener al menos un servicio.');
-                }
-            });
-
-            // Agregar nueva fila de servicio
-            $('#agregar-servicio').click(function() {
-                const nuevaFila = `
-                    <tr>
-                        <td>
-                            <select class="form-control servicio-select">
-                                <option>Seleccionar servicio...</option>
-                                <option data-precio="850">Botox Facial - $850.00</option>
-                                <option data-precio="120">Limpieza Facial - $120.00</option>
-                                <option data-precio="450">Relleno Labial - $450.00</option>
-                                <option data-precio="300">Peeling Químico - $300.00</option>
-                                <option data-precio="200">Hidratación Facial - $200.00</option>
-                                <option data-precio="600">Tratamiento Antiarrugas - $600.00</option>
-                                <option value="custom">📝 Servicio Personalizado</option>
-                            </select>
-                            <input type="text" class="form-control servicio-custom mt-2" placeholder="Escribir nombre del servicio..." style="display: none;">
-                        </td>
-                        <td>
-                            <input type="number" class="form-control cantidad" value="1" min="1">
-                        </td>
-                        <td>
-                            <input type="number" class="form-control precio" step="0.01" placeholder="0.00">
-                        </td>
-                        <td>
-                            <input type="number" class="form-control total" step="0.01" readonly>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm eliminar-fila">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                $('#servicios-table tbody').append(nuevaFila);
-            });
-
-            function actualizarTotal(fila) {
-                const cantidad = parseFloat(fila.find('.cantidad').val()) || 0;
-                const precio = parseFloat(fila.find('.precio').val()) || 0;
-                const total = cantidad * precio;
-                fila.find('.total').val(total.toFixed(2));
-                actualizarResumen();
+            if (!cabeceraResponse.ok) {
+                const errorData = await cabeceraResponse.json().catch(() => ({ message: 'No se pudo parsear el JSON de error' }));
+                throw new Error(`Error al crear la cabecera: ${cabeceraResponse.statusText} - ${errorData.message || 'Error desconocido'}`);
             }
 
-            function actualizarResumen() {
-                let subtotal = 0;
-                $('.total').each(function() {
-                    subtotal += parseFloat($(this).val()) || 0;
-                });
-                
-                const isv = subtotal * 0.15;
-                const totalFinal = subtotal + isv;
-                
-                $('#subtotal').text('$' + subtotal.toFixed(2));
-                $('#isv').text('$' + isv.toFixed(2));
-                $('#total-final').text('$' + totalFinal.toFixed(2));
-            }
+            const cabeceraResult = await cabeceraResponse.json();
+            // Asumo que la API de Laravel para facturas devuelve el ID/Código de la factura creada.
+            codFactura = cabeceraResult.Cod_Factura;
+            document.getElementById('numero_factura').value = `#F-${codFactura}`; // Actualiza la info en el form
+            showMessage(`Factura #${codFactura} creada. Insertando detalles...`, 'info');
 
-            // Funcionalidad de impresión
-            $('#imprimir-factura').click(function() {
-                // Validar que haya al menos un servicio y un paciente
-                if ($('#paciente').val() === '') {
-                    alert('Por favor seleccione un paciente antes de imprimir.');
-                    return;
+            // 2. POST Detalle de Artículos
+            for (const item of invoiceItems) {
+                let endpoint, detalleData;
+                if (item.isProduct) {
+                    endpoint = 'detalle_factura_producto';
+                    detalleData = {
+                        Cod_Factura: codFactura,
+                        Cod_Producto: item.Cod_Item,
+                        Cantidad_Vendida: item.Cantidad,
+                        Precio_Unitario_Venta: item.Precio_Unitario_Venta,
+                        Subtotal: (item.Precio_Unitario_Venta * item.Cantidad).toFixed(2)
+                    };
+                } else {
+                    endpoint = 'detalle_factura_tratamiento';
+                    detalleData = {
+                        Cod_Factura: codFactura,
+                        Cod_Tratamiento: item.Cod_Item,
+                        Precio_Tratamiento_Venta: item.Precio_Unitario_Venta,
+                        Subtotal: (item.Precio_Unitario_Venta * item.Cantidad).toFixed(2)
+                    };
                 }
 
-                let hayServicios = false;
-                $('.total').each(function() {
-                    if (parseFloat($(this).val()) > 0) {
-                        hayServicios = true;
-                        return false;
-                    }
+                const detalleResponse = await fetch(`${API_BASE_URL}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': CSRF_TOKEN
+                    },
+                    body: JSON.stringify(detalleData)
                 });
 
-                if (!hayServicios) {
-                    alert('Por favor agregue al menos un servicio con precio antes de imprimir.');
-                    return;
+                if (!detalleResponse.ok) {
+                    const errorData = await detalleResponse.json().catch(() => ({ message: 'No se pudo parsear el JSON de error' }));
+                    throw new Error(`Error al insertar detalle ${item.Nombre}. Detalle: ${detalleResponse.statusText} - ${errorData.error || errorData.message || 'Desconocido'}`);
                 }
-
-                generarFacturaImprimible();
-            });
-
-            function generarFacturaImprimible() {
-                const pacienteId = $('#paciente').val();
-                const pacienteNombre = $('#paciente option:selected').text();
-                const pacienteData = pacientes[pacienteId];
-                const numeroFactura = $('#numero_factura').val();
-                const fecha = $('#fecha').val();
-                const observaciones = $('#observaciones').val();
-
-                // Generar tabla de servicios
-                let serviciosHTML = '';
-                let subtotal = 0;
-
-                $('#servicios-table tbody tr').each(function() {
-                    const fila = $(this);
-                    const servicioSelect = fila.find('.servicio-select');
-                    const servicioCustom = fila.find('.servicio-custom');
-                    const cantidad = fila.find('.cantidad').val();
-                    const precio = fila.find('.precio').val();
-                    const total = fila.find('.total').val();
-
-                    if (parseFloat(total) > 0) {
-                        let nombreServicio;
-                        if (servicioSelect.val() === 'custom' && servicioCustom.is(':visible')) {
-                            nombreServicio = servicioCustom.val() || 'Servicio personalizado';
-                        } else {
-                            nombreServicio = servicioSelect.find(':selected').text().split(' - ')[0];
-                        }
-
-                        serviciosHTML += `
-                            <tr>
-                                <td style="border: 1px solid #ddd; padding: 8px;">${nombreServicio}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${cantidad}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${parseFloat(precio).toFixed(2)}</td>
-                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${parseFloat(total).toFixed(2)}</td>
-                            </tr>
-                        `;
-                        subtotal += parseFloat(total);
-                    }
-                });
-
-                const isv = subtotal * 0.15;
-                const totalFinal = subtotal + isv;
-
-                // Crear HTML de la factura
-                const facturaHTML = `
-                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #d4a574; padding-bottom: 20px;">
-                        <h1 style="color: #d4a574; margin: 0; font-size: 28px;">CLÍNICA ESTÉTICA SALUS</h1>
-                        <p style="margin: 5px 0; font-size: 14px;">Dirección: Tegucigalpa, Francisco Morazán</p>
-                        <p style="margin: 5px 0; font-size: 14px;">Teléfono: +504 0000-0000 | Email: info@salus.hn</p>
-                    </div>
-
-                    <div style="display: table; width: 100%; margin-bottom: 30px;">
-                        <div style="display: table-cell; width: 50%; vertical-align: top;">
-                            <h2 style="color: #333; margin-bottom: 15px; font-size: 22px;">FACTURA</h2>
-                            <p style="margin: 8px 0;"><strong>Número:</strong> ${numeroFactura}</p>
-                            <p style="margin: 8px 0;"><strong>Fecha:</strong> ${new Date(fecha).toLocaleDateString('es-HN')}</p>
-                        </div>
-                        <div style="display: table-cell; width: 50%; vertical-align: top; text-align: right;">
-                            <h3 style="color: #d4a574; margin-bottom: 15px; font-size: 18px;">DATOS DEL PACIENTE</h3>
-                            <p style="margin: 8px 0;"><strong>${pacienteData.nombre}</strong></p>
-                            <p style="margin: 8px 0;">Cédula: ${pacienteData.cedula}</p>
-                            <p style="margin: 8px 0;">Teléfono: ${pacienteData.telefono}</p>
-                            <p style="margin: 8px 0;">Email: ${pacienteData.email}</p>
-                        </div>
-                    </div>
-
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                        <thead>
-                            <tr style="background-color: #d4a574; color: white;">
-                                <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Servicio/Tratamiento</th>
-                                <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Cantidad</th>
-                                <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">Precio Unitario</th>
-                                <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${serviciosHTML}
-                        </tbody>
-                    </table>
-
-                    <div style="text-align: right;">
-                        <div style="display: inline-block; min-width: 300px; border: 1px solid #ddd; padding: 15px;">
-                            <div style="display: table; width: 100%; margin-bottom: 8px;">
-                                <span style="display: table-cell;">Subtotal:</span>
-                                <span style="display: table-cell; text-align: right;">${subtotal.toFixed(2)}</span>
-                            </div>
-                            <div style="display: table; width: 100%; margin-bottom: 8px;">
-                                <span style="display: table-cell;">ISV (15%):</span>
-                                <span style="display: table-cell; text-align: right;">${isv.toFixed(2)}</span>
-                            </div>
-                            <div style="display: table; width: 100%; border-top: 2px solid #d4a574; padding-top: 8px; font-weight: bold; font-size: 18px;">
-                                <span style="display: table-cell;">TOTAL A PAGAR:</span>
-                                <span style="display: table-cell; text-align: right; color: #28a745;">${totalFinal.toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    ${observaciones ? `
-                    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #d4a574;">
-                        <h4 style="margin: 0 0 10px 0; color: #d4a574;">Observaciones:</h4>
-                        <p style="margin: 0;">${observaciones}</p>
-                    </div>
-                    ` : ''}
-
-                    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #666;">
-                        <p>Gracias por confiar en nosotros para su cuidado estético</p>
-                        <p>Esta factura fue generada el ${new Date().toLocaleString('es-HN')}</p>
-                    </div>
-                `;
-
-                // Eliminar factura anterior si existe
-                $('.factura-print').remove();
-                
-                // Agregar la nueva factura al body
-                $('body').append(`<div class="factura-print">${facturaHTML}</div>`);
-                
-                // Imprimir después de un pequeño delay
-                setTimeout(() => {
-                    window.print();
-                    // Remover después de imprimir
-                    setTimeout(() => {
-                        $('.factura-print').remove();
-                    }, 1000);
-                }, 100);
             }
-        });
-    </script>
+
+            // 3. Éxito Final
+            showMessage(`Factura #${codFactura} generada y detalles guardados con éxito!`, 'success');
+            // Recargar la página o redirigir tras un breve retraso
+            // CORRECCIÓN: La ruta corregida es 'factura.index' para el listado principal
+            setTimeout(() => window.location.href = '{{ route("factura.index") }}', 2000);
+
+        } catch (error) {
+            console.error("Error completo en el proceso de facturación:", error);
+            showMessage(`Error al procesar la factura: ${error.message}`, 'error');
+        } finally {
+            // Estado de carga OFF
+            spinner.style.display = 'none';
+            document.getElementById('submit-text').textContent = 'Emitir Factura';
+            toggleSubmitButton();
+        }
+    }
+
+    // --- INICIALIZACIÓN ---
+    document.addEventListener('DOMContentLoaded', loadInitialData);
+</script>
 @stop

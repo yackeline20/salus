@@ -9,7 +9,7 @@ use App\Http\Controllers\CitasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
-use App\Http\Controllers\ServicioController; // <--- CORRECCIÓN: Usando el nombre correcto (Singular)
+use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
@@ -97,8 +97,8 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
              ->middleware('can:viewAny,App\Models\Product');
 
-    // Módulo de Gestión de Servicios (Ajustado para usar el controller)
-    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios') // <--- CORRECCIÓN A SERVICIOCONTROLLER
+    // Módulo de Gestión de Servicios
+    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios')
       ->middleware('can:viewAny,App\Models\Tratamiento');
 
     // Módulo de Reportes
@@ -139,8 +139,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
 
     // ========================================
-    // 🟠 RUTAS DE API (CRUD de Facturación, Citas, Inventario, Servicios, Personal)
-    // Estas rutas actúan como un intermediario (proxy) para las APIs de Node.js (puerto 3000).
+    // 🟠 RUTAS DE API (PROXY DE LARAVEL A NODE.JS)
     // ========================================
 
     Route::group(['prefix' => 'api'], function () {
@@ -152,8 +151,11 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::post('factura', [FacturaController::class, 'storeCabecera'])->name('api.factura.store');
         // GET /api/factura (Listado/Búsqueda por Cod_Factura)
         Route::get('factura', [FacturaController::class, 'index'])->name('api.factura.index');
-        // PUT /api/factura (Actualización/Cambio de estado/pago)
-        Route::put('factura', [FacturaController::class, 'update'])->name('api.factura.update');
+
+        // ✅ CORRECCIÓN MANTENIDA: PUT RESTful requiere el ID en la URL.
+        // PUT /api/factura/{id} (Actualización/Cambio de estado/pago)
+        Route::put('factura/{id}', [FacturaController::class, 'update'])->name('api.factura.update');
+
         // DELETE /api/factura/{factura} (Eliminación/Anulación)
         Route::delete('factura/{factura}', [FacturaController::class, 'destroy'])->name('api.factura.destroy');
 
@@ -187,10 +189,10 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // ----------------------------------------
         // CRUD DE SERVICIOS (TRATAMIENTOS)
         // ----------------------------------------
-        Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('api.tratamientos.index'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-        Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('api.tratamientos.store'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-        Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('api.tratamientos.update'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
-        Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('api.tratamientos.destroy'); // <--- CORRECCIÓN A SERVICIOCONTROLLER
+        Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('api.tratamientos.index');
+        Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('api.tratamientos.store');
+        Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('api.tratamientos.update');
+        Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('api.tratamientos.destroy');
 
 
         // ----------------------------------------
@@ -203,7 +205,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
 
         // ----------------------------------------
-        // CRUD DE CITAS (Mantengo las suyas originales)
+        // CRUD DE CITAS
         // ----------------------------------------
         Route::get('/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
             ->name('api.citas.buscar-cliente');
