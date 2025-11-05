@@ -39,18 +39,43 @@ class PersonalPolicy
         return $this->viewAny($user);
     }
 
-    // El Jefe de Proyectos NO tiene permiso de modificación.
+    /**
+     * Define si se puede crear un empleado.
+     * El Jefe de Proyectos NO tiene permiso de modificación.
+     */
     public function create(Usuario $user): bool
     {
         return $user->hasPermission('insert', $this->objetoName);
     }
 
+    /**
+     * Define si se puede actualizar un empleado.
+     */
     public function update(Usuario $user, Empleado $empleado): bool
     {
         return $user->hasPermission('update', $this->objetoName);
     }
 
+    /**
+     * Define si se puede eliminar un empleado.
+     */
     public function delete(Usuario $user, Empleado $empleado): bool
+    {
+        return $user->hasPermission('delete', $this->objetoName);
+    }
+
+    /**
+     * Define si se puede restaurar un empleado eliminado.
+     */
+    public function restore(Usuario $user, Empleado $empleado): bool
+    {
+        return $user->hasPermission('update', $this->objetoName);
+    }
+
+    /**
+     * Define si se puede forzar la eliminación de un empleado.
+     */
+    public function forceDelete(Usuario $user, Empleado $empleado): bool
     {
         return $user->hasPermission('delete', $this->objetoName);
     }

@@ -37,23 +37,9 @@
                         </div>
                     </div>
                     
-                    <select class="form-control form-control-sm mr-2" id="categoryFilter" style="width: 150px;">
-                        <option value="">Todas las categorías</option>
-                        <option value="facial">Tratamientos Faciales</option>
-                        <option value="aesthetic">Servicios Estéticos</option>
-                        <option value="natural">Terapias Naturales</option>
-                        <option value="medical">Medicina Estética</option>
-                    </select>
-                    
-                    <select class="form-control form-control-sm mr-2" style="width: 120px;">
-                        <option value="">Todos los estados</option>
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
-                    </select>
-                    
-                    <button class="btn btn-outline-secondary btn-sm mr-2">
-                        <i class="fas fa-filter"></i>
-                        Filtrar
+                    <button class="btn btn-outline-secondary btn-sm mr-2" onclick="cargarServicios()">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualizar
                     </button>
                     
                     <button class="btn btn-success btn-sm">
@@ -65,132 +51,35 @@
         </div>
 
         <div class="card-body">
+            <!-- Loader -->
+            <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando servicios...</p>
+            </div>
+
+            <!-- Mensaje de error -->
+            <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+
+            <!-- Mensaje sin datos -->
+            <div id="noDataMessage" class="alert alert-info" style="display: none;">
+                <i class="fas fa-info-circle"></i> No hay servicios registrados.
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead class="thead-dark">
                         <tr>
                             <th>SERVICIO</th>
-                            <th>CATEGORÍA</th>
+                            <th>DESCRIPCIÓN</th>
                             <th>PRECIO</th>
                             <th>DURACIÓN</th>
-                            <th>ESTADO</th>
-                            <th>ÚLTIMA ACTUALIZACIÓN</th>
                             <th>ACCIONES</th>
                         </tr>
                     </thead>
                     <tbody id="servicesTableBody">
-                        <tr>
-                            <td class="service-name font-weight-bold">Mesoterapia capilar</td>
-                            <td><span class="badge bg-orange">Facial</span></td>
-                            <td class="price text-success font-weight-bold">L 2,500.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 60 min</td>
-                            <td><span class="badge bg-success">Activo</span></td>
-                            <td>2025-06-25</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Mesoterapia capilar')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Mesoterapia capilar')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="service-name font-weight-bold">Aclaramiento facial</td>
-                            <td><span class="badge bg-info">Estético</span></td>
-                            <td class="price text-success font-weight-bold">L 1,800.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 45 min</td>
-                            <td><span class="badge bg-success">Activo</span></td>
-                            <td>2025-06-30</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Aclaramiento facial')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Aclaramiento facial')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="service-name font-weight-bold">Peeling Facial</td>
-                            <td><span class="badge bg-orange">Facial</span></td>
-                            <td class="price text-success font-weight-bold">L 2,200.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 50 min</td>
-                            <td><span class="badge bg-success">Activo</span></td>
-                            <td>2025-07-01</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Peeling Facial')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Peeling Facial')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="service-name font-weight-bold">Limpieza facial simple</td>
-                            <td><span class="badge bg-orange">Facial</span></td>
-                            <td class="price text-success font-weight-bold">L 800.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 30 min</td>
-                            <td><span class="badge bg-success">Activo</span></td>
-                            <td>2025-06-28</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Limpieza facial simple')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Limpieza facial simple')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="service-name font-weight-bold">Masaje relajante</td>
-                            <td><span class="badge bg-success">Natural</span></td>
-                            <td class="price text-success font-weight-bold">L 1,500.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 90 min</td>
-                            <td><span class="badge bg-success">Activo</span></td>
-                            <td>2025-07-02</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Masaje relajante')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Masaje relajante')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="service-name font-weight-bold">Botox</td>
-                            <td><span class="badge bg-danger">Médico</span></td>
-                            <td class="price text-success font-weight-bold">L 5,000.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 30 min</td>
-                            <td><span class="badge bg-success">Activo</span></td>
-                            <td>2025-06-20</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Botox')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Botox')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="service-name font-weight-bold">Depilación láser</td>
-                            <td><span class="badge bg-info">Estético</span></td>
-                            <td class="price text-success font-weight-bold">L 3,000.00</td>
-                            <td class="duration text-muted"><i class="far fa-clock"></i> 40 min</td>
-                            <td><span class="badge bg-danger">Inactivo</span></td>
-                            <td>2025-05-15</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editService('Depilación láser')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('Depilación láser')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
+                        <!-- Los datos se cargarán dinámicamente aquí -->
                     </tbody>
                 </table>
             </div>
@@ -202,50 +91,36 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Editar Servicio</h5>
+                    <h5 class="modal-title" id="modalTitle">Agregar Nuevo Servicio</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <form id="serviceForm">
+                    <input type="hidden" id="serviceId" value="">
                     <div class="modal-body">
                         <div class="form-group">
-                            <label>Nombre del servicio</label>
-                            <input type="text" class="form-control" id="serviceName" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Categoría</label>
-                            <select class="form-control" id="serviceCategory" required>
-                                <option value="">Seleccionar categoría</option>
-                                <option value="facial">Tratamientos Faciales</option>
-                                <option value="aesthetic">Servicios Estéticos</option>
-                                <option value="natural">Terapias Naturales</option>
-                                <option value="medical">Medicina Estética</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Precio (L)</label>
-                            <input type="number" class="form-control" id="servicePrice" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Duración (minutos)</label>
-                            <input type="number" class="form-control" id="serviceDuration" required>
+                            <label>Nombre del servicio *</label>
+                            <input type="text" class="form-control" id="serviceName" name="Nombre_Tratamiento" required maxlength="50">
                         </div>
                         <div class="form-group">
                             <label>Descripción</label>
-                            <textarea class="form-control" id="serviceDescription" rows="3"></textarea>
+                            <textarea class="form-control" id="serviceDescription" name="Descripcion" rows="3"></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Estado</label>
-                            <select class="form-control" id="serviceStatus">
-                                <option value="active">Activo</option>
-                                <option value="inactive">Inactivo</option>
-                            </select>
+                            <label>Precio (L) *</label>
+                            <input type="number" class="form-control" id="servicePrice" name="Precio_Estandar" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración (minutos) *</label>
+                            <input type="number" class="form-control" id="serviceDuration" name="Duracion_Estimada_Min" min="0" required>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                        <button type="submit" class="btn btn-primary" id="submitButton">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
                     </div>
                 </form>
             </div>
@@ -255,6 +130,7 @@
 
 @section('css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
         .page-icon {
             width: 45px;
@@ -268,10 +144,6 @@
             font-size: 20px;
         }
         
-        .bg-orange {
-            background-color: #f0ad7e !important;
-        }
-        
         .table th {
             font-size: 12px;
             font-weight: 600;
@@ -281,6 +153,26 @@
         
         .search-box {
             width: 250px;
+        }
+
+        .service-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .price {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .duration {
+            color: #6c757d;
+        }
+
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 2px;
         }
         
         @media (max-width: 768px) {
@@ -304,44 +196,149 @@
                 min-width: 120px;
             }
         }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
     </style>
 @stop
 
 @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // Función para abrir el modal
+        // Variable para almacenar todos los servicios
+        let todosLosServicios = [];
+
+        // ============================================
+        // CARGAR SERVICIOS AL INICIAR LA PÁGINA
+        // ============================================
+        $(document).ready(function() {
+            cargarServicios();
+        });
+
+        // ============================================
+        // FUNCIÓN PARA CARGAR SERVICIOS DESDE LA API
+        // ============================================
+        function cargarServicios() {
+            // Mostrar spinner
+            $('#loadingSpinner').show();
+            $('#servicesTableBody').empty();
+            $('#errorMessage').hide();
+            $('#noDataMessage').hide();
+
+            $.ajax({
+                url: '{{ route("api.servicios.get") }}',
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#loadingSpinner').hide();
+                    
+                    if (response.success && response.data && response.data.length > 0) {
+                        todosLosServicios = response.data;
+                        renderizarServicios(response.data);
+                    } else {
+                        $('#noDataMessage').show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loadingSpinner').hide();
+                    console.error('Error al cargar servicios:', error);
+                    
+                    let errorMsg = 'Error al cargar los servicios.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    
+                    $('#errorMessage').text(errorMsg).show();
+                }
+            });
+        }
+
+        // ============================================
+        // FUNCIÓN PARA RENDERIZAR SERVICIOS EN LA TABLA
+        // ============================================
+        function renderizarServicios(servicios) {
+            const tbody = $('#servicesTableBody');
+            tbody.empty();
+
+            if (!servicios || servicios.length === 0) {
+                $('#noDataMessage').show();
+                return;
+            }
+
+            servicios.forEach(function(servicio) {
+                const precio = parseFloat(servicio.Precio_Estandar).toFixed(2);
+                const duracion = servicio.Duracion_Estimada_Min;
+                const descripcion = servicio.Descripcion || 'Sin descripción';
+
+                const row = `
+                    <tr data-id="${servicio.Cod_Tratamiento}">
+                        <td class="service-name">${servicio.Nombre_Tratamiento}</td>
+                        <td>${descripcion}</td>
+                        <td class="price">L ${precio}</td>
+                        <td class="duration"><i class="far fa-clock"></i> ${duracion} min</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary btn-action" onclick="editService(${servicio.Cod_Tratamiento})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteService(${servicio.Cod_Tratamiento}, '${servicio.Nombre_Tratamiento}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        // ============================================
+        // FUNCIÓN PARA ABRIR EL MODAL (CREAR/EDITAR)
+        // ============================================
         function openModal(isEdit = false) {
             const modal = $('#serviceModal');
             
             if (!isEdit) {
                 $('#modalTitle').text('Agregar Nuevo Servicio');
                 $('#serviceForm')[0].reset();
+                $('#serviceId').val('');
             }
             
             modal.modal('show');
         }
 
-        // Función para editar servicio
-        function editService(serviceName) {
-            openModal(true);
-            $('#modalTitle').text('Editar Servicio');
-            $('#serviceName').val(serviceName);
-
-            // Simulación de datos
-            if (serviceName === 'Mesoterapia capilar') {
-                $('#serviceCategory').val('facial');
-                $('#servicePrice').val('2500');
-                $('#serviceDuration').val('60');
-                $('#serviceDescription').val('Tratamiento para fortalecimiento y regeneración capilar, vitaminas y nutrientes');
-                $('#serviceStatus').val('active');
+        // ============================================
+        // FUNCIÓN PARA EDITAR SERVICIO
+        // ============================================
+        function editService(id) {
+            // Buscar el servicio en el array
+            const servicio = todosLosServicios.find(s => s.Cod_Tratamiento == id);
+            
+            if (!servicio) {
+                Swal.fire('Error', 'No se encontró el servicio', 'error');
+                return;
             }
+
+            // Llenar el formulario con los datos del servicio
+            $('#modalTitle').text('Editar Servicio');
+            $('#serviceId').val(servicio.Cod_Tratamiento);
+            $('#serviceName').val(servicio.Nombre_Tratamiento);
+            $('#serviceDescription').val(servicio.Descripcion || '');
+            $('#servicePrice').val(servicio.Precio_Estandar);
+            $('#serviceDuration').val(servicio.Duracion_Estimada_Min);
+            
+            openModal(true);
         }
 
-        // Función para eliminar servicio
-        function deleteService(serviceName) {
+        // ============================================
+        // FUNCIÓN PARA ELIMINAR SERVICIO
+        // ============================================
+        function deleteService(id, nombre) {
             Swal.fire({
                 title: '¿Está seguro?',
-                text: `¿Desea eliminar el servicio "${serviceName}"?`,
+                text: `¿Desea eliminar el servicio "${nombre}"?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -350,80 +347,141 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire(
-                        '¡Eliminado!',
-                        `El servicio "${serviceName}" ha sido eliminado.`,
-                        'success'
-                    ).then(() => {
-                        // Aquí iría la lógica AJAX para eliminar
-                        location.reload();
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Eliminando...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    $.ajax({
+                        url: `/api/servicios/${id}`,
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire(
+                                    '¡Eliminado!',
+                                    response.message,
+                                    'success'
+                                ).then(() => {
+                                    cargarServicios(); // Recargar la tabla
+                                });
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMsg = 'Error al eliminar el servicio';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMsg = xhr.responseJSON.message;
+                            }
+                            Swal.fire('Error', errorMsg, 'error');
+                        }
                     });
                 }
             });
         }
 
-        // Función para regresar
+        // ============================================
+        // FUNCIÓN PARA REGRESAR
+        // ============================================
         function goBack() {
             window.history.back();
         }
 
-        // Manejo del formulario
+        // ============================================
+        // MANEJO DEL FORMULARIO (CREAR/ACTUALIZAR)
+        // ============================================
         $('#serviceForm').on('submit', function(e) {
             e.preventDefault();
             
+            const serviceId = $('#serviceId').val();
+            const isEdit = serviceId !== '';
+            
             const formData = {
-                name: $('#serviceName').val(),
-                category: $('#serviceCategory').val(),
-                price: $('#servicePrice').val(),
-                duration: $('#serviceDuration').val(),
-                description: $('#serviceDescription').val(),
-                status: $('#serviceStatus').val()
+                Nombre_Tratamiento: $('#serviceName').val(),
+                Descripcion: $('#serviceDescription').val(),
+                Precio_Estandar: $('#servicePrice').val(),
+                Duracion_Estimada_Min: $('#serviceDuration').val()
             };
 
-            console.log('Datos del servicio:', formData);
-            
-            Swal.fire(
-                '¡Guardado!',
-                'Servicio guardado correctamente',
-                'success'
-            ).then(() => {
-                $('#serviceModal').modal('hide');
-                location.reload();
+            // Deshabilitar el botón de submit
+            $('#submitButton').prop('disabled', true);
+
+            // Mostrar loading
+            Swal.fire({
+                title: isEdit ? 'Actualizando...' : 'Guardando...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const url = isEdit ? `/api/servicios/${serviceId}` : '{{ route("api.servicios.store") }}';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            $.ajax({
+                url: url,
+                method: method,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    $('#submitButton').prop('disabled', false);
+                    
+                    if (response.success) {
+                        Swal.fire(
+                            '¡Éxito!',
+                            response.message,
+                            'success'
+                        ).then(() => {
+                            $('#serviceModal').modal('hide');
+                            cargarServicios(); // Recargar la tabla
+                        });
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    $('#submitButton').prop('disabled', false);
+                    
+                    let errorMsg = 'Error al guardar el servicio';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        errorMsg = Object.values(xhr.responseJSON.errors).join('\n');
+                    }
+                    
+                    Swal.fire('Error', errorMsg, 'error');
+                }
             });
         });
 
-        // Búsqueda en tiempo real
+        // ============================================
+        // BÚSQUEDA EN TIEMPO REAL
+        // ============================================
         $('#searchInput').on('input', function() {
             const searchTerm = this.value.toLowerCase();
-            $('#servicesTableBody tr').each(function() {
-                const serviceName = $(this).find('.service-name').text().toLowerCase();
-                const category = $(this).find('.badge').text().toLowerCase();
-                
-                if (serviceName.includes(searchTerm) || category.includes(searchTerm)) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
-        });
-
-        // Filtro por categoría
-        $('#categoryFilter').on('change', function() {
-            const filterValue = this.value;
-            $('#servicesTableBody tr').each(function() {
-                if (!filterValue) {
-                    $(this).show();
-                } else {
-                    const badgeClass = $(this).find('.badge').attr('class');
-                    const hasCategory = 
-                        (filterValue === 'facial' && badgeClass.includes('bg-orange')) ||
-                        (filterValue === 'aesthetic' && badgeClass.includes('bg-info')) ||
-                        (filterValue === 'natural' && badgeClass.includes('bg-success')) ||
-                        (filterValue === 'medical' && badgeClass.includes('bg-danger'));
+            
+            if (searchTerm === '') {
+                renderizarServicios(todosLosServicios);
+            } else {
+                const serviciosFiltrados = todosLosServicios.filter(function(servicio) {
+                    const nombre = servicio.Nombre_Tratamiento.toLowerCase();
+                    const descripcion = (servicio.Descripcion || '').toLowerCase();
                     
-                    $(this).toggle(hasCategory);
-                }
-            });
+                    return nombre.includes(searchTerm) || descripcion.includes(searchTerm);
+                });
+                
+                renderizarServicios(serviciosFiltrados);
+            }
         });
     </script>
 @stop

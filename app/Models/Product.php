@@ -26,6 +26,12 @@ class Product extends Model
         'Url_Imagen', // Agregado según la estructura de tu tabla
     ];
 
+    protected $casts = [
+        'Precio_Venta' => 'decimal:2',
+        'Costo_Compra' => 'decimal:2',
+        'Fecha_Vencimiento' => 'date'
+    ];
+
     // --- Relaciones ---
 
     /**
