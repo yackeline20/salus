@@ -1,4 +1,4 @@
-<?php
+<<?php
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\RegisteredPersonaController;
@@ -9,7 +9,6 @@ use App\Http\Controllers\CitasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GestionPersonalController;
-use App\Http\Controllers\ServicioController; // <--- Correcto
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
@@ -17,6 +16,7 @@ use App\Http\Controllers\FacturaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\BitacoraController;
+use App\Http\Controllers\ServicioController;
 
 // Ruta raíz - SIEMPRE muestra la vista de bienvenida.
 Route::get('/', function () {
@@ -38,6 +38,7 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('l
 // Logout (Debe ser POST)
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
+
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
@@ -45,6 +46,7 @@ Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])-
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
+
 
 // ========================================
 // RUTAS DE 2FA (SIN VERIFICACIÓN 2FA)
@@ -55,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
 });
+
 
 // ========================================
 // RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN + VERIFICACIÓN 2FA + POLICIES)
@@ -72,12 +75,13 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
+
     // ----------------------------------------
-    // B. MÓDULOS PROTEGIDOS POR POLICIES (Rutas Web)
+    // B. MÓDULOS PROTEGIDOS POR POLICIES (Route::resource)
+    // Usar Route::resource activa FacturaPolicy, CitaPolicy, etc.
     // ----------------------------------------
 
-    // Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
-    // Route::resource ya crea las rutas 'index' y 'create', por lo que las anteriores eran redundantes.
+    // 🟢 Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
     Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
     // ========================================
@@ -121,56 +125,81 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->name('api.clientes.listado')
         ->middleware('can:viewAny,App\Models\Cita');
 
-    // 🟢 Módulo de Inventario
+    // ========================================
+    // 🟢 MÓDULO DE INVENTARIO - COMPLETO
+    // ========================================
+    
+    // Vista principal del inventario
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-        ->middleware('can:viewAny,App\Models\Product');
+         ->middleware('can:viewAny,App\Models\Product');
 
-    // Módulo de Gestión de Servicios (Ajustado para usar el controller)
-    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios')
-        ->middleware('can:viewAny,App\Models\Tratamiento');
-
-    // Módulo de Reportes
-    Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-        ->middleware('can:viewAny,App\Models\Reporte');
-
-    // ========================================
-    // MÓDULO DE GESTIÓN DE PERSONAL
-    // ========================================
-    Route::prefix('gestion-personal')->group(function () {
-        // Página principal
-        Route::get('/', [GestionPersonalController::class, 'index'])->name('gestion-personal.index')
-            ->middleware('can:viewAny,App\Models\Empleado');
+    // 🆕 RUTAS API DE INVENTARIO
+    Route::prefix('api/inventario')->group(function () {
+        // Obtener todos los productos
+        Route::get('/productos', [InventarioController::class, 'getProductos'])
+             ->name('api.inventario.productos')
+             ->middleware('can:viewAny,App\Models\Product');
         
-        // Crear empleado
-        Route::post('/', [GestionPersonalController::class, 'store'])->name('gestion-personal.store')
-            ->middleware('can:create,App\Models\Empleado');
+        // Crear nuevo producto
+        Route::post('/productos', [InventarioController::class, 'store'])
+             ->name('api.inventario.store')
+             ->middleware('can:create,App\Models\Product');
         
-        // ELIMINAR EMPLEADO - NUEVA RUTA
-        Route::delete('/empleados/{id}', [GestionPersonalController::class, 'destroy'])->name('gestion-personal.destroy')
-            ->middleware('can:delete,App\Models\Empleado');
+        // Actualizar producto existente
+        Route::put('/productos/{id}', [InventarioController::class, 'update'])
+             ->name('api.inventario.update')
+             ->middleware('can:update,App\Models\Product');
         
-        // Registrar comisión
-        Route::post('/comision', [GestionPersonalController::class, 'storeComision'])->name('gestion-personal.comision.store')
-            ->middleware('can:create,App\Models\Empleado');
+        // Eliminar producto
+        Route::delete('/productos/{id}', [InventarioController::class, 'destroy'])
+             ->name('api.inventario.destroy')
+             ->middleware('can:delete,App\Models\Product');
         
-        // API endpoints para AJAX
-        Route::get('/empleados/ajax', [GestionPersonalController::class, 'getEmpleadosAjax'])->name('gestion-personal.empleados.ajax')
-            ->middleware('can:viewAny,App\Models\Empleado');
+        // Obtener proveedores (datos estáticos por ahora)
+        Route::get('/proveedores', [InventarioController::class, 'getProveedores'])
+             ->name('api.inventario.proveedores');
         
-        // RUTA NUEVA: Empleados activos para comisiones
-        Route::get('/empleados-activos', [GestionPersonalController::class, 'getEmpleadosActivos'])->name('empleados.activos')
-            ->middleware('can:viewAny,App\Models\Empleado');
+        // Obtener categorías (datos estáticos por ahora)
+        Route::get('/categorias', [InventarioController::class, 'getCategorias'])
+             ->name('api.inventario.categorias');
         
-        Route::get('/empleados/{id}', [GestionPersonalController::class, 'show'])->name('gestion-personal.empleados.show')
-            ->middleware('can:view,App\Models\Empleado');
+        // Obtener estadísticas del inventario
+        Route::get('/estadisticas', [InventarioController::class, 'getEstadisticas'])
+             ->name('api.inventario.estadisticas')
+             ->middleware('can:viewAny,App\Models\Product');
     });
 
+    // ========================================
+    // 🟢 MÓDULO DE GESTIÓN DE SERVICIOS
+    // ========================================
+    
+    Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios')
+          ->middleware('can:viewAny,App\Models\Tratamiento');
+
+    Route::prefix('api/servicios')->name('api.servicios.')->group(function () {
+        Route::get('/', [ServicioController::class, 'getTratamientos'])->name('get')
+            ->middleware('can:viewAny,App\Models\Tratamiento');
+        Route::post('/', [ServicioController::class, 'store'])->name('store')
+            ->middleware('can:create,App\Models\Tratamiento');
+        Route::get('/{id}', [ServicioController::class, 'show'])->name('show')
+            ->middleware('can:viewAny,App\Models\Tratamiento');
+        Route::put('/{id}', [ServicioController::class, 'update'])->name('update')
+            ->middleware('can:update,App\Models\Tratamiento');
+        Route::delete('/{id}', [ServicioController::class, 'destroy'])->name('destroy')
+            ->middleware('can:delete,App\Models\Tratamiento');
+    });
+
+    // ========================================
     // MÓDULO DE ADMINISTRACIÓN
+    // ========================================
+
+    // Ruta principal de Administración
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-        ->middleware('can:viewAny,App\Models\Cliente');
+         ->middleware('can:viewAny,App\Models\Cliente');
 
     // SUB-RUTAS DE ADMINISTRACIÓN
     Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
+
         // Backup y Restore
         Route::get('/backup', [AdministracionController::class, 'backup'])->name('administracion.backup');
         Route::post('/backup/crear', [AdministracionController::class, 'crearBackup'])->name('administracion.backup.crear');
@@ -179,58 +208,36 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // Cambio de Contraseña
         Route::get('/password', [AdministracionController::class, 'password'])->name('administracion.password');
         Route::post('/password/cambiar', [AdministracionController::class, 'cambiarPassword'])->name('administracion.password.cambiar');
-    });
 
-    // RUTAS DEL MÓDULO DE BITÁCORA
-    Route::prefix('bitacora')->name('bitacora.')->group(function () {
-        Route::get('/', [BitacoraController::class, 'index'])->name('index');
-        Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
-        Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
-        Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
-        Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
-    });
+        // ========================================
+        // RUTAS DEL MÓDULO DE BITÁCORA
+        // ========================================
 
-    // ========================================
-    // 🟠 RUTAS DE API (CRUD de Facturación, Inventario, Servicios, Personal)
-    //    NOTA: Las rutas de Citas se eliminaron de aquí porque ya estaban definidas arriba.
-    // ========================================
+        // Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
+        // Asume que este bloque está dentro del middleware de autenticación que uses.
+        Route::prefix('bitacora')->name('bitacora.')->group(function () {
+            
+            // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
+            // Nombre: bitacora.index
+            Route::get('/', [BitacoraController::class, 'index'])->name('index');
 
-    Route::group(['prefix' => 'api'], function () {
-        // ----------------------------------------
-        // CRUD DE CABECERA DE FACTURA
-        // ----------------------------------------
-        Route::post('factura', [FacturaController::class, 'storeCabecera'])->name('api.factura.store');
-        Route::get('factura', [FacturaController::class, 'index'])->name('api.factura.index');
-        Route::put('factura', [FacturaController::class, 'update'])->name('api.factura.update');
-        Route::delete('factura/{factura}', [FacturaController::class, 'destroy'])->name('api.factura.destroy');
+            // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
+            // Nombre: bitacora.export.pdf (preferible sobre bitacora.pdf)
+            Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
 
-        // ----------------------------------------
-        // CRUD DE DETALLE DE FACTURA
-        // ----------------------------------------
-        Route::get('detalle_factura_tratamiento', [FacturaController::class, 'getDetalleTratamiento'])->name('api.factura.detalle_tratamiento');
-        Route::get('detalle_factura_producto', [FacturaController::class, 'getDetalleProducto'])->name('api.factura.detalle_producto');
-        Route::post('detalle_factura_producto', [FacturaController::class, 'storeDetalleProducto'])->name('api.detalle_producto.store');
-        Route::post('detalle_factura_tratamiento', [FacturaController::class, 'storeDetalleTratamiento'])->name('api.detalle_tratamiento.store');
-        Route::put('detalle_factura_producto/{id}', [FacturaController::class, 'updateDetalleProducto'])->name('api.detalle_producto.update');
-        Route::delete('detalle_factura_producto/{id}', [FacturaController::class, 'destroyDetalleProducto'])->name('api.detalle_producto.destroy');
-        Route::put('detalle_factura_tratamiento/{id}', [FacturaController::class, 'updateDetalleTratamiento'])->name('api.detalle_tratamiento.update');
-        Route::delete('detalle_factura_tratamiento/{id}', [FacturaController::class, 'destroyDetalleTratamiento'])->name('api.detalle_tratamiento.destroy');
+            // 3. Mostrar los detalles de un registro (para la función actualizarRegistro en JS)
+            // Nombre: bitacora.show (URL: /bitacora/{id})
+            Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
+            
+            // 4. Elimina un registro de la bitácora (Eliminación física del log)
+            // Nombre: bitacora.destroy (URL: /bitacora/{id})
+            Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
 
-        // ----------------------------------------
-        // CRUD DE INVENTARIO (PRODUCTOS)
-        // ----------------------------------------
-        Route::get('productos', [InventarioController::class, 'getProducts'])->name('api.productos.index');
-        Route::post('productos', [InventarioController::class, 'storeProduct'])->name('api.productos.store');
-        Route::put('productos/{id}', [InventarioController::class, 'updateProduct'])->name('api.productos.update');
-        Route::delete('productos/{id}', [InventarioController::class, 'destroyProduct'])->name('api.productos.destroy');
+            // 5. Procesa la restauración de un registro previamente eliminado
+            // Nombre: bitacora.restaurar (URL: /bitacora/restaurar/{id})
+            Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
 
-        // ----------------------------------------
-        // CRUD DE SERVICIOS (TRATAMIENTOS)
-        // ----------------------------------------
-        Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('api.tratamientos.index');
-        Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('api.tratamientos.store');
-        Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('api.tratamientos.update');
-        Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('api.tratamientos.destroy');
+        });
 
         // ----------------------------------------
         // CRUD DE GESTIÓN DE PERSONAL (EMPLEADOS)
@@ -240,7 +247,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::put('empleados/{id}', [GestionPersonalController::class, 'updateEmpleado'])->name('api.empleados.update');
         Route::delete('empleados/{id}', [GestionPersonalController::class, 'destroyEmpleado'])->name('api.empleados.destroy');
 
-    });
+    }); // CIERRE DEL PREFIX 'administracion'
 
 }); // CIERRE DEL MIDDLEWARE 'auth', 'twofactor'
 

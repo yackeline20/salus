@@ -1,38 +1,92 @@
 <?php
-// En: app/Models/Tratamiento.php
 
 namespace App\Models;
-use App\Traits\BitacoraTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tratamiento extends Model
 {
-    use HasFactory;
-use BitacoraTrait;
+    /**
+     * Nombre de la tabla en la base de datos
+     */
     protected $table = 'tratamiento';
-    protected $primaryKey = 'Cod_Tratamiento';
-    public $timestamps = false; // Confirmado con tu esquema
 
+    /**
+     * La clave primaria de la tabla
+     */
+    protected $primaryKey = 'Cod_Tratamiento';
+
+    /**
+     * Indica si el modelo debe gestionar timestamps (created_at, updated_at)
+     * Como la tabla no tiene estos campos, lo deshabilitamos
+     */
+    public $timestamps = false;
+
+    /**
+     * Los atributos que son asignables en masa
+     */
     protected $fillable = [
         'Nombre_Tratamiento',
         'Descripcion',
-        'Costo',
-        'Precio_Estandar', // Agregado: Es el precio de venta al cliente
-        'Url_Imagen'       // Agregado si usas imágenes para tratamientos
+        'Precio_Estandar',
+        'Duracion_Estimada_Min'
     ];
 
-    // --- Relaciones ---
+    /**
+     * Los atributos que deben ser convertidos a tipos nativos
+     */
+    protected $casts = [
+        'Precio_Estandar' => 'decimal:2',
+        'Duracion_Estimada_Min' => 'integer'
+    ];
 
     /**
-     * Relación UNO a MUCHOS con DetalleFacturaTratamiento.
-     * Un tratamiento puede ser vendido en muchas líneas de detalle de factura.
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Relación con Composicion_Tratamiento
+     * Un tratamiento puede tener muchas composiciones (productos asociados)
      */
-    public function detalleFacturaTratamientos(): HasMany
+    public function composiciones()
     {
-        // FK: 'Cod_Tratamiento' en la tabla 'detalle_factura_tratamiento'
-        return $this->hasMany(DetalleFacturaTratamiento::class, 'Cod_Tratamiento', 'Cod_Tratamiento');
+        return $this->hasMany(ComposicionTratamiento::class, 'Cod_Tratamiento', 'Cod_Tratamiento');
+    }
+
+    /**
+     * Relación con Detalle_Cita_Tratamiento
+     * Un tratamiento puede estar en muchas citas
+     */
+    public function detallesCitas()
+    {
+        return $this->hasMany(DetalleCitaTratamiento::class, 'Cod_Tratamiento', 'Cod_Tratamiento');
+    }
+
+    /**
+     * Scope para buscar tratamientos por nombre
+     */
+    public function scopeBuscarPorNombre($query, $nombre)
+    {
+        return $query->where('Nombre_Tratamiento', 'LIKE', "%{$nombre}%");
+    }
+
+    /**
+     * Scope para obtener tratamientos activos (si implementas un campo de estado)
+     */
+    public function scopeActivos($query)
+    {
+        return $query; // Implementar lógica si hay campo de estado
+    }
+
+    /**
+     * Accessor para formatear el precio con el símbolo de Lempira
+     */
+    public function getPrecioFormateadoAttribute()
+    {
+        return 'L ' . number_format($this->Precio_Estandar, 2);
+    }
+
+    /**
+     * Accessor para obtener la duración formateada
+     */
+    public function getDuracionFormateadaAttribute()
+    {
+        return $this->Duracion_Estimada_Min . ' min';
     }
 }
