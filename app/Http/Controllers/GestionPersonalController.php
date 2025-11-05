@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -306,6 +307,9 @@ class GestionPersonalController extends Controller
 
             $empleado = Empleado::fromApiData($empleadoData);
             $this->authorize('update', $empleado);
+
+            // AQUÍ IRÍA LA LÓGICA DE ACTUALIZACIÓN (que parece faltar)
+            // $this->apiService->updateEmpleado($id, $request->all());
 
             return redirect()->route('gestion-personal.index')
                 ->with('success', 'Empleado actualizado exitosamente!');

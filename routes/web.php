@@ -80,7 +80,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // B. MÓDULOS PROTEGIDOS POR POLICIES (Route::resource)
     // ----------------------------------------
 
-    // 🟢 Módulo de Facturación (CRÍTICO: Usamos FacturaController y Route::resource)
+    // 🟢 Módulo de Facturación
     Route::resource('factura', FacturaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
     // ========================================
@@ -135,36 +135,36 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::prefix('api/inventario')->group(function () {
         // Obtener todos los productos
         Route::get('/productos', [InventarioController::class, 'getProductos'])
-             ->name('api.inventario.productos')
-             ->middleware('can:viewAny,App\Models\Product');
+                ->name('api.inventario.productos')
+                ->middleware('can:viewAny,App\Models\Product');
 
         // Crear nuevo producto
         Route::post('/productos', [InventarioController::class, 'store'])
-             ->name('api.inventario.store')
-             ->middleware('can:create,App\Models\Product');
+                ->name('api.inventario.store')
+                ->middleware('can:create,App\Models\Product');
 
         // Actualizar producto existente
         Route::put('/productos/{id}', [InventarioController::class, 'update'])
-             ->name('api.inventario.update')
-             ->middleware('can:update,App\Models\Product');
+                ->name('api.inventario.update')
+                ->middleware('can:update,App\Models\Product');
 
         // Eliminar producto
         Route::delete('/productos/{id}', [InventarioController::class, 'destroy'])
-             ->name('api.inventario.destroy')
-             ->middleware('can:delete,App\Models\Product');
+                ->name('api.inventario.destroy')
+                ->middleware('can:delete,App\Models\Product');
 
         // Obtener proveedores (datos estáticos por ahora)
         Route::get('/proveedores', [InventarioController::class, 'getProveedores'])
-             ->name('api.inventario.proveedores');
+                ->name('api.inventario.proveedores');
 
         // Obtener categorías (datos estáticos por ahora)
         Route::get('/categorias', [InventarioController::class, 'getCategorias'])
-             ->name('api.inventario.categorias');
+                ->name('api.inventario.categorias');
 
         // Obtener estadísticas del inventario
         Route::get('/estadisticas', [InventarioController::class, 'getEstadisticas'])
-             ->name('api.inventario.estadisticas')
-             ->middleware('can:viewAny,App\Models\Product');
+                ->name('api.inventario.estadisticas')
+                ->middleware('can:viewAny,App\Models\Product');
     });
 
 
@@ -194,13 +194,13 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // Módulo de Reportes
     // ========================================
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
-                 ->middleware('can:viewAny,App\Models\Reporte');
+                ->middleware('can:viewAny,App\Models\Reporte');
 
     // ========================================
     // Módulo de Gestión de Personal
     // ========================================
-    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal.index') // <--- SOLUCIÓN APLICADA AQUÍ
-                 ->middleware('can:viewAny,App\Models\Empleado');
+    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal.index')
+                ->middleware('can:viewAny,App\Models\Empleado');
 
 
     // ========================================
@@ -209,7 +209,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
     // Ruta principal de Administración
     Route::get('/administracion', [AdministracionController::class, 'index'])->name('administracion')
-             ->middleware('can:viewAny,App\Models\Cliente');
+                ->middleware('can:viewAny,App\Models\Cliente');
 
     // SUB-RUTAS DE ADMINISTRACIÓN
     Route::prefix('administracion')->middleware('can:viewAny,App\Models\Cliente')->group(function () {
@@ -227,39 +227,23 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // RUTAS DEL MÓDULO DE BITÁCORA
         // ========================================
 
-        // Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
         Route::prefix('bitacora')->name('bitacora.')->group(function () {
-
-            // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
-            // Nombre: bitacora.index
             Route::get('/', [BitacoraController::class, 'index'])->name('index');
-
-            // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
-            // Nombre: bitacora.export.pdf
             Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
-
-            // 3. Mostrar los detalles de un registro
-            // Nombre: bitacora.show (URL: /bitacora/{id})
             Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
-
-            // 4. Elimina un registro de la bitácora
-            // Nombre: bitacora.destroy (URL: /bitacora/{id})
             Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
-
-            // 5. Procesa la restauración de un registro
-            // Nombre: bitacora.restaurar (URL: /bitacora/restaurar/{id})
             Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
-
         });
 
         // ----------------------------------------
         // CRUD DE GESTIÓN DE PERSONAL (EMPLEADOS)
         // ----------------------------------------
-        Route::get('empleados', [GestionPersonalController::class, 'getEmpleados'])->name('api.empleados.index');
-        Route::post('empleados', [GestionPersonalController::class, 'storeEmpleado'])->name('api.empleados.store');
-        Route::put('empleados/{id}', [GestionPersonalController::class, 'updateEmpleado'])->name('api.empleados.update');
-        Route::delete('empleados/{id}', [GestionPersonalController::class, 'destroyEmpleado'])->name('api.empleados.destroy');
-
+        
+        // Estas rutas se corrigieron para apuntar a los métodos correctos del controlador
+        Route::get('empleados', [GestionPersonalController::class, 'getEmpleadosAjax'])->name('api.empleados.index');
+        Route::post('empleados', [GestionPersonalController::class, 'store'])->name('api.empleados.store');
+        Route::put('empleados/{id}', [GestionPersonalController::class, 'update'])->name('api.empleados.update');
+        Route::delete('empleados/{id}', [GestionPersonalController::class, 'destroy'])->name('api.empleados.destroy');
 
     }); // CIERRE DEL PREFIX 'administracion'
 
