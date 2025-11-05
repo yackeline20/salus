@@ -199,7 +199,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // ========================================
     // Módulo de Gestión de Personal
     // ========================================
-    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal')
+    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal.index') // <--- SOLUCIÓN APLICADA AQUÍ
                  ->middleware('can:viewAny,App\Models\Empleado');
 
 
@@ -312,7 +312,6 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
         // ----------------------------------------
         // CRUD DE CITAS - Rutas duplicadas movidas aquí.
-        // NOTA: Estas rutas ya estaban declaradas, pero las dejo aquí en el grupo 'api' para consistencia con el bloque conflictivo.
         // ----------------------------------------
         Route::get('/citas/buscar-cliente', [CitasController::class, 'buscarCliente'])
             ->name('api.citas.buscar-cliente');
