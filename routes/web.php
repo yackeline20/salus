@@ -14,10 +14,11 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\FacturaController;
-use App\Http\Controllers\ClienteController; // <-- AGREGADO DE WEB 1.PHP
+use App\Http\Controllers\ClienteController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\BitacoraController;
+use App\Services\ApiService; // Necesario para la ruta de comisiones
 
 // ========================================
 // RUTA RAÍZ
@@ -75,22 +76,26 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
     // ========================================
-    // MÓDULO DE FACTURACIÓN
+    // MÓDULO DE FACTURACIÓN (Rutas Web)
     // ========================================
-    Route::get('/facturas', [FacturaController::class, 'index'])->name('factura.index')
-        ->middleware('can:viewAny,App\Models\Factura');
-
-    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create')
-        ->middleware('can:create,App\Models\Factura');
-
+    // Se mantiene Route::resource para las vistas web (index, create, show, edit, update, destroy)
     Route::resource('factura', FacturaController::class)
         ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
+    // El middleware 'can' se aplica a las rutas de facturación con el Route::resource
+    Route::get('/facturas', [FacturaController::class, 'index'])->name('factura.index') // Aunque esté cubierto por el resource, se mantiene si se usa este nombre de ruta específicamente.
+        ->middleware('can:viewAny,App\Models\Factura');
+
+    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create') // Mantenido para el nombre de ruta específico.
+        ->middleware('can:create,App\Models\Factura');
+
+
     // ========================================
-    // 🟢 MÓDULO DE CLIENTES (RUTA COMENTADA DE WEB 1.PHP)
+    // 🟢 MÓDULO DE CLIENTES
     // ========================================
+    // Se mantiene la ruta comentada, si se descomenta se usará esta
     // Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index')
-    //     ->middleware('can:viewAny,App\Models\Cliente');
+    //      ->middleware('can:viewAny,App\Models\Cliente');
 
     // ========================================
     // MÓDULO DE CITAS
@@ -121,14 +126,14 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->middleware('can:viewAny,App\Models\Reporte');
 
     // ========================================
-    // MÓDULO DE GESTIÓN DE PERSONAL (Tu estructura funcional)
+    // MÓDULO DE GESTIÓN DE PERSONAL
     // ========================================
     Route::prefix('gestion-personal')->name('gestion-personal.')->group(function () {
         // Página principal
         Route::get('/', [GestionPersonalController::class, 'index'])->name('index')
             ->middleware('can:viewAny,App\Models\Empleado');
 
-        // Crear empleado
+        // Crear empleado (POST)
         Route::post('/', [GestionPersonalController::class, 'store'])->name('store')
             ->middleware('can:create,App\Models\Empleado');
 
@@ -143,7 +148,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // ✅ ELIMINAR EMPLEADO
         Route::delete('/empleados/{id}', [GestionPersonalController::class, 'destroy'])->name('destroy');
 
-        // RUTAS AJAX PARA EL FRONTEND
+        // RUTAS AJAX PARA EL FRONTEND (Estas no estaban duplicadas, solo se unificaron las llaves)
         Route::get('/empleados-activos', [GestionPersonalController::class, 'getEmpleadosActivos'])
             ->name('empleados.activos')
             ->middleware('can:viewAny,App\Models\Empleado');
@@ -187,27 +192,27 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::prefix('api')->name('api.')->group(function () {
 
         // ----------------------------------------
-        // API DE FACTURAS
+        // API DE FACTURAS (Se unifican las rutas de cabecera)
         // ----------------------------------------
         Route::get('factura', [FacturaController::class, 'index'])->name('factura.index');
         Route::post('factura', [FacturaController::class, 'storeCabecera'])->name('factura.store');
         Route::put('factura/{id}', [FacturaController::class, 'update'])->name('factura.update');
         Route::delete('factura/{id}', [FacturaController::class, 'destroy'])->name('factura.destroy');
 
-        // API DE DETALLE DE FACTURA - TRATAMIENTO
+        // API DE DETALLE DE FACTURA - TRATAMIENTO (Se unifican)
         Route::get('detalle_factura_tratamiento', [FacturaController::class, 'getDetalleTratamiento'])->name('factura.detalle_tratamiento');
         Route::post('detalle_factura_tratamiento', [FacturaController::class, 'storeDetalleTratamiento'])->name('detalle_tratamiento.store');
         Route::put('detalle_factura_tratamiento/{id}', [FacturaController::class, 'updateDetalleTratamiento'])->name('detalle_tratamiento.update');
         Route::delete('detalle_factura_tratamiento/{id}', [FacturaController::class, 'destroyDetalleTratamiento'])->name('detalle_tratamiento.destroy');
 
-        // API DE DETALLE DE FACTURA - PRODUCTO
+        // API DE DETALLE DE FACTURA - PRODUCTO (Se unifican)
         Route::get('detalle_factura_producto', [FacturaController::class, 'getDetalleProducto'])->name('factura.detalle_producto');
         Route::post('detalle_factura_producto', [FacturaController::class, 'storeDetalleProducto'])->name('detalle_producto.store');
         Route::put('detalle_factura_producto/{id}', [FacturaController::class, 'updateDetalleProducto'])->name('detalle_producto.update');
         Route::delete('detalle_factura_producto/{id}', [FacturaController::class, 'destroyDetalleProducto'])->name('detalle_producto.destroy');
 
         // ----------------------------------------
-        // API DE CITAS
+        // API DE CITAS (Se unifican)
         // ----------------------------------------
         Route::get('citas', [CitasController::class, 'getCitas'])->name('citas.get');
         Route::post('citas', [CitasController::class, 'storeCita'])->name('citas.store');
@@ -225,7 +230,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
             ->middleware('can:viewAny,App\Models\Cita');
 
         // ----------------------------------------
-        // API DE INVENTARIO (PRODUCTOS)
+        // API DE INVENTARIO (PRODUCTOS) (Se unifican)
         // ----------------------------------------
         Route::get('productos', [InventarioController::class, 'getProducts'])->name('productos.index');
         Route::post('productos', [InventarioController::class, 'storeProduct'])->name('productos.store');
@@ -242,17 +247,17 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
              ->middleware('can:viewAny,App\Models\Product');
 
         // ----------------------------------------
-        // API DE SERVICIOS (TRATAMIENTOS)
+        // API DE SERVICIOS (TRATAMIENTOS) (Se mantiene la unificación con rutas alias)
         // ----------------------------------------
+        // Rutas directas a tratamientos
         Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('tratamientos.index');
-        // 🟢 RUTA AGREGADA DE WEB 1.PHP (Ver detalle de un solo tratamiento)
         Route::get('tratamientos/{id}', [ServicioController::class, 'show'])->name('tratamientos.show')
             ->middleware('can:viewAny,App\Models\Tratamiento');
         Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('tratamientos.store');
         Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('tratamientos.update');
         Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('tratamientos.destroy');
 
-        // 🟢 RUTAS ALIAS AGREGADAS DE WEB 2.PHP (Apuntan al mismo controller)
+        // Rutas alias de servicios (apuntan a los mismos métodos)
         Route::prefix('servicios')->name('api.servicios.')->group(function () {
             Route::get('/', [ServicioController::class, 'getTratamientos'])->name('get');
             Route::post('/', [ServicioController::class, 'store'])->name('store');
@@ -262,7 +267,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         });
 
         // ----------------------------------------
-        // API DE GESTIÓN DE PERSONAL Y COMISIONES
+        // API DE GESTIÓN DE PERSONAL Y COMISIONES (Se unifican)
         // ----------------------------------------
         Route::get('empleados', [GestionPersonalController::class, 'getEmpleadosAjax'])->name('empleados.index');
         Route::get('empleados/activos', [GestionPersonalController::class, 'getEmpleadosActivos'])->name('empleados.activos');
@@ -273,7 +278,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
         // API DE COMISIONES
         Route::get('comisiones/{cod_empleado}', function($cod_empleado) {
-            $apiService = new \App\Services\ApiService();
+            $apiService = new ApiService();
             $comisiones = $apiService->getComisiones();
             return response()->json(
                 collect($comisiones)->where('Cod_Empleado', (int)$cod_empleado)->values()

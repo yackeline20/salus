@@ -11,38 +11,41 @@ class Empleado extends Model
     use HasFactory;
     use BitacoraTrait;
 
-    // COMENTAMOS estas propiedades ya que NO usamos base de datos local
-    // protected $table = 'empleado';
-    // protected $primaryKey = 'Cod_Empleado';
-    // public $timestamps = false;
+    // ✅ DEFINE LA TABLA (aunque uses API, Laravel lo necesita)
+    protected $table = 'empleado';
 
-    // En su lugar, definimos que este modelo es para uso interno de Laravel
-    // pero los datos vienen de la API externa
-    protected $table = null; // No usa tabla de Laravel
-    public $timestamps = false; // No usa timestamps
+    // ✅ DEFINE LA CLAVE PRIMARIA
+    protected $primaryKey = 'Cod_Empleado';
 
-    // Campos que pueden ser asignados masivamente
+    public $timestamps = false;
+
+    // ✅ IMPORTANTE: No incrementa automáticamente
+    public $incrementing = false;
+
     protected $fillable = [
         'Cod_Empleado',
         'Cod_Persona',
-        'Nombre',        // Agregamos estos campos para mostrar en las vistas
-        'Apellido',      // ya que vendrán de la API
+        'Nombre',
+        'Apellido',
         'Rol',
         'Fecha_Contratacion',
         'Salario',
         'Disponibilidad',
-        'Correo',        // Agregamos campo para email
-        'DNI',           // Agregamos campo para DNI
-        'Genero',        // Agregamos campo para género
-        'Fecha_Nacimiento' // Agregamos campo para fecha de nacimiento
+        'Correo',
+        'DNI',
+        'Genero',
+        'Fecha_Nacimiento'
     ];
 
     /**
-     * NUEVO: Método estático para crear instancias desde datos de API
+     * Método estático para crear instancias desde datos de API
      */
     public static function fromApiData(array $data): self
     {
         $empleado = new self();
+
+        // ✅ CRÍTICO: Marcar como existente. Necesario para Políticas de Autorización.
+        $empleado->exists = true;
 
         // Asignar datos principales del empleado
         $empleado->Cod_Empleado = $data['Cod_Empleado'] ?? $data['cod_empleado'] ?? null;
@@ -61,7 +64,7 @@ class Empleado extends Model
             $empleado->Genero = $persona['Genero'] ?? $persona['genero'] ?? null;
             $empleado->Fecha_Nacimiento = $persona['Fecha_Nacimiento'] ?? $persona['fecha_nacimiento'] ?? null;
         } else {
-            // Si los datos vienen planos (directamente en el array principal)
+            // Si los datos vienen planos
             $empleado->Nombre = $data['Nombre'] ?? $data['nombre'] ?? null;
             $empleado->Apellido = $data['Apellido'] ?? $data['apellido'] ?? null;
             $empleado->DNI = $data['DNI'] ?? $data['dni'] ?? null;
@@ -76,23 +79,22 @@ class Empleado extends Model
     }
 
     /**
-     * Método para simular la búsqueda de empleados
-     * En realidad los datos vendrán del ApiService
+     * Método estático simulado para obtener datos.
+     * En realidad, la lógica real de obtención está en ApiService.
      */
     public static function getFromApi()
     {
         // Este método es solo para mantener compatibilidad
-        // La lógica real está en el ApiService
         return collect([]);
     }
 
     /**
-     * Relación con Persona (para mantener estructura si otras partes del código la usan)
-     * Pero en realidad los datos vienen de la API
+     * Relación simulada con Persona.
+     * Mantiene la compatibilidad si otras partes del código esperan una relación.
      */
     public function persona()
     {
-        // Retornamos una relación vacía o simulada
+        // Retornamos un objeto simulado
         return new class {
             public $Nombre = '';
             public $Apellido = '';
@@ -104,55 +106,36 @@ class Empleado extends Model
     }
 
     /**
-     * Métodos de acceso para compatibilidad
+     * Método para obtener nombre completo
      */
     public function getNombreCompletoAttribute()
     {
         return trim(($this->Nombre ?? '') . ' ' . ($this->Apellido ?? ''));
     }
 
+    /**
+     * Getter para email
+     */
     public function getEmailAttribute()
     {
         return $this->Correo ?? '';
     }
 
     /**
-     * NUEVO: Método para obtener el ID para políticas de autorización
-     */
-    public function getKey()
-    {
-        return $this->Cod_Empleado;
-    }
-
-    /**
-     * NUEVO: Método para indicar qué campo se usa como clave primaria
-     */
-    public function getKeyName()
-    {
-        return 'Cod_Empleado';
-    }
-
-    /**
-     * Indicar que este modelo no persiste en BD local
+     * Deshabilitar save() porque trabajamos con API
      */
     public function save(array $options = [])
     {
-        // No guardar en BD local - los datos se guardan via API
-        return false;
-    }
-
-    public function delete()
-    {
-        // No eliminar de BD local - se elimina via API
-        return false;
+        // No hacer nada - modelo solo lectura o manipulación vía API
+        return true;
     }
 
     /**
-     * NUEVO: Método para verificar si el empleado existe
-     * Útil para políticas de autorización
+     * Deshabilitar delete() porque trabajamos con API
      */
-    public function exists()
+    public function delete()
     {
-        return !empty($this->Cod_Empleado);
+        // No hacer nada - la eliminación se hace vía API
+        return true;
     }
 }
