@@ -1,11 +1,11 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Empleado;
 use App\Services\ApiService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class GestionPersonalController extends Controller
 {
@@ -16,46 +16,108 @@ class GestionPersonalController extends Controller
         $this->apiService = new ApiService();
     }
 
-    /**
-     * Muestra la página principal de Gestión de Personal
-     */
     public function index()
     {
         $this->authorize('viewAny', Empleado::class);
 
         try {
-            $empleados = $this->apiService->getEmpleados();
+            // Verificar API
+            try {
+                $apiTest = Http::timeout(5)->get('http://localhost:3000/persona');
+                if (!$apiTest->successful()) {
+                    throw new \Exception('API no responde');
+                }
+            } catch (\Exception $e) {
+                Log::error('❌ API no disponible: ' . $e->getMessage());
+                $empleados = [];
+                return view('profile.gestion-personal', compact('empleados'))
+                    ->with('error', '⚠️ No se puede conectar con el servidor API');
+            }
+
+            $empleadosRaw = $this->apiService->getEmpleados();
+            
+            if (empty($empleadosRaw)) {
+                Log::warning('⚠️ No se encontraron empleados');
+                $empleados = [];
+                return view('profile.gestion-personal', compact('empleados'))
+                    ->with('info', 'No hay empleados registrados');
+            }
+            
+            $personas = $this->apiService->getPersonas();
+            
+            // Combinar empleados con sus datos
+            $empleados = collect($empleadosRaw)->map(function($empleadoData) use ($personas) {
+                $persona = collect($personas)->firstWhere('Cod_Persona', $empleadoData['Cod_Persona']);
+                
+                if ($persona) {
+                    $empleadoData['Nombre'] = $persona['Nombre'] ?? 'N/A';
+                    $empleadoData['Apellido'] = $persona['Apellido'] ?? 'N/A';
+                    $empleadoData['DNI'] = $persona['DNI'] ?? 'N/A';
+                    $empleadoData['Genero'] = $persona['Genero'] ?? 'N/A';
+                    $empleadoData['Fecha_Nacimiento'] = $persona['Fecha_Nacimiento'] ?? 'N/A';
+                } else {
+                    $empleadoData['Nombre'] = 'Sin Nombre';
+                    $empleadoData['Apellido'] = '';
+                    $empleadoData['DNI'] = 'N/A';
+                    $empleadoData['Genero'] = 'N/A';
+                    $empleadoData['Fecha_Nacimiento'] = 'N/A';
+                }
+                
+                // ✅ OBTENER CORREO
+                try {
+                    $correosResponse = Http::timeout(5)->get('http://localhost:3000/correo');
+                    if ($correosResponse->successful()) {
+                        $correos = $correosResponse->json();
+                        $correoData = collect($correos)->firstWhere('Cod_Persona', $empleadoData['Cod_Persona']);
+                        $empleadoData['Correo'] = $correoData['Correo'] ?? 'N/A';
+                    } else {
+                        $empleadoData['Correo'] = 'N/A';
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('⚠️ Error al obtener correo: ' . $e->getMessage());
+                    $empleadoData['Correo'] = 'N/A';
+                }
+                
+                // ✅ OBTENER TELÉFONO
+                try {
+                    $telefonosResponse = Http::timeout(5)->get('http://localhost:3000/telefono');
+                    if ($telefonosResponse->successful()) {
+                        $telefonos = $telefonosResponse->json();
+                        $telefonoData = collect($telefonos)->firstWhere('Cod_Persona', $empleadoData['Cod_Persona']);
+                        $empleadoData['Telefono'] = $telefonoData['Numero'] ?? 'N/A';
+                    } else {
+                        $empleadoData['Telefono'] = 'N/A';
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('⚠️ Error al obtener teléfono: ' . $e->getMessage());
+                    $empleadoData['Telefono'] = 'N/A';
+                }
+                
+                return $empleadoData;
+            })->toArray();
+            
+            Log::info('✅ Empleados cargados', ['total' => count($empleados)]);
+            
             return view('profile.gestion-personal', compact('empleados'));
             
         } catch (\Exception $e) {
+            Log::error('❌ Error al cargar empleados: ' . $e->getMessage());
             $empleados = [];
             return view('profile.gestion-personal', compact('empleados'))
-                ->with('error', 'No se pudieron cargar los empleados: ' . $e->getMessage());
+                ->with('error', '❌ Error al cargar empleados: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Obtener empleados activos con nombres para comisiones - NUEVA FUNCIÓN
-     */
     public function getEmpleadosActivos()
     {
         try {
-            // Obtener todos los empleados
             $empleados = $this->apiService->getEmpleados();
-            
-            // Obtener todas las personas para cruzar información
             $personas = $this->apiService->getPersonas();
             
-            // Filtrar empleados activos y combinar con datos de persona
             $empleadosActivos = collect($empleados)
-                ->filter(function($empleado) {
-                    // Asumiendo que hay un campo 'Estado' o 'Disponibilidad'
-                    return ($empleado['Estado'] ?? $empleado['Disponibilidad'] ?? 'Activo') === 'Activo';
-                })
+                ->filter(fn($e) => ($e['Disponibilidad'] ?? 'Activo') === 'Activo')
                 ->map(function($empleado) use ($personas) {
-                    // Buscar la persona correspondiente al empleado
                     $persona = collect($personas)->firstWhere('Cod_Persona', $empleado['Cod_Persona']);
-                    
                     return [
                         'Cod_Empleado' => $empleado['Cod_Empleado'],
                         'Nombre_Completo' => ($persona['Nombre'] ?? 'N/A') . ' ' . ($persona['Apellido'] ?? 'N/A'),
@@ -63,193 +125,251 @@ class GestionPersonalController extends Controller
                         'Rol' => $empleado['Rol'] ?? 'N/A'
                     ];
                 })
-                ->values(); // Reindexar array
+                ->values();
 
             return response()->json($empleadosActivos);
-            
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al cargar empleados activos: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Crear nuevo empleado
-     */
     public function store(Request $request)
     {
         $this->authorize('create', Empleado::class);
 
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'nombre' => 'required|string|max:255',
                 'apellido' => 'required|string|max:255',
-                'dni' => 'required|string|max:20',
-                'fecha_nacimiento' => 'required|date',
-                'genero' => 'required|string|in:masculino,femenino,otro',
+                'dni' => 'required|string|size:13|regex:/^[0-9]+$/',
+                'telefono' => 'required|string|size:8|regex:/^[0-9]+$/',
+                'fecha_nacimiento' => 'required|date|before:-18 years',
+                'genero' => 'required|string|in:Masculino,Femenino,Otro',
                 'email' => 'required|email|max:255',
                 'rol' => 'required|string|max:255',
-                'fecha_contratacion' => 'required|date',
+                'fecha_contratacion' => 'required|date|before_or_equal:today',
                 'salario' => 'required|numeric|min:0'
+            ], [
+                'dni.size' => 'El DNI debe tener exactamente 13 dígitos',
+                'dni.regex' => 'El DNI debe contener solo números',
+                'telefono.size' => 'El teléfono debe tener exactamente 8 dígitos',
+                'telefono.regex' => 'El teléfono debe contener solo números',
+                'fecha_nacimiento.before' => 'El empleado debe ser mayor de 18 años',
+                'genero.in' => 'Seleccione un género válido'
             ]);
 
-            // VALIDACIÓN: Verificar si el DNI ya existe
+            Log::info('🚀 Creando empleado', $validated);
+
+            // Verificar API
             try {
-                $personas = $this->apiService->getPersonas();
-                $dniExiste = collect($personas)->firstWhere('DNI', $request->dni);
-                
-                if ($dniExiste) {
+                $apiTest = Http::timeout(5)->get('http://localhost:3000/persona');
+                if (!$apiTest->successful()) {
+                    throw new \Exception('API no responde');
+                }
+            } catch (\Exception $e) {
+                return redirect()->route('gestion-personal.index')
+                    ->withInput()
+                    ->with('error', '❌ API no disponible');
+            }
+
+            // Verificar DNI duplicado
+            $personas = $this->apiService->getPersonas();
+            if (collect($personas)->firstWhere('DNI', $request->dni)) {
+                return redirect()->route('gestion-personal.index')
+                    ->withInput()
+                    ->with('error', '⚠️ DNI ya existe: ' . $request->dni);
+            }
+
+            // Verificar email duplicado
+            $response = Http::timeout(10)->get('http://localhost:3000/correo');
+            if ($response->successful()) {
+                if (collect($response->json())->firstWhere('Correo', $request->email)) {
                     return redirect()->route('gestion-personal.index')
-                        ->with('error', 'Ya existe una persona registrada con el DNI: ' . $request->dni);
+                        ->withInput()
+                        ->with('error', '⚠️ Email ya existe: ' . $request->email);
                 }
-            } catch (\Exception $e) {
-                // Si falla la consulta, continuar
             }
 
-            // VALIDACIÓN: Verificar si el email ya existe
-            try {
-                $response = Http::timeout(10)->get('http://localhost:3000/correo');
-                if ($response->successful()) {
-                    $correos = $response->json();
-                    $emailExiste = collect($correos)->firstWhere('Correo', $request->email);
-                    
-                    if ($emailExiste) {
-                        return redirect()->route('gestion-personal.index')
-                            ->with('error', 'Ya existe un empleado registrado con el correo: ' . $request->email);
-                    }
+            // Verificar teléfono duplicado
+            $telResponse = Http::timeout(10)->get('http://localhost:3000/telefono');
+            if ($telResponse->successful()) {
+                if (collect($telResponse->json())->firstWhere('Numero', $request->telefono)) {
+                    return redirect()->route('gestion-personal.index')
+                        ->withInput()
+                        ->with('error', '⚠️ Teléfono ya existe: ' . $request->telefono);
                 }
-            } catch (\Exception $e) {
-                // Si falla la consulta, continuar
             }
 
-            // Datos para persona
             $datosPersona = [
-                'Nombre' => $request->nombre,
-                'Apellido' => $request->apellido,
-                'DNI' => $request->dni,
+                'Nombre' => trim($request->nombre),
+                'Apellido' => trim($request->apellido),
+                'DNI' => trim($request->dni),
                 'Fecha_Nacimiento' => $request->fecha_nacimiento,
                 'Genero' => $request->genero
             ];
 
-            // Datos para empleado
             $datosEmpleado = [
                 'Rol' => $request->rol,
                 'Fecha_Contratacion' => $request->fecha_contratacion,
-                'Salario' => $request->salario,
-                'Disponibilidad' => $request->disponibilidad ?? 'Activo'
+                'Salario' => floatval($request->salario),
+                'Disponibilidad' => 'Activo'
             ];
 
-            // Crear empleado completo usando el servicio
-            $this->apiService->crearEmpleadoCompleto($datosPersona, $request->email, $datosEmpleado);
+            Log::info('📝 Datos preparados', [
+                'persona' => $datosPersona,
+                'empleado' => $datosEmpleado,
+                'email' => $request->email,
+                'telefono' => $request->telefono
+            ]);
+
+            // Crear empleado completo
+            $resultado = $this->apiService->crearEmpleadoCompleto(
+                $datosPersona, 
+                trim($request->email),
+                trim($request->telefono),
+                $datosEmpleado
+            );
+
+            Log::info('✅ Empleado creado', $resultado);
 
             return redirect()->route('gestion-personal.index')
-                ->with('success', 'Empleado creado exitosamente!');
+                ->with('success', '✅ Empleado creado: ' . $request->nombre . ' ' . $request->apellido);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('gestion-personal.index')
+                ->withErrors($e->validator)
+                ->withInput()
+                ->with('error', '⚠️ Corrige los errores del formulario');
         } catch (\Exception $e) {
+            Log::error('❌ Error al crear empleado', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->route('gestion-personal.index')
-                ->with('error', 'Error al crear empleado: ' . $e->getMessage());
+                ->withInput()
+                ->with('error', '❌ Error: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Registrar comisión para empleado - CORREGIDO
-     */
     public function storeComision(Request $request)
     {
         try {
-            // Validación de datos
             $request->validate([
                 'cod_empleado' => 'required|integer',
                 'monto_comision' => 'required|numeric|min:0',
-                'fecha_comision' => 'required|date',
+                'fecha_comision' => 'required|date|before_or_equal:today',
                 'concepto_comision' => 'required|string|max:500'
             ]);
 
             $comisionData = [
                 'Cod_Empleado' => $request->cod_empleado,
-                'Monto_Comision' => $request->monto_comision,
+                'Monto_Comision' => floatval($request->monto_comision),
                 'Fecha_Comision' => $request->fecha_comision,
                 'Concepto_Comision' => $request->concepto_comision,
                 'Cod_Factura' => $request->cod_factura ?? null
             ];
 
+            Log::info('💰 Registrando comisión', $comisionData);
             $this->apiService->createComision($comisionData);
+            Log::info('✅ Comisión registrada');
 
             return redirect()->route('gestion-personal.index')
-                ->with('success', 'Comisión registrada exitosamente!');
-
+                ->with('success', '✅ Comisión registrada!');
         } catch (\Exception $e) {
+            Log::error('❌ Error comisión: ' . $e->getMessage());
             return redirect()->route('gestion-personal.index')
-                ->with('error', 'Error al registrar comisión: ' . $e->getMessage());
+                ->with('error', '❌ Error: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Obtener empleados via AJAX (para select de comisiones) - ACTUALIZADO
-     */
     public function getEmpleadosAjax()
     {
         try {
             $empleados = $this->apiService->getEmpleados();
             $personas = $this->apiService->getPersonas();
             
-            // Combinar datos de empleados con personas
             $empleadosConNombres = collect($empleados)->map(function($empleado) use ($personas) {
                 $persona = collect($personas)->firstWhere('Cod_Persona', $empleado['Cod_Persona']);
                 return [
                     'Cod_Empleado' => $empleado['Cod_Empleado'],
+                    'Nombre' => $persona['Nombre'] ?? 'N/A',
+                    'Apellido' => $persona['Apellido'] ?? 'N/A',
                     'Nombre_Completo' => ($persona['Nombre'] ?? 'N/A') . ' ' . ($persona['Apellido'] ?? 'N/A'),
                     'Rol' => $empleado['Rol'] ?? 'N/A',
-                    'Departamento' => $empleado['Rol'] ?? 'N/A'
+                    'Departamento' => $empleado['Rol'] ?? 'N/A',
+                    'Disponibilidad' => $empleado['Disponibilidad'] ?? 'Activo'
                 ];
             });
             
             return response()->json($empleadosConNombres);
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al cargar empleados: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * ELIMINAR EMPLEADO
+     * ✅ MÉTODO DESTROY ACTUALIZADO - SIN USAR POLICY
+     * Verifica permisos directamente desde el modelo Usuario
      */
     public function destroy($id)
     {
         try {
+            // ✅ Verificar permiso directamente sin Policy
+            if (!auth()->user()->hasPermission('delete', 'Gestión de Personal')) {
+                Log::warning('⚠️ Usuario sin permisos de eliminación', [
+                    'usuario' => auth()->user()->Nombre_Usuario,
+                    'rol' => auth()->user()->Nombre_Rol
+                ]);
+                
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'No tienes permisos para eliminar empleados'
+                ], 403);
+            }
+
+            // Buscar empleado
             $empleados = $this->apiService->getEmpleados();
-            $empleadoData = collect($empleados)->firstWhere('Cod_Empleado', $id);
+            $empleadoData = collect($empleados)->firstWhere('Cod_Empleado', (int)$id);
             
             if (!$empleadoData) {
+                Log::warning('⚠️ Empleado no encontrado', ['id' => $id]);
                 return response()->json([
-                    'success' => false,
+                    'success' => false, 
                     'message' => 'Empleado no encontrado'
                 ], 404);
             }
 
-            $empleado = Empleado::fromApiData($empleadoData);
-            $this->authorize('delete', $empleado);
-
+            Log::info('🗑️ Eliminando empleado', [
+                'id' => $id,
+                'empleado' => $empleadoData['Rol'] ?? 'N/A',
+                'usuario' => auth()->user()->Nombre_Usuario
+            ]);
+            
+            // Eliminar en la API
             $this->apiService->deleteEmpleado($id);
             
+            Log::info('✅ Empleado eliminado exitosamente', ['id' => $id]);
+            
             return response()->json([
-                'success' => true,
+                'success' => true, 
                 'message' => 'Empleado eliminado exitosamente'
             ]);
             
         } catch (\Exception $e) {
+            Log::error('❌ Error al eliminar empleado', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar empleado: ' . $e->getMessage()
+                'success' => false, 
+                'message' => 'Error al eliminar: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Obtener empleado específico
-     */
     public function show($id)
     {
         try {
@@ -257,66 +377,12 @@ class GestionPersonalController extends Controller
             $empleado = collect($empleados)->firstWhere('Cod_Empleado', $id);
             
             if (!$empleado) {
-                return response()->json(['error' => 'Empleado no encontrado'], 404);
+                return response()->json(['error' => 'No encontrado'], 404);
             }
 
             return response()->json($empleado);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * EDITAR EMPLEADO
-     */
-    public function edit($id)
-    {
-        try {
-            $empleados = $this->apiService->getEmpleados();
-            $empleadoData = collect($empleados)->firstWhere('Cod_Empleado', $id);
-            
-            if (!$empleadoData) {
-                return redirect()->route('gestion-personal.index')
-                    ->with('error', 'Empleado no encontrado');
-            }
-
-            $empleado = Empleado::fromApiData($empleadoData);
-            $this->authorize('update', $empleado);
-
-            return view('profile.editar-empleado', compact('empleadoData'));
-
-        } catch (\Exception $e) {
-            return redirect()->route('gestion-personal.index')
-                ->with('error', 'Error al cargar empleado para edición: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * ACTUALIZAR EMPLEADO
-     */
-    public function update(Request $request, $id)
-    {
-        try {
-            $empleados = $this->apiService->getEmpleados();
-            $empleadoData = collect($empleados)->firstWhere('Cod_Empleado', $id);
-            
-            if (!$empleadoData) {
-                return redirect()->route('gestion-personal.index')
-                    ->with('error', 'Empleado no encontrado');
-            }
-
-            $empleado = Empleado::fromApiData($empleadoData);
-            $this->authorize('update', $empleado);
-
-            // AQUÍ IRÍA LA LÓGICA DE ACTUALIZACIÓN (que parece faltar)
-            // $this->apiService->updateEmpleado($id, $request->all());
-
-            return redirect()->route('gestion-personal.index')
-                ->with('success', 'Empleado actualizado exitosamente!');
-
-        } catch (\Exception $e) {
-            return redirect()->route('gestion-personal.index')
-                ->with('error', 'Error al actualizar empleado: ' . $e->getMessage());
         }
     }
 }
