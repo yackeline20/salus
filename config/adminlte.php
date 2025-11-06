@@ -244,6 +244,19 @@ return [
             'icon' => 'fas fa-boxes',
         ],
 
+         // Gestión de Servicios
+[
+    'text' => 'Gestión de Servicios',
+    'route' => 'servicios',
+    'icon' => 'fas fa-clipboard-list',
+],
+
+
+
+
+
+
+
         // Gestión de Personal
 [
     'text' => 'Gestión de Personal',

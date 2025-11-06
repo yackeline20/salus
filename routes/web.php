@@ -224,6 +224,22 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('tratamientos.update');
         Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('tratamientos.destroy');
 
+// ----------------------------------------
+// RUTAS ALIAS PARA SERVICIOS (Apuntan al mismo controller)
+// ----------------------------------------
+Route::prefix('servicios')->name('api.servicios.')->group(function () {
+    Route::get('/', [ServicioController::class, 'getTratamientos'])->name('get');
+    Route::post('/', [ServicioController::class, 'store'])->name('store');
+    Route::get('/{id}', [ServicioController::class, 'show'])->name('show');
+    Route::put('/{id}', [ServicioController::class, 'update'])->name('update');
+    Route::delete('/{id}', [ServicioController::class, 'destroy'])->name('destroy');
+});
+
+// Exportar servicios a Excel
+Route::get('/servicios/export', [ServicioController::class, 'exportExcel'])->name('servicios.export')
+    ->middleware('can:viewAny,App\Models\Tratamiento');
+
+
         // ----------------------------------------
         // API DE GESTIÓN DE PERSONAL Y COMISIONES
         // ----------------------------------------

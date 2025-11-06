@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\Tratamiento;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ServiciosExport;
 
 class ServicioController extends Controller
 {
-    // URL base de la API de Node.js
     private $apiUrl = 'http://localhost:3000';
 
     /**
@@ -16,11 +17,9 @@ class ServicioController extends Controller
      */
     public function index()
     {
-        // 🛡️ Autorizar la visualización del listado (viewAny)
         $this->authorize('viewAny', Tratamiento::class);
 
         try {
-            // Consumir la API de Node.js para obtener todos los tratamientos
             $response = Http::timeout(10)->get("{$this->apiUrl}/tratamiento");
             
             if ($response->successful()) {
@@ -40,7 +39,6 @@ class ServicioController extends Controller
      */
     public function getTratamientos()
     {
-        // 🛡️ Autorizar
         $this->authorize('viewAny', Tratamiento::class);
 
         try {
@@ -67,14 +65,32 @@ class ServicioController extends Controller
     }
 
     /**
+     * Muestra un tratamiento específico
+     */
+    public function show($id)
+    {
+        $this->authorize('viewAny', Tratamiento::class);
+
+        try {
+            $response = Http::timeout(5)->get($this->apiUrl . '/tratamiento/' . $id);
+            
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+            
+            return response()->json(['error' => 'Tratamiento no encontrado'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Almacena un nuevo tratamiento
      */
     public function store(Request $request)
     {
-        // 🛡️ Autorizar la acción de crear
         $this->authorize('create', Tratamiento::class);
 
-        // Validar los datos
         $validated = $request->validate([
             'Nombre_Tratamiento' => 'required|string|max:50',
             'Descripcion' => 'nullable|string',
@@ -83,7 +99,6 @@ class ServicioController extends Controller
         ]);
 
         try {
-            // Enviar datos a la API de Node.js
             $response = Http::timeout(10)->post("{$this->apiUrl}/tratamiento", $validated);
             
             if ($response->successful()) {
@@ -107,56 +122,12 @@ class ServicioController extends Controller
     }
 
     /**
-     * Obtiene un tratamiento específico
-     */
-    public function show($id)
-    {
-        // 🛡️ Autorizar
-        $this->authorize('viewAny', Tratamiento::class);
-
-        try {
-            // Obtener todos los tratamientos y filtrar por ID
-            $response = Http::timeout(10)->get("{$this->apiUrl}/tratamiento");
-            
-            if ($response->successful()) {
-                $tratamientos = $response->json();
-                $tratamiento = collect($tratamientos)->firstWhere('Cod_Tratamiento', $id);
-                
-                if ($tratamiento) {
-                    return response()->json([
-                        'success' => true,
-                        'data' => $tratamiento
-                    ]);
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Servicio no encontrado'
-                    ], 404);
-                }
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al obtener el servicio'
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Error en show: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error de conexión con el servidor'
-            ], 500);
-        }
-    }
-
-    /**
      * Actualiza un tratamiento existente
      */
     public function update(Request $request, $id)
     {
-        // 🛡️ Autorizar
         $this->authorize('update', Tratamiento::class);
 
-        // Validar los datos
         $validated = $request->validate([
             'Nombre_Tratamiento' => 'required|string|max:50',
             'Descripcion' => 'nullable|string',
@@ -165,10 +136,8 @@ class ServicioController extends Controller
         ]);
 
         try {
-            // Agregar el ID al array de datos
             $validated['Cod_Tratamiento'] = $id;
 
-            // Enviar datos a la API de Node.js
             $response = Http::timeout(10)->put("{$this->apiUrl}/tratamiento", $validated);
             
             if ($response->successful()) {
@@ -192,15 +161,23 @@ class ServicioController extends Controller
     }
 
     /**
+     * Exporta los servicios a Excel
+     */
+    public function exportExcel()
+    {
+        $this->authorize('viewAny', Tratamiento::class);
+        
+        return Excel::download(new ServiciosExport, 'servicios_' . date('Y-m-d_His') . '.xlsx');
+    }
+
+    /**
      * Elimina un tratamiento
      */
     public function destroy($id)
     {
-        // 🛡️ Autorizar la acción de eliminar
         $this->authorize('delete', Tratamiento::class);
 
         try {
-            // Enviar solicitud DELETE a la API de Node.js
             $response = Http::timeout(10)->delete("{$this->apiUrl}/tratamiento", [
                 'Cod_Tratamiento' => $id
             ]);
@@ -230,7 +207,6 @@ class ServicioController extends Controller
      */
     public function search(Request $request)
     {
-        // 🛡️ Autorizar
         $this->authorize('viewAny', Tratamiento::class);
 
         $searchTerm = $request->input('search', '');
