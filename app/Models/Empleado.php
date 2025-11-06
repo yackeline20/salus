@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\BitacoraTrait;  // ← AGREGAR ESTA LÍNEA
+use App\Traits\BitacoraTrait;
 
 class Empleado extends Model
 {
     use HasFactory;
-    use BitacoraTrait;  // ← AGREGAR ESTA LÍNEA
+    use BitacoraTrait;
 
     // COMENTAMOS estas propiedades ya que NO usamos base de datos local
     // protected $table = 'empleado';
@@ -38,12 +38,12 @@ class Empleado extends Model
     ];
 
     /**
-     *  NUEVO: Método estático para crear instancias desde datos de API
+     * NUEVO: Método estático para crear instancias desde datos de API
      */
     public static function fromApiData(array $data): self
     {
         $empleado = new self();
-        
+
         // Asignar datos principales del empleado
         $empleado->Cod_Empleado = $data['Cod_Empleado'] ?? $data['cod_empleado'] ?? null;
         $empleado->Cod_Persona = $data['Cod_Persona'] ?? $data['cod_persona'] ?? null;
@@ -51,7 +51,7 @@ class Empleado extends Model
         $empleado->Fecha_Contratacion = $data['Fecha_Contratacion'] ?? $data['fecha_contratacion'] ?? null;
         $empleado->Salario = $data['Salario'] ?? $data['salario'] ?? null;
         $empleado->Disponibilidad = $data['Disponibilidad'] ?? $data['disponibilidad'] ?? 'Activo';
-        
+
         // Si los datos vienen con información de persona anidada
         if (isset($data['Persona']) && is_array($data['Persona'])) {
             $persona = $data['Persona'];
@@ -68,10 +68,10 @@ class Empleado extends Model
             $empleado->Genero = $data['Genero'] ?? $data['genero'] ?? null;
             $empleado->Fecha_Nacimiento = $data['Fecha_Nacimiento'] ?? $data['fecha_nacimiento'] ?? null;
         }
-        
+
         // Asignar correo (puede venir de diferentes fuentes)
         $empleado->Correo = $data['Correo'] ?? $data['correo'] ?? $data['Email'] ?? $data['email'] ?? null;
-        
+
         return $empleado;
     }
 
@@ -102,8 +102,6 @@ class Empleado extends Model
             public $Fecha_Nacimiento = '';
         };
     }
-<<<<<<< Updated upstream
-=======
 
     /**
      * Métodos de acceso para compatibilidad
@@ -119,7 +117,7 @@ class Empleado extends Model
     }
 
     /**
-     *  NUEVO: Método para obtener el ID para políticas de autorización
+     * NUEVO: Método para obtener el ID para políticas de autorización
      */
     public function getKey()
     {
@@ -127,7 +125,7 @@ class Empleado extends Model
     }
 
     /**
-     *  NUEVO: Método para indicar qué campo se usa como clave primaria
+     * NUEVO: Método para indicar qué campo se usa como clave primaria
      */
     public function getKeyName()
     {
@@ -150,12 +148,11 @@ class Empleado extends Model
     }
 
     /**
-     *  NUEVO: Método para verificar si el empleado existe
+     * NUEVO: Método para verificar si el empleado existe
      * Útil para políticas de autorización
      */
     public function exists()
     {
         return !empty($this->Cod_Empleado);
     }
->>>>>>> Stashed changes
 }
