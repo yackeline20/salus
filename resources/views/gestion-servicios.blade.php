@@ -1019,11 +1019,6 @@
                 font-size: 11px;
             }
         }
-
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
     </style>
 @stop
 

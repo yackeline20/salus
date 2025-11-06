@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\ClienteController; // <-- AGREGADO DE WEB 1.PHP
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\BitacoraController;
@@ -86,6 +87,12 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
     // ========================================
+    // 🟢 MÓDULO DE CLIENTES (RUTA COMENTADA DE WEB 1.PHP)
+    // ========================================
+    // Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index')
+    //     ->middleware('can:viewAny,App\Models\Cliente');
+
+    // ========================================
     // MÓDULO DE CITAS
     // ========================================
     Route::get('/citas', [CitasController::class, 'index'])->name('citas')
@@ -103,6 +110,10 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios')
         ->middleware('can:viewAny,App\Models\Tratamiento');
 
+    // 🟢 RUTA AGREGADA DE WEB 2.PHP (Exportar Excel)
+    Route::get('/servicios/export', [ServicioController::class, 'exportExcel'])->name('servicios.export')
+        ->middleware('can:viewAny,App\Models\Tratamiento');
+
     // ========================================
     // MÓDULO DE REPORTES
     // ========================================
@@ -110,7 +121,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->middleware('can:viewAny,App\Models\Reporte');
 
     // ========================================
-    // MÓDULO DE GESTIÓN DE PERSONAL
+    // MÓDULO DE GESTIÓN DE PERSONAL (Tu estructura funcional)
     // ========================================
     Route::prefix('gestion-personal')->name('gestion-personal.')->group(function () {
         // Página principal
@@ -129,7 +140,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::get('/empleados/{id}', [GestionPersonalController::class, 'show'])->name('show')
             ->middleware('can:view,App\Models\Empleado');
         
-        // ✅ ELIMINAR EMPLEADO - SIN MIDDLEWARE (la autorización se hace en el controlador)
+        // ✅ ELIMINAR EMPLEADO
         Route::delete('/empleados/{id}', [GestionPersonalController::class, 'destroy'])->name('destroy');
         
         // RUTAS AJAX PARA EL FRONTEND
@@ -208,6 +219,11 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::get('citas/buscar-cliente', [CitasController::class, 'buscarCliente'])->name('citas.buscar-cliente');
         Route::post('citas/crear-cliente', [CitasController::class, 'crearClienteCompleto'])->name('citas.crear-cliente');
 
+        // 🟢 RUTA AGREGADA DE WEB 1.PHP (Modal Lista de Clientes en Citas)
+        Route::get('clientes/listado', [CitasController::class, 'listado'])
+            ->name('clientes.listado')
+            ->middleware('can:viewAny,App\Models\Cita');
+
         // ----------------------------------------
         // API DE INVENTARIO (PRODUCTOS)
         // ----------------------------------------
@@ -216,29 +232,34 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         Route::put('productos/{id}', [InventarioController::class, 'updateProduct'])->name('productos.update');
         Route::delete('productos/{id}', [InventarioController::class, 'destroyProduct'])->name('productos.destroy');
 
+        // 🟢 RUTAS AGREGADAS DE WEB 1.PHP (Datos adicionales de inventario)
+        Route::get('inventario/proveedores', [InventarioController::class, 'getProveedores'])
+             ->name('inventario.proveedores');
+        Route::get('inventario/categorias', [InventarioController::class, 'getCategorias'])
+             ->name('inventario.categorias');
+        Route::get('inventario/estadisticas', [InventarioController::class, 'getEstadisticas'])
+             ->name('inventario.estadisticas')
+             ->middleware('can:viewAny,App\Models\Product');
+
         // ----------------------------------------
         // API DE SERVICIOS (TRATAMIENTOS)
         // ----------------------------------------
         Route::get('tratamientos', [ServicioController::class, 'getTratamientos'])->name('tratamientos.index');
+        // 🟢 RUTA AGREGADA DE WEB 1.PHP (Ver detalle de un solo tratamiento)
+        Route::get('tratamientos/{id}', [ServicioController::class, 'show'])->name('tratamientos.show')
+            ->middleware('can:viewAny,App\Models\Tratamiento');
         Route::post('tratamientos', [ServicioController::class, 'storeTratamiento'])->name('tratamientos.store');
         Route::put('tratamientos/{id}', [ServicioController::class, 'updateTratamiento'])->name('tratamientos.update');
         Route::delete('tratamientos/{id}', [ServicioController::class, 'destroyTratamiento'])->name('tratamientos.destroy');
 
-// ----------------------------------------
-// RUTAS ALIAS PARA SERVICIOS (Apuntan al mismo controller)
-// ----------------------------------------
-Route::prefix('servicios')->name('api.servicios.')->group(function () {
-    Route::get('/', [ServicioController::class, 'getTratamientos'])->name('get');
-    Route::post('/', [ServicioController::class, 'store'])->name('store');
-    Route::get('/{id}', [ServicioController::class, 'show'])->name('show');
-    Route::put('/{id}', [ServicioController::class, 'update'])->name('update');
-    Route::delete('/{id}', [ServicioController::class, 'destroy'])->name('destroy');
-});
-
-// Exportar servicios a Excel
-Route::get('/servicios/export', [ServicioController::class, 'exportExcel'])->name('servicios.export')
-    ->middleware('can:viewAny,App\Models\Tratamiento');
-
+        // 🟢 RUTAS ALIAS AGREGADAS DE WEB 2.PHP (Apuntan al mismo controller)
+        Route::prefix('servicios')->name('api.servicios.')->group(function () {
+            Route::get('/', [ServicioController::class, 'getTratamientos'])->name('get');
+            Route::post('/', [ServicioController::class, 'store'])->name('store');
+            Route::get('/{id}', [ServicioController::class, 'show'])->name('show');
+            Route::put('/{id}', [ServicioController::class, 'update'])->name('update');
+            Route::delete('/{id}', [ServicioController::class, 'destroy'])->name('destroy');
+        });
 
         // ----------------------------------------
         // API DE GESTIÓN DE PERSONAL Y COMISIONES
