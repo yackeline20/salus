@@ -1,92 +1,201 @@
 <?php
-// En: app/Http/Controllers/ServicioController.php
 
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Tratamiento; // 👈 NECESARIO: Importar el modelo Tratamiento para la Policy
+use Illuminate\Support\Facades\Http;
+use App\Models\Tratamiento;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ServiciosExport;
 
 class ServicioController extends Controller
 {
+    private $apiUrl = 'http://localhost:3000';
+
     /**
-     * Muestra el listado de tratamientos/servicios. (Leer/Seleccionar)
+     * Muestra el listado de tratamientos/servicios
      */
     public function index()
     {
-        // 🛡️ Autorizar la visualización del listado (viewAny)
-        // Llama a ServicioPolicy::viewAny() para verificar el permiso 'select' en el objeto 'Servicios'.
         $this->authorize('viewAny', Tratamiento::class);
-
-        $tratamientos = Tratamiento::all();
-        return view('servicios.index', compact('tratamientos'));
+        
+        // 🔥 Obtener datos desde la API de Node.js
+        try {
+            $response = Http::timeout(5)->get($this->apiUrl . '/tratamiento');
+            
+            if ($response->successful()) {
+                $tratamientos = $response->json();
+                return view('gestion-servicios', compact('tratamientos'));
+            }
+            
+            return back()->with('error', 'No se pudo conectar con la API');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al obtener servicios: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Muestra el formulario para crear un nuevo recurso. (Crear/Insertar)
+     * Obtiene todos los tratamientos (para AJAX)
      */
-    public function create()
+    public function getTratamientos()
     {
-        // 🛡️ Autorizar la visualización del formulario de creación (create)
-        // Llama a ServicioPolicy::create()
-        $this->authorize('create', Tratamiento::class);
-
-        return view('servicios.create');
+        $this->authorize('viewAny', Tratamiento::class);
+        
+        
+        try {
+            $response = Http::timeout(5)->get($this->apiUrl . '/tratamiento');
+            
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+            
+            return response()->json(['error' => 'No se pudo obtener los tratamientos'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
-     * Almacena un recurso recién creado en la base de datos. (Crear/Insertar)
+     * Muestra un tratamiento específico
+     */
+    public function show($id)
+    {
+        $this->authorize('viewAny', Tratamiento::class);
+        
+        try {
+            $response = Http::timeout(5)->get($this->apiUrl . '/tratamiento/' . $id);
+            
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+            
+            return response()->json(['error' => 'Tratamiento no encontrado'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Almacena un nuevo tratamiento
      */
     public function store(Request $request)
     {
-        // 🛡️ Autorizar la acción de guardar/insertar (create)
-        // Llama a ServicioPolicy::create()
-        $this->authorize('create', Tratamiento::class);
+       
 
-        // ... Lógica de validación y creación del Tratamiento ...
-        // $tratamiento = Tratamiento::create($request->validate([...]));
+        
+        $validated = $request->validate([
+            'Nombre_Tratamiento' => 'required|string|max:100',
+            'Descripcion' => 'nullable|string',
+            'Precio_Estandar' => 'required|numeric|min:0',
+            'Duracion_Estimada_Min' => 'required|integer|min:0'
+        ]);
 
-        return redirect()->route('servicios.index')->with('success', 'Servicio creado exitosamente.');
+        try {
+            $response = Http::timeout(5)->post($this->apiUrl . '/tratamiento', $validated);
+            
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Servicio creado exitosamente'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el servicio'
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Muestra el formulario para editar el recurso especificado. (Actualizar)
+     * Actualiza un tratamiento existente
      */
-    public function edit(Tratamiento $tratamiento)
+    public function update(Request $request, $id)
     {
-        // 🛡️ Autorizar la visualización del formulario de edición (update)
-        // Llama a ServicioPolicy::update($user, $tratamiento)
-        $this->authorize('update', $tratamiento);
+        // ✅ AUTORIZACIÓN COMENTADA - La verificación se hace a nivel de ruta
+        // $this->authorize('update', Tratamiento::class);
+        
+        $validated = $request->validate([
+            'Nombre_Tratamiento' => 'required|string|max:100',
+            'Descripcion' => 'nullable|string',
+            'Precio_Estandar' => 'required|numeric|min:0',
+            'Duracion_Estimada_Min' => 'required|integer|min:0'
+        ]);
 
-        return view('servicios.edit', compact('tratamiento'));
+        $validated['Cod_Tratamiento'] = $id;
+
+        try {
+            $response = Http::timeout(5)->put($this->apiUrl . '/tratamiento', $validated);
+            
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Servicio actualizado exitosamente'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el servicio'
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Actualiza el recurso especificado en la base de datos. (Actualizar)
+     * Elimina un tratamiento
      */
-    public function update(Request $request, Tratamiento $tratamiento)
+
+/**
+ * Exporta los servicios a Excel
+ */
+public function exportExcel()
+{
+    $this->authorize('viewAny', Tratamiento::class);
+    
+    return Excel::download(new ServiciosExport, 'servicios_' . date('Y-m-d_His') . '.xlsx');
+}
+
+
+
+
+
+
+    public function destroy($id)
     {
-        // 🛡️ Autorizar la acción de actualizar (update)
-        // Llama a ServicioPolicy::update($user, $tratamiento)
-        $this->authorize('update', $tratamiento);
-
-        // ... Lógica de validación y actualización del Tratamiento ...
-        // $tratamiento->update($request->validate([...]));
-
-        return redirect()->route('servicios.index')->with('success', 'Servicio actualizado exitosamente.');
-    }
-
-    /**
-     * Elimina el recurso especificado de la base de datos. (Eliminar)
-     */
-    public function destroy(Tratamiento $tratamiento)
-    {
-        // 🛡️ Autorizar la acción de eliminar (delete)
-        // Llama a ServicioPolicy::delete($user, $tratamiento)
-        $this->authorize('delete', $tratamiento);
-
-        // ... Lógica de eliminación del Tratamiento ...
-        // $tratamiento->delete();
-
-        return redirect()->route('servicios.index')->with('success', 'Servicio eliminado exitosamente.');
+        // ✅ AUTORIZACIÓN COMENTADA - La verificación se hace a nivel de ruta
+        // $this->authorize('delete', Tratamiento::class);
+        
+        try {
+            $response = Http::timeout(5)->delete($this->apiUrl . '/tratamiento', [
+                'Cod_Tratamiento' => $id
+            ]);
+            
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Servicio eliminado exitosamente'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el servicio'
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

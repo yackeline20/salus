@@ -42,7 +42,6 @@ class CitasController extends Controller
             $responseCorreo = Http::get($this->apiUrl . '/correo');
             $correos = collect($responseCorreo->json())->where('Cod_Persona', $codPersona)->values()->all();
             
-            // ⬇️ MODIFICADO: Ahora usa la API /telefonos (plural)
             $responseTelefono = Http::get($this->apiUrl . '/telefonos'); 
             $telefonos = collect($responseTelefono->json())->where('Cod_Persona', $codPersona)->values()->all();
             
@@ -112,17 +111,15 @@ class CitasController extends Controller
                 Http::post($this->apiUrl . '/correo', ['Cod_Persona' => $codPersona, 'Correo' => $request->correo, 'Tipo_Correo' => 'Personal']);
             }
             
-            // ⬇️ MODIFICACIÓN CLAVE AQUÍ ⬇️
             if ($request->telefono) {
-                Http::post($this->apiUrl . '/telefonos', [ // 1. Corregido a /telefonos (plural)
+                Http::post($this->apiUrl . '/telefonos', [
                     'Cod_Persona' => $codPersona, 
                     'Numero' => $request->telefono, 
                     'Cod_Pais' => '504', 
-                    'Tipo' => 'Movil', // 2. Corregido a 'Movil' (para coincidir con el ENUM)
+                    'Tipo' => 'Movil',
                     'Descripcion' => 'Principal'
                 ]);
             }
-            // ⬆️ FIN DE LA MODIFICACIÓN ⬆️
 
             if ($request->direccion) {
                 Http::post($this->apiUrl . '/direccion', ['Cod_Persona' => $codPersona, 'Direccion' => $request->direccion, 'Descripcion' => 'Principal']);
@@ -137,10 +134,12 @@ class CitasController extends Controller
         }
     }
 
-    // ⬇️ --- NUEVA FUNCIÓN AÑADIDA --- ⬇️
+    // ⬇️ --- MÉTODO CORREGIDO --- ⬇️
     /**
      * Devuelve un listado de todos los clientes (código, nombre, dni)
      * consumiendo la API.
+     * * CORREGIDO: Se añadieron validaciones para prevenir errores 500
+     * si la API devuelve datos incompletos o nulos.
      */
     public function listado()
     {
@@ -150,33 +149,56 @@ class CitasController extends Controller
             // 1. Obtener todos los clientes
             $responseClientes = Http::get($this->apiUrl . '/cliente');
             if (!$responseClientes->successful()) {
-                throw new \Exception('Error al obtener clientes de la API: ' . $responseClientes->body());
+                Log::error('API Error /cliente', ['status' => $responseClientes->status(), 'body' => $responseClientes->body()]);
+                throw new \Exception('Error al obtener clientes de la API');
             }
             $clientes = $responseClientes->json();
+            // 🟢 CORRECCIÓN: Asegurarse de que $clientes es un array
+            if (!is_array($clientes)) {
+                $clientes = [];
+            }
 
             // 2. Obtener todas las personas
             $responsePersonas = Http::get($this->apiUrl . '/persona');
             if (!$responsePersonas->successful()) {
-                throw new \Exception('Error al obtener personas de la API: ' . $responsePersonas->body());
+                Log::error('API Error /persona', ['status' => $responsePersonas->status(), 'body' => $responsePersonas->body()]);
+                throw new \Exception('Error al obtener personas de la API');
             }
             $personas = $responsePersonas->json();
+            // 🟢 CORRECCIÓN: Asegurarse de que $personas es un array
+            if (!is_array($personas)) {
+                $personas = [];
+            }
 
             // 3. Mapear personas por Cod_Persona para una búsqueda eficiente
-            $personasMap = collect($personas)->keyBy('Cod_Persona');
+            // 🟢 CORRECCIÓN: Usar ->filter() para evitar errores si 'Cod_Persona' no existe
+            $personasMap = collect($personas)->filter(function($p) {
+                return isset($p['Cod_Persona']);
+            })->keyBy('Cod_Persona');
 
             // 4. Combinar los datos
             $listadoCompleto = [];
             foreach ($clientes as $cliente) {
-                $codPersona = $cliente['Cod_Persona'];
-                // Buscar la persona correspondiente en el mapa
-                if (isset($personasMap[$codPersona])) {
-                    $persona = $personasMap[$codPersona];
-                    $listadoCompleto[] = [
-                        'cod_cliente' => $cliente['Cod_Cliente'],
-                        'nombre'      => $persona['Nombre'],
-                        'apellido'    => $persona['Apellido'],
-                        'dni'         => $persona['DNI']
-                    ];
+                
+                // 🟢 CORRECCIÓN: Verificar que las claves existen antes de usarlas
+                if (isset($cliente['Cod_Persona']) && isset($cliente['Cod_Cliente'])) {
+                    
+                    $codPersona = $cliente['Cod_Persona'];
+                    
+                    // Buscar la persona correspondiente en el mapa
+                    if (isset($personasMap[$codPersona])) {
+                        $persona = $personasMap[$codPersona];
+
+                        // 🟢 CORRECCIÓN: Verificar que las claves de persona existen
+                        if (isset($persona['Nombre']) && isset($persona['Apellido']) && isset($persona['DNI'])) {
+                            $listadoCompleto[] = [
+                                'cod_cliente' => $cliente['Cod_Cliente'],
+                                'nombre'      => $persona['Nombre'],
+                                'apellido'    => $persona['Apellido'],
+                                'dni'         => $persona['DNI']
+                            ];
+                        }
+                    }
                 }
             }
             
@@ -190,7 +212,7 @@ class CitasController extends Controller
             return response()->json(['error' => 'Error del servidor al obtener la lista.'], 500);
         }
     }
-    // ⬆️ --- FIN DE LA NUEVA FUNCIÓN --- ⬆️
+    // ⬆️ --- FIN DE LA CORRECCIÓN --- ⬆️
 
 
     // GET - Obtener citas

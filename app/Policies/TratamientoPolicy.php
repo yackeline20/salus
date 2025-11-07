@@ -25,7 +25,6 @@ class TratamientoPolicy
 
     /**
      * Define si un usuario puede ver cualquier modelo (lista de tratamientos).
-     * Permitido para todos los empleados que necesiten ver los tratamientos (Administrador ya pasa por before).
      */
     public function viewAny(Usuario $usuario): bool
     {
@@ -42,49 +41,64 @@ class TratamientoPolicy
 
     /**
      * Define si un usuario puede crear nuevos modelos (Tratamientos).
-     * ACCESO EXCLUSIVO: JEFE DE PROYECTOS.
+     * Permitido para roles seleccionados.
      */
     public function create(Usuario $usuario): bool
     {
-        // Solo el Jefe de Proyectos puede crear (el Administrador ya está cubierto en before).
-        return $usuario->Nombre_Rol === $this->rolJefeProyectos;
+        $rolesPermitidos = [
+            'Administrador',
+            'Jefe de Proyectos y Desarrollo de Servicios',
+            'Recepcionista',
+            'Esteticista'
+        ];
+
+        return in_array($usuario->Nombre_Rol, $rolesPermitidos);
     }
 
     /**
-     * Define si un usuario puede actualizar (editar) el modelo (Tratamiento).
-     * ACCESO EXCLUSIVO: JEFE DE PROYECTOS.
+     * Define si un usuario puede actualizar (editar) un tratamiento.
+     * Permitido para roles seleccionados.
      */
     public function update(Usuario $usuario, Tratamiento $tratamiento): bool
     {
-        // Solo el Jefe de Proyectos puede editar.
-        return $usuario->Nombre_Rol === $this->rolJefeProyectos;
+        $rolesPermitidos = [
+            'Administrador',
+            'Jefe de Proyectos y Desarrollo de Servicios',
+            'Recepcionista',
+            'Esteticista'
+        ];
+
+        return in_array($usuario->Nombre_Rol, $rolesPermitidos);
     }
 
     /**
-     * Define si un usuario puede eliminar el modelo (Tratamiento).
-     * ACCESO EXCLUSIVO: JEFE DE PROYECTOS.
+     * Define si un usuario puede eliminar un tratamiento.
+     * Permitido para roles seleccionados.
      */
     public function delete(Usuario $usuario, Tratamiento $tratamiento): bool
     {
-        // Solo el Jefe de Proyectos puede eliminar.
-        return $usuario->Nombre_Rol === $this->rolJefeProyectos;
+        $rolesPermitidos = [
+            'Administrador',
+            'Jefe de Proyectos y Desarrollo de Servicios',
+            'Recepcionista'
+        ];
+
+        return in_array($usuario->Nombre_Rol, $rolesPermitidos);
     }
 
     /**
-     * Define si un usuario puede restaurar el modelo (Tratamiento).
+     * Define si un usuario puede restaurar un tratamiento.
      */
     public function restore(Usuario $usuario, Tratamiento $tratamiento): bool
     {
-        // Si no es Administrador (cubierto en before), se deniega.
         return false;
     }
 
     /**
-     * Define si un usuario puede eliminar permanentemente el modelo (Tratamiento).
+     * Define si un usuario puede eliminar permanentemente un tratamiento.
      */
     public function forceDelete(Usuario $usuario, Tratamiento $tratamiento): bool
     {
-        // Si no es Administrador (cubierto en before), se deniega.
         return false;
     }
 }
