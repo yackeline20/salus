@@ -16,6 +16,25 @@
 
 @section('content')
 
+{{-- Mensajes de Sesión (Éxito/Error de las operaciones de Laravel) --}}
+@if (session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle mr-2"></i>{{ session('error') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+@endif
+
 {{-- Tarjeta de Bienvenida y Resumen --}}
 <div class="row mb-4">
     <div class="col-12">
@@ -100,12 +119,15 @@
                                 <th>Método de Pago</th>
                                 <th>Desc.</th>
                                 <th>Monto Final</th>
-                                <th>Estado de Pago</th> {{-- Título de columna ajustado --}}
+                                <th>Estado de Pago</th>
                                 <th style="width: 150px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="facturas-body">
-                            {{-- Contenido inyectado por JavaScript --}}
+                            {{-- Si los datos se inyectan por JS, este bucle no se usa. --}}
+                            {{-- Si FacturaController::index retorna los datos, se usaría un @foreach --}}
+
+                            {{-- El código JS hará la inyección. Manteniendo el placeholder de carga. --}}
                             <tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando facturas...</td></tr>
                         </tbody>
                     </table>
@@ -115,27 +137,7 @@
     </div>
 </div>
 
-{{-- Modal de Confirmación de Eliminación --}}
-<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm" role="document">
-        <div class="modal-content border-danger border-left-lg shadow-lg">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i> Confirmar Eliminación</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <p>¿Seguro que desea eliminar la Factura No. <strong><span id="factura-a-eliminar-id" class="text-danger font-weight-bold"></span></strong>?</p>
-                <p class="text-danger small font-weight-bold">Esta acción es irreversible.</p>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="btn-confirmar-delete"><i class="fas fa-trash-alt mr-1"></i> Eliminar</button>
-            </div>
-        </div>
-    </div>
-</div>
+{{-- ELIMINAMOS EL MODAL DE ELIMINACIÓN DE ESTE ARCHIVO. El `confirm` de JS es suficiente para el flujo de formulario. --}}
 
 @stop
 
@@ -164,8 +166,13 @@
 @section('js')
     <script>
         // URL base de tu API Node.js (Asegúrate de que el puerto 3000 sea accesible)
-        const API_URL = 'http://localhost:3000'; // ⭐ URL de API externa RESTAURADA
-        let facturaToDeleteId = null; // Variable global para almacenar el ID a eliminar
+        const API_URL = 'http://localhost:3000';
+
+        // Rutas de Laravel (generadas en Blade)
+        const facturaReciboUrl = "{{ route('factura.recibo', ['factura' => ':id_placeholder']) }}"; // Usaremos esta
+        const facturaEditUrl = "{{ route('factura.edit', ['factura' => ':id_placeholder']) }}";
+        const facturaDestroyUrl = "{{ route('factura.destroy', ['factura' => ':id_placeholder']) }}"; // Nueva URL de Eliminación
+
 
         // Función de ayuda para mostrar alertas de AdminLTE
         function showAdminlteAlert(message, type = 'success') {
@@ -195,9 +202,10 @@
             tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando facturas...</td></tr>';
 
             try {
-                // Llamada a la API GET de Node.js
+                // LLamada a la API GET de Node.js
                 const response = await fetch(`${API_URL}/facturas`);
                 if (!response.ok) {
+                    // Si el error es de conexión, la API de Laravel ya lo habría detectado. Aquí solo se muestra si el JS lo pide directamente.
                     throw new Error(`Error en la API: ${response.statusText}`);
                 }
                 const facturas = await response.json();
@@ -220,6 +228,10 @@
                     const metodoPago = factura.Metodo_Pago || 'No especificado';
                     const descuento = factura.Descuento_Aplicado ? parseFloat(factura.Descuento_Aplicado).toFixed(2) : '0.00';
 
+                    // Sustituir el placeholder en las rutas de Laravel generadas en Blade
+                    const reciboUrl = facturaReciboUrl.replace(':id_placeholder', id);
+                    const editUrl = facturaEditUrl.replace(':id_placeholder', id);
+                    const destroyUrl = facturaDestroyUrl.replace(':id_placeholder', id); // Usar esta ruta para el formulario
 
                     // Lógica para el badge según el Estado_Pago
                     let badge_class = 'secondary';
@@ -243,18 +255,23 @@
                             <td>
                                 <span class="badge badge-${badge_class} font-weight-bold">${estado}</span>
                             </td>
-                            <td>
-                                {{-- Los botones de edición y vista DEBEN usar rutas de Laravel, aquí simuladas --}}
-                                <a href="{{ url('facturas') }}/${id}/show" class="btn btn-sm btn-outline-info mr-1" title="Ver Factura">
+                            <td class="d-flex">
+                                {{-- ENLACE DE VISTA (Recibo): Usa la URL generada por Laravel --}}
+                                <a href="${reciboUrl}" class="btn btn-sm btn-outline-info mr-1" title="Ver Recibo">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ url('facturas') }}/${id}/edit" class="btn btn-sm btn-outline-secondary mr-1" title="Editar Factura">
+                                {{-- ENLACE DE EDICIÓN: Usa la URL generada por Laravel --}}
+                                <a href="${editUrl}" class="btn btn-sm btn-outline-secondary mr-1" title="Editar Factura">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                {{-- Botón de eliminación llama a la función JS --}}
-                                <button onclick="prepareDelete(${id})" class="btn btn-sm btn-outline-danger" title="Eliminar Factura">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                {{-- 🚨 FORMULARIO DE ELIMINACIÓN ESTÁNDAR DE LARAVEL 🚨 --}}
+                                <form action="${destroyUrl}" method="POST" style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar Factura" onclick="return confirm('ATENCIÓN: ¿Seguro que desea eliminar la factura #F-${String(id).padStart(4, '0')}? Esta acción es irreversible y eliminará todos los detalles y comisiones asociados.')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     `;
@@ -264,64 +281,16 @@
 
             } catch (error) {
                 console.error("Error al obtener facturas:", error);
-                tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle mr-2"></i> No se pudo conectar con la API en `http://localhost:3000`. Verifique el servidor.</td></tr>';
+                // Si el JS falla al contactar la API, se muestra un mensaje de error explícito.
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle mr-2"></i> **Error Crítico:** No se pudo conectar con la API en `http://localhost:3000`. Verifique que el servidor de Node.js esté funcionando.</td></tr>';
             }
         }
 
         // ----------------------------------------------------
-        // 2. FUNCIÓN PARA INICIAR EL PROCESO DE ELIMINACIÓN
-        // ----------------------------------------------------
-        window.prepareDelete = (facturaId) => {
-            facturaToDeleteId = facturaId;
-            document.getElementById('factura-a-eliminar-id').textContent = `#F-${String(facturaId).padStart(4, '0')}`;
-            $('#deleteConfirmationModal').modal('show');
-        };
-
-        // ----------------------------------------------------
-        // 3. FUNCIÓN PARA CONFIRMAR Y EJECUTAR LA ELIMINACIÓN
-        // ----------------------------------------------------
-        document.getElementById('btn-confirmar-delete').addEventListener('click', async () => {
-            const id = facturaToDeleteId;
-            if (!id) return;
-
-            // Deshabilita el botón mientras se procesa
-            const deleteButton = document.getElementById('btn-confirmar-delete');
-            deleteButton.disabled = true;
-            deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Eliminando...';
-
-            $('#deleteConfirmationModal').modal('hide');
-
-            try {
-                // ⭐ LLamada a la API de Node.js con parámetro de consulta para DELETE
-                const response = await fetch(`${API_URL}/facturas?cod=${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showAdminlteAlert(`Factura #${String(id).padStart(4, '0')} eliminada correctamente.`, 'success');
-                    fetchAndRenderFacturas(); // Recargar los datos de la tabla
-                } else {
-                    showAdminlteAlert(`Error (${response.status}) al eliminar: ${result.error || 'Problema con la API.'}`, 'danger');
-                    console.error('Error de API:', result);
-                }
-
-            } catch (error) {
-                console.error('Error de red al eliminar factura:', error);
-                showAdminlteAlert('Error de conexión con el servidor API. Intente de nuevo.', 'danger');
-            } finally {
-                // Habilitar el botón nuevamente
-                deleteButton.disabled = false;
-                deleteButton.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Eliminar';
-            }
-        });
-
-        // ----------------------------------------------------
-        // 4. INICIALIZACIÓN
+        // 2. INICIALIZACIÓN
         // ----------------------------------------------------
         $(document).ready(function() {
+            // Asegúrate de que Guzzle esté instalado: composer require guzzlehttp/guzzle
             fetchAndRenderFacturas();
         });
 

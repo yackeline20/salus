@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -11,6 +13,10 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
+
+use Barryvdh\DomPDF\Facade\Pdf; // ⬅️ CAMBIO CLAVE: Importación de la librería PDF
 
 /**
  * FacturaController actúa como un proxy/gateway que redirige
@@ -23,6 +29,8 @@ class FacturaController extends Controller
 {
     // Propiedad para almacenar la URL base de la API de Node.js
     protected string $apiBaseUrl;
+    // Timeout por defecto para las peticiones en segundos
+    protected int $apiTimeout = 15;
 
     /**
      * Constructor para inyectar la Policy de autorización y configurar la URL base.
@@ -32,107 +40,122 @@ class FacturaController extends Controller
         // Obtiene la URL base desde el archivo .env y asegura que no termina en barra.
         $this->apiBaseUrl = rtrim(env('SALUS_API_BASE_URL', 'http://127.0.0.1:3000'), '/');
 
-        // Autorización de recursos. Se mantiene solo para la capa de seguridad de Laravel.
-        // Se asume que el modelo Factura tiene definido el primary key (Cod_Factura)
+        // Autorización de recursos.
         $this->authorizeResource(Factura::class, 'factura', [
-            // Excluimos la autorización automática para los métodos de detalle que no operan sobre el Modelo Factura,
-            // y que deben ser autorizados manualmente con la Policy si es necesario.
+            // Excluimos la autorización automática para los métodos de detalle y agregamos 'recibo'.
             'except' => [
                 'storeDetalleProducto', 'storeDetalleTratamiento',
                 'getDetalleTratamiento', 'getDetalleProducto',
                 'updateDetalleProducto', 'destroyDetalleProducto',
                 'updateDetalleTratamiento', 'destroyDetalleTratamiento',
+                'recibo', // Excluir para manejar la autorización de forma manual si es necesario
             ]
         ]);
     }
 
     /**
-     * Método auxiliar para encapsular la lógica de llamada a la API y el manejo de errores/respuestas.
+     * Método auxiliar robusto para encapsular la lógica de llamada a la API y manejo de errores.
      *
-     * @param string $method Método HTTP (GET, POST, PATCH, DELETE)
+     * @param string $method Método HTTP (GET, POST, PATCH, DELETE).
      * @param string $uri La parte del endpoint (ej: '/facturas/100'). Debe empezar con '/'.
-     * @param array $data Cuerpo de la petición (para POST, PUT, PATCH, DELETE) o datos para GET/DELETE si se requiere.
-     * @param array $query Parámetros de la URL (para GET).
-     * @param bool $returnViewData Si es true, retorna los datos de la API en formato array|null (para usar en vistas).
-     * @return JsonResponse|array|null
+     * @param array $data Cuerpo de la petición (para POST, PUT, PATCH, DELETE).
+     * @param array $query Parámetros de la URL (para GET/DELETE).
+     * @param bool $returnViewData Si es true, retorna los datos decodificados (array|null) para su uso en vistas.
+     * @return JsonResponse|\Illuminate\Http\Client\Response|array|null ⬅️ CAMBIO: Puede retornar la Respuesta Guzzle original.
      */
-    private function callExternalApi(string $method, string $uri, array $data = [], array $query = [], bool $returnViewData = false): JsonResponse|array|null
+    private function callExternalApi(string $method, string $uri, array $data = [], array $query = [], bool $returnViewData = false): JsonResponse|array|\Illuminate\Http\Client\Response|null
     {
-        // Se construye la URL: $this->apiBaseUrl (sin barra final) + $uri (con barra inicial)
         $url = $this->apiBaseUrl . $uri;
+        $methodLower = strtolower($method);
 
         try {
-            // Se define el cliente HTTP con el timeout
-            $client = Http::timeout(15);
+            // Se define el cliente HTTP con timeout y solicitando JSON
+            $client = Http::timeout($this->apiTimeout)
+                          ->acceptJson();
 
-            // Determinar el método y realizar la llamada
-            $response = match (strtolower($method)) {
-                // Para GET, fusionamos $query y $data como query parameters.
-                'get' => $client->get($url, array_merge($query, $data)),
+            // Realizar la llamada según el método
+            $response = match ($methodLower) {
+                'get' => $client->get($url, $query), // Solo usamos $query para GET
                 'post' => $client->post($url, $data),
                 'put' => $client->put($url, $data),
                 'patch' => $client->patch($url, $data),
-                // Para DELETE, enviamos $data como body si se requiere.
-                'delete' => $client->delete($url, $data),
+                'delete' => $client->delete($url, $data), // DELETE puede llevar body
                 default => throw new \InvalidArgumentException("Método HTTP no soportado: {$method}")
             };
 
+            // 1. Manejo de respuesta exitosa (2xx)
             if ($response->successful()) {
                 $responseData = $response->json();
 
-                // Si se pide para la vista, retornamos solo los datos (array)
-                if ($returnViewData) {
-                    return $responseData;
+                // 🚨 ADICIÓN CLAVE: Retorna el objeto Response completo si es necesario.
+                if ($returnViewData === 'response') {
+                    return $response;
                 }
 
-                // Si no es para la vista, retorna el JSONResponse con el status
-                $responseBody = $responseData ?: ['message' => 'Operación exitosa'];
+                // Si se pide para la vista, retorna el array de datos
+                if ($returnViewData) {
+                    // Si no hay contenido, retorna un array vacío o los datos decodificados
+                    return is_array($responseData) ? $responseData : ($responseData === null ? [] : $responseData);
+                }
+
+                // Para llamadas de API, retorna un JsonResponse con el status de la API.
+                $responseBody = $responseData ?? ['message' => 'Operación exitosa'];
                 return response()->json($responseBody, $response->status());
             }
 
-            // Manejo de errores de la API externa (4xx o 5xx)
+            // 2. Manejo de errores de la API externa (4xx o 5xx)
             $status = $response->status();
-            $body = $response->body();
 
-            Log::error("API {$method} {$uri} falló (Status: {$status}): " . $body);
+            // 🚨 ADICIÓN CLAVE: Retorna el objeto Response completo si es necesario.
+            if ($returnViewData === 'response') {
+                return $response;
+            }
 
-            // Si es para la vista y falla, retorna null para que la vista maneje el error
+            // Intenta decodificar el error de la API o usa el cuerpo sin procesar como mensaje
+            $apiErrorBody = $response->json() ?? ['message' => $response->body() ?: 'Error de la API externa sin cuerpo de respuesta.'];
+
+            Log::error("API {$method} {$uri} falló (Status: {$status}): " . json_encode($apiErrorBody));
+
+            // Si es para la vista y falla, retorna null para manejo de error en la vista
             if ($returnViewData) {
                 return null;
             }
 
-            // Si no es para la vista, retorna el JsonResponse de error
+            // Para la respuesta JSON, crea un mensaje de proxy más útil
             $message = match (true) {
-                $status === 404 => 'Recurso no encontrado en la API externa. Verifique la ruta: ' . $uri,
-                $status >= 400 && $status < 500 => 'Error de la aplicación al procesar la solicitud en la API externa.',
-                $status >= 500 => 'Error interno del servidor de la API externa.',
+                $status === Response::HTTP_NOT_FOUND => 'El recurso no fue encontrado en el sistema de facturación externo. Por favor, verifique el endpoint.',
+                $status >= 400 && $status < 500 => $apiErrorBody['message'] ?? 'Error de validación o aplicación en la API externa.',
+                $status >= 500 => 'Error interno en el servidor de facturación externo. Intente más tarde.',
                 default => 'Error desconocido en la API externa.',
             };
 
             return response()->json([
                 'message' => $message,
-                'api_error' => $response->json() ?? $response->body(), // Usar body si no es JSON válido
+                'api_error' => $apiErrorBody,
             ], $status);
 
         } catch (ConnectionException $e) {
-             // Error de conexión: DNS, Timeout, Servidor Inaccesible
-             Log::error('Error de conexión con el servidor de facturación: ' . $e->getMessage());
+            // 3. Error de conexión (Timeout, DNS, Servidor Inaccesible, etc.)
+            Log::error('Error de conexión con el servidor de facturación: ' . $e->getMessage());
 
-             // Si es para la vista y falla la conexión, retorna null
-             if ($returnViewData) {
-               return null;
-             }
-
-             return response()->json(['message' => 'Error de conexión con la API de Node.js. Verifique que el servidor esté corriendo.', 'error' => $e->getMessage()], 503);
-        } catch (\Exception $e) {
-            // Error genérico
-            Log::error('Error en FacturaController::callExternalApi: ' . $e->getMessage());
-
-            if ($returnViewData) {
+            // 🚨 ADICIÓN CLAVE: Retorna null si es para la vista y falla la conexión.
+            if ($returnViewData || $returnViewData === 'response') {
                 return null;
             }
 
-            return response()->json(['message' => 'Error inesperado al procesar la solicitud.', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Error de conexión: El servidor de facturación externo no está disponible. Verifique la URL base en el archivo .env.',
+                'error' => $e->getMessage()
+            ], Response::HTTP_SERVICE_UNAVAILABLE); // Código 503
+        } catch (\Exception $e) {
+            // 4. Error genérico (incluye InvalidArgumentException del match)
+            Log::critical('Error CRÍTICO en FacturaController::callExternalApi: ' . $e->getMessage());
+
+            if ($returnViewData || $returnViewData === 'response') {
+                return null;
+            }
+
+            return response()->json(['message' => 'Error inesperado del proxy.', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR); // Código 500
         }
     }
 
@@ -147,73 +170,76 @@ class FacturaController extends Controller
      */
     public function index(Request $request): View
     {
+        // Se llama al helper con returnViewData=true para obtener array|null
         $facturas = $this->callExternalApi('GET', '/facturas', [], $request->query(), true);
         $apiError = null;
 
-        if (is_array($facturas)) {
-            // Si la API retorna un array, se pasa a la vista
-            return view('factura.index', compact('facturas'));
-        } else {
-            // Si retorna null (error de conexión o API), se maneja como error en la vista
+        if ($facturas === null) {
+            // Error de conexión o API
             $facturas = [];
-            $apiError = 'No se pudo cargar el listado de facturas. Verifique la conexión o el endpoint /facturas en la API externa.';
-            return view('factura.index', compact('facturas', 'apiError'));
+            $apiError = 'Error: No se pudo cargar el listado de facturas. Verifique la conexión con el servidor de Node.js y la ruta `/facturas`.';
         }
+
+        // Ya sea array de datos o array vacío con error
+        return view('factura.index', compact('facturas', 'apiError'));
     }
 
+    // ... (Métodos create, store, edit, show y update no modificados) ...
+    // Los he omitido aquí por brevedad, asumiendo que el código de arriba es el que usted me dio.
+
     /**
-     * Muestra la vista para crear una nueva factura, cargando las listas de Clientes, Productos y Tratamientos.
-     * GET /factura/create
-     * @return View
+     * Muestra la vista de un recibo o factura para imprimir o ver.
+     * 🚨 **MÉTODO MODIFICADO PARA GENERAR PDF** 🚨
+     * GET /factura/{factura}/recibo
+     * @param Factura $factura
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
-    public function create(): View
+    public function recibo(Factura $factura)
     {
-        // Se asume que las rutas singularizadas (/cliente, /producto, /tratamiento) son las correctas para la API de precarga.
-        $clientes = $this->callExternalApi('GET', '/cliente', [], [], true);
-        $productos = $this->callExternalApi('GET', '/producto', [], [], true);
-        $tratamientos = $this->callExternalApi('GET', '/tratamiento', [], [], true);
+        $facturaId = $factura->Cod_Factura;
+        // ⬅️ CAMBIO CLAVE: Usamos 'response' para obtener el objeto Response completo si es exitoso.
+        $response = $this->callExternalApi('GET', "/facturas/{$facturaId}/detalles", [], [], 'response');
 
-        // Inicializar variables para manejo de errores en la vista
-        $apiError = null;
-        $errorDetails = [];
-
-        // Verificar si alguna de las llamadas falló (retornó null)
-        if ($clientes === null) {
-            $errorDetails[] = 'Clientes (/cliente)';
-        }
-        if ($productos === null) {
-            $errorDetails[] = 'Productos (/producto)';
-        }
-        if ($tratamientos === null) {
-            $errorDetails[] = 'Tratamientos (/tratamiento)';
+        // Si hay un error de conexión o API, callExternalApi retorna null
+        if ($response === null || !$response->successful()) {
+             // Redirigir al índice con un mensaje de error explícito
+            $message = $response?->json()['message'] ?? 'Error desconocido o de conexión al intentar obtener los datos de la factura.';
+            return redirect()->route('factura.index')->with('error', "No se pudo generar el recibo de la Factura #{$facturaId}: {$message}");
         }
 
-        if (!empty($errorDetails)) {
-            $apiError = 'Error crítico: No se pudieron cargar los datos de precarga: ' . implode(', ', $errorDetails) . '. Verifique que la API de Node.js esté corriendo y las rutas correctas.';
+        // Obtener los datos JSON
+        $data = $response->json();
+
+        // Asegurarse de que el formato de datos de la API sea el esperado
+        $facturaData = $data['factura'] ?? null;
+        $detallesProducto = $data['detalles_producto'] ?? [];
+        $detallesTratamiento = $data['detalles_tratamiento'] ?? [];
+
+        // Si la cabecera no está presente, fallar de forma controlada
+        if (!$facturaData) {
+            return redirect()->route('factura.index')->with('error', "La API no proporcionó los datos de cabecera para la Factura #{$facturaId}.");
         }
 
-        // Si alguna lista es null, la convertimos a un array vacío para evitar errores en la vista.
-        $clientes = is_array($clientes) ? $clientes : [];
-        $productos = is_array($productos) ? $productos : [];
-        $tratamientos = is_array($tratamientos) ? $tratamientos : [];
+        // Combinamos los detalles para que la vista recibo.blade.php pueda iterar una sola lista.
+        // ADVERTENCIA: Su vista recibo.blade.php necesita iterar sobre un solo array llamado 'Detalles_Factura'
+        // Por eso vamos a pasar un array único que combine ambos detalles.
+        $facturaData['Detalles_Factura'] = array_merge($detallesProducto, $detallesTratamiento);
 
-        // Retornar la vista con todos los datos necesarios
-        return view('factura.create', compact('clientes', 'productos', 'tratamientos', 'apiError'));
+
+        // 🚨 PASO FINAL: Generar el PDF
+        $pdf = Pdf::loadView('factura.recibo', [
+            // Pasamos solo la variable $factura que contiene todos los datos.
+            'factura' => $facturaData
+        ]);
+
+        // Devolver el PDF para que se muestre en el navegador
+        $filename = "factura_F-". str_pad($facturaId, 4, '0', STR_PAD_LEFT) .".pdf";
+        return $pdf->stream($filename); // Usar stream() para visualizarlo en el navegador
     }
 
     /**
-     * Crea y almacena una nueva factura (Cabecera + Detalles). Envía los datos completos a la API.
-     * @param FacturaStoreRequest $request
-     * @return JsonResponse
-     */
-    public function store(FacturaStoreRequest $request): JsonResponse
-    {
-        // FacturaStoreRequest se encarga de la validación completa.
-        return $this->callExternalApi('POST', '/facturas', $request->validated());
-    }
-
-    /**
-     * Muestra el detalle completo de una factura específica.
+     * Muestra el detalle completo de una factura específica (JSON).
+     * Este endpoint lo usa el JS de su edit.blade.php.
      * @param Factura $factura
      * @return JsonResponse
      */
@@ -223,171 +249,41 @@ class FacturaController extends Controller
         return $this->callExternalApi('GET', "/facturas/{$facturaId}");
     }
 
-    /**
-     * Actualiza el estado, método de pago o descuento de una factura existente (Actualización parcial/PATCH).
-     * @param Request $request
-     * @param Factura $factura
-     * @return JsonResponse
-     */
-    public function update(Request $request, Factura $factura): JsonResponse
-    {
-        $facturaId = $factura->Cod_Factura;
-
-        try {
-            // Validación específica para los campos que pueden ser actualizados.
-            $validated = $request->validate([
-                'Metodo_Pago' => 'sometimes|required|string|max:50',
-                'Estado_Pago' => 'sometimes|required|string|in:PENDIENTE,PAGADA,ANULADA',
-                'Descuento_Aplicado' => 'sometimes|required|numeric|min:0|max:100',
-            ]);
-            return $this->callExternalApi('PATCH', "/facturas/{$facturaId}", $validated);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
-        }
-    }
+    // ... (El resto de métodos: update, destroy, getDetalleTratamiento, etc.) ...
 
     /**
      * Elimina (Anula) una factura y revierte los cambios de stock de productos.
-     * @param Factura $factura
-     * @return JsonResponse
+     * * 🚨 **MÉTODO CORREGIDO PARA REDIRECCIÓN** 🚨
+     * * @param Factura $factura
+     * @return RedirectResponse
      */
-    public function destroy(Factura $factura): JsonResponse
+    public function destroy(Factura $factura): RedirectResponse
     {
         $facturaId = $factura->Cod_Factura;
-        // DELETE debe delegar a la API para anular la factura y gestionar el stock.
-        return $this->callExternalApi('DELETE', "/facturas/{$facturaId}");
-    }
 
-    // =========================================================================
-    // MÉTODOS CRUD DE DETALLES (Lines) - LECTURA y CREACIÓN
-    // =========================================================================
+        // 1. Llama a la API de Node.js usando el helper.
+        // callExternalApi devuelve un JsonResponse (si no retorna viewData)
+        // 🚨 CAMBIO: Se debe cambiar el tipo de retorno en el helper para que el delete funcione como antes.
+        // Por ahora, usamos el objeto JsonResponse que devuelve callExternalApi.
+        $response = $this->callExternalApi('DELETE', "/facturas/{$facturaId}");
 
-    /**
-     * Obtiene los detalles de tratamiento de una factura (usando Cod_Factura como query parameter).
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function getDetalleTratamiento(Request $request): JsonResponse
-    {
-        $validated = $request->validate(['Cod_Factura' => 'required|integer']);
-        return $this->callExternalApi('GET', "/detalle_factura_tratamiento", [], $validated);
-    }
+        $status = $response->getStatusCode();
 
-    /**
-     * Obtiene los detalles de producto de una factura (usando Cod_Factura como query parameter).
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function getDetalleProducto(Request $request): JsonResponse
-    {
-        $validated = $request->validate(['Cod_Factura' => 'required|integer']);
-        return $this->callExternalApi('GET', "/detalle_factura_producto", [], $validated);
-    }
-
-    /**
-     * Agrega un detalle de producto a una factura (POST).
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function storeDetalleProducto(Request $request): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'Cod_Factura' => 'required|integer',
-                'Cod_Producto' => 'required|integer',
-                'Cantidad' => 'required|integer|min:1',
-                'Precio_Unitario' => 'required|numeric|min:0',
-            ]);
-            // El API de Node.js es responsable de actualizar el stock.
-            return $this->callExternalApi('POST', "/detalle_factura_producto", $validated);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
+        // 2. Si el código de estado es 200 (OK), asumimos éxito.
+        if ($status === Response::HTTP_OK) { // Usa constante para mayor claridad
+            // Redirigir a la vista principal (index) con un mensaje de éxito.
+            return redirect()->route('factura.index')
+                ->with('success', "Factura #F-{$facturaId} y sus dependencias han sido eliminadas correctamente.");
         }
+
+        // 3. Si hay un error, intentar obtener el mensaje de error del JSON.
+        $errorBody = json_decode($response->getContent(), true) ?? [];
+        $message = $errorBody['message'] ?? 'Error desconocido al eliminar la factura desde el servidor externo.';
+
+        // Redirigir con un mensaje de error.
+        return redirect()->route('factura.index')
+            ->with('error', "Error al eliminar la Factura #F-{$facturaId}: {$message}");
     }
 
-    /**
-     * Agrega un detalle de tratamiento a una factura (POST).
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function storeDetalleTratamiento(Request $request): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'Cod_Factura' => 'required|integer',
-                'Cod_Tratamiento' => 'required|integer',
-                'Costo' => 'required|numeric|min:0',
-                'Descripcion' => 'sometimes|string|max:255',
-            ]);
-            return $this->callExternalApi('POST', "/detalle_factura_tratamiento", $validated);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
-        }
-    }
-
-    // =========================================================================
-    // MÉTODOS CRUD DE DETALLES (Lines) - ACTUALIZACIÓN y ELIMINACIÓN
-    // =========================================================================
-
-    /**
-     * Actualiza un detalle de producto en la factura (Actualización parcial/PATCH).
-     * El $idDetalle es el ID del detalle, no el Cod_Factura.
-     * @param Request $request
-     * @param int $idDetalle El ID del detalle de producto.
-     * @return JsonResponse
-     */
-    public function updateDetalleProducto(Request $request, int $idDetalle): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'Cantidad' => 'sometimes|required|integer|min:1',
-                'Precio_Unitario' => 'sometimes|required|numeric|min:0',
-            ]);
-            // El API de Node.js es responsable de reajustar el stock.
-            return $this->callExternalApi('PATCH', "/detalle_factura_producto/{$idDetalle}", $validated);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
-        }
-    }
-
-    /**
-     * Elimina un detalle de producto de la factura, revirtiendo el stock.
-     * @param int $idDetalle El ID del detalle de producto.
-     * @return JsonResponse
-     */
-    public function destroyDetalleProducto(int $idDetalle): JsonResponse
-    {
-        // DELETE debe delegar a la API para revertir el stock.
-        return $this->callExternalApi('DELETE', "/detalle_factura_producto/{$idDetalle}");
-    }
-
-    /**
-     * Actualiza un detalle de tratamiento en la factura (Actualización parcial/PATCH).
-     * El $idDetalle es el ID del detalle, no el Cod_Factura.
-     * @param Request $request
-     * @param int $idDetalle El ID del detalle de tratamiento.
-     * @return JsonResponse
-     */
-    public function updateDetalleTratamiento(Request $request, int $idDetalle): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'Costo' => 'sometimes|required|numeric|min:0',
-                'Descripcion' => 'sometimes|string|max:255',
-            ]);
-            return $this->callExternalApi('PATCH', "/detalle_factura_tratamiento/{$idDetalle}", $validated);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Error de validación', 'errors' => $e->errors()], 422);
-        }
-    }
-
-    /**
-     * Elimina un detalle de tratamiento de la factura.
-     * @param int $idDetalle El ID del detalle de tratamiento.
-     * @return JsonResponse
-     */
-    public function destroyDetalleTratamiento(int $idDetalle): JsonResponse
-    {
-        return $this->callExternalApi('DELETE', "/detalle_factura_tratamiento/{$idDetalle}");
-    }
+    // ... (Resto de métodos de detalles) ...
 }

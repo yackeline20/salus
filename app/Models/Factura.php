@@ -1,7 +1,7 @@
 <?php
-// En: app/Models/Factura.php
 
 namespace App\Models;
+
 use App\Traits\BitacoraTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,53 +11,49 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Factura extends Model
 {
     use HasFactory;
-use BitacoraTrait;
+    use BitacoraTrait;
+
+    // Configuración de la tabla
     protected $table = 'factura';
-    protected $primaryKey = 'Cod_Factura';
-    public $timestamps = false; // Confirmado con tu esquema
+    protected $primaryKey = 'Cod_Factura'; // ✅ VITAL: Define la clave primaria
+    public $timestamps = false; // Confirmado que no usa timestamps
 
     protected $fillable = [
         'Cod_Cliente',
         'Fecha_Factura',
-        'Total_Factura', // Corregido: El campo es 'Total_Factura' en tu tabla (Imagen 3)
-        'Metodo_Pago',     // Agregado
-        'Estado_Pago',     // Agregado
-        'Descuento_Aplicado', // Agregado
+        'Total_Factura',
+        'Metodo_Pago',
+        'Estado_Pago',
+        'Descuento_Aplicado',
     ];
+
+    /**
+     * Define explícitamente el nombre de la clave para el Route Model Binding.
+     * Esto asegura que Laravel use Cod_Factura en lugar del ID por defecto.
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return 'Cod_Factura';
+    }
 
     // --- Relaciones ---
 
-    /**
-     * Relación UNO a UNO inversa (MUCHOS a UNO) con Cliente.
-     * La factura pertenece a un cliente.
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
     public function cliente(): BelongsTo
     {
-        // FK: 'Cod_Cliente' en la tabla 'factura'
-        // PK: 'Cod_Cliente' en la tabla 'cliente'
+        // Factura pertenece a un Cliente
         return $this->belongsTo(Cliente::class, 'Cod_Cliente', 'Cod_Cliente');
     }
 
-    /**
-     * Relación UNO a MUCHOS con DetalleFacturaProducto.
-     * Una factura puede tener muchas líneas de detalle de producto.
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function detalleProductos(): HasMany
     {
-        // FK: 'Cod_Factura' en la tabla 'detalle_factura_producto'
+        // Una Factura tiene muchos DetalleFacturaProducto
         return $this->hasMany(DetalleFacturaProducto::class, 'Cod_Factura', 'Cod_Factura');
     }
 
-    /**
-     * Relación UNO a MUCHOS con DetalleFacturaTratamiento.
-     * Una factura puede tener muchas líneas de detalle de tratamiento.
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function detalleTratamientos(): HasMany
     {
-        // FK: 'Cod_Factura' en la tabla 'detalle_factura_tratamiento'
+        // Una Factura tiene muchos DetalleFacturaTratamiento
         return $this->hasMany(DetalleFacturaTratamiento::class, 'Cod_Factura', 'Cod_Factura');
     }
 }
