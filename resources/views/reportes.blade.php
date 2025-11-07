@@ -14,8 +14,18 @@
                 <p>Gestiona y visualiza todos los reportes de tu clínica estética.</p>
             </div>
             <div class="welcome-date">
-                <span class="date">{{ now()->format('l, d \d\e F Y') }}</span>
-                <span class="time">{{ now()->format('H:i') }}</span>
+                {{-- Establecer el locale para esta instancia de Carbon (solo si no funciona la configuración global) --}}
+                @php
+                    use Carbon\Carbon;
+                    // Si la configuración global (config/app.php) no funciona, esto la fuerza
+                    Carbon::setLocale('es'); 
+                @endphp
+    
+                {{-- Formato en Español y con la zona horaria correcta --}}
+                <span class="date">{{ Carbon::now()->translatedFormat('l, d \d\e F Y') }}</span>
+    
+                {{-- Hora local --}}
+                <span class="time">{{ Carbon::now()->format('H:i') }}</span>
             </div>
         </div>
 
@@ -85,18 +95,20 @@
         <!-- Filtros -->
         <div class="filter-section mb-4">
             <h3 class="section-title mb-4">Filtros de Búsqueda</h3>
-            <form method="GET" action="{{ route('reportes') }}">
+            <form method="POST" action="{{ route('reportes.consultar') }}" id="filtro-reporte-form">
+                @csrf
+                <input type="hidden" name="tipo" id="reporte-tipo-activo" value="{{ $tipo ?? 'citas' }}">
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label>Fecha Inicio</label>
-                            <input type="date" name="fecha_inicio" value="{{ $fecha_inicio }}" class="form-control custom-input">
+                            <input type="date" name="fecha_inicio" value="{{ isset($fecha_inicio) ? \Carbon\Carbon::parse($fecha_inicio)->format('Y-m-d') : '' }}" class="form-control">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
                             <label>Fecha Fin</label>
-                            <input type="date" name="fecha_fin" value="{{ $fecha_fin }}" class="form-control custom-input">
+                            <input type="date" name="fecha_fin" value="{{ isset($fecha_fin) ? \Carbon\Carbon::parse($fecha_fin)->format('Y-m-d') : '' }}" class="form-control">
                         </div>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
@@ -107,6 +119,61 @@
                 </div>
             </form>
         </div>
+        @section('js')
+            <script>
+            // ... (Tu función showNotification y estilos)
+
+            // Lógica para actualizar el campo 'tipo' oculto y la pestaña activa
+            const reportTabs = document.getElementById('reportTabs');
+            const reporteTipoActivoInput = document.getElementById('reporte-tipo-activo');
+        
+            // 1. Almacena el tipo activo al cambiar de pestaña
+            reportTabs.addEventListener('click', function(e) {
+                if (e.target.closest('.nav-link')) {
+                    const tipo = e.target.getAttribute('href').replace('#', '');
+                    reporteTipoActivoInput.value = tipo;
+                    // Opcional: Si el controlador retorna un tipo, haz que esa sea la pestaña activa
+               }
+            });
+        
+            // 2. Asegúrate de que la pestaña activa sea la que se consultó
+            // Esto es necesario para que al cargar los resultados, se muestre la pestaña correcta.
+            const tipoActual = '{{ $tipo ?? 'citas' }}';
+            document.querySelectorAll('#reportTabs .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').replace('#', '') === tipoActual) {
+                    link.classList.add('active');
+                    // Activar el contenido del tab
+                    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('show', 'active'));
+                    document.getElementById(tipoActual).classList.add('show', 'active');
+                }
+            });
+        
+            // 3. Confirmación antes de exportar
+            document.querySelectorAll('a[href*="exportar"]').forEach(link => {
+                link.addEventListener('click', function(e) {
+
+                    // 1. CAPTURAR el formato (excel o pdf) del enlace original
+                    let href = this.getAttribute('href');
+                    // Esto crea un objeto de parámetros a partir de la URL actual
+                    const urlParams = new URLSearchParams(href.split('?')[1] || '');
+                    const formato = urlParams.get('formato'); // Obtiene 'excel' o 'pdf'
+        
+                    // 2. Obtener los valores actuales de los filtros
+                    const fecha_inicio = document.querySelector('input[name="fecha_inicio"]').value;
+                    const fecha_fin = document.querySelector('input[name="fecha_fin"]').value;
+                    const tipo = reporteTipoActivoInput.value;
+
+                    //let href = this.getAttribute('href');
+                    // 3. Limpiar la URL y RECONSTRUIRLA con el formato capturado
+                    href = href.split('?')[0]; // Limpiar cualquier query string anterior
+                this.setAttribute('href', `${href}?tipo=${tipo}&formato=${formato}&fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}`);
+
+                showNotification('Generando reporte...', 'info');
+            });
+        });
+    </script>
+@endsection
 
         <!-- Pestañas de Reportes -->
         <div class="card modern-card">
@@ -153,17 +220,18 @@
                                 <i class="fas fa-calendar-check" style="color: #c9a876;"></i> Reporte de Citas
                             </h4>
                             <div>
-                                <a href="{{ route('reportes.export', ['tipo' => 'citas', 'formato' => 'excel']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'citas', 'formato' => 'excel']) }}" 
                                    class="btn btn-sm btn-success">
                                     <i class="fas fa-file-excel mr-1"></i> Excel
                                 </a>
-                                <a href="{{ route('reportes.export', ['tipo' => 'citas', 'formato' => 'pdf']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'citas', 'formato' => 'pdf']) }}" 
                                    class="btn btn-sm btn-danger">
                                     <i class="fas fa-file-pdf mr-1"></i> PDF
                                 </a>
                             </div>
                         </div>
                         <div class="table-responsive">
+                            @php $citas = is_array($citas) ? $citas : []; @endphp
                             <table class="table table-hover table-striped modern-table">
                                 <thead>
                                     <tr>
@@ -198,17 +266,18 @@
                                 <i class="fas fa-dollar-sign" style="color: #c9a876;"></i> Reporte Financiero
                             </h4>
                             <div>
-                                <a href="{{ route('reportes.export', ['tipo' => 'financiero', 'formato' => 'excel']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'financiero', 'formato' => 'excel']) }}" 
                                    class="btn btn-sm btn-success">
                                     <i class="fas fa-file-excel mr-1"></i> Excel
                                 </a>
-                                <a href="{{ route('reportes.export', ['tipo' => 'financiero', 'formato' => 'pdf']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'financiero', 'formato' => 'pdf']) }}" 
                                    class="btn btn-sm btn-danger">
                                     <i class="fas fa-file-pdf mr-1"></i> PDF
                                 </a>
                             </div>
                         </div>
                         <div class="table-responsive">
+                            @php $financiero = is_array($financiero) ? $financiero : []; @endphp
                             <table class="table table-hover table-striped modern-table">
                                 <thead>
                                     <tr>
@@ -218,7 +287,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($financiero ?? [] as $fila)
+                                    @forelse($financiero as $fila)
                                         <tr>
                                             @foreach($fila as $valor)
                                                 <td>{{ $valor }}</td>
@@ -243,17 +312,18 @@
                                 <i class="fas fa-box" style="color: #c9a876;"></i> Reporte de Inventario
                             </h4>
                             <div>
-                                <a href="{{ route('reportes.export', ['tipo' => 'inventario', 'formato' => 'excel']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'inventario', 'formato' => 'excel']) }}" 
                                    class="btn btn-sm btn-success">
                                     <i class="fas fa-file-excel mr-1"></i> Excel
                                 </a>
-                                <a href="{{ route('reportes.export', ['tipo' => 'inventario', 'formato' => 'pdf']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'inventario', 'formato' => 'pdf']) }}" 
                                    class="btn btn-sm btn-danger">
                                     <i class="fas fa-file-pdf mr-1"></i> PDF
                                 </a>
                             </div>
                         </div>
                         <div class="table-responsive">
+                            @php $inventario = is_array($inventario) ? $inventario : []; @endphp
                             <table class="table table-hover table-striped modern-table">
                                 <thead>
                                     <tr>
@@ -263,7 +333,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($inventario ?? [] as $fila)
+                                    @forelse($inventario as $fila)
                                         <tr>
                                             @foreach($fila as $valor)
                                                 <td>{{ $valor }}</td>
@@ -288,17 +358,18 @@
                                 <i class="fas fa-shopping-cart" style="color: #c9a876;"></i> Reporte de Compras
                             </h4>
                             <div>
-                                <a href="{{ route('reportes.export', ['tipo' => 'compras', 'formato' => 'excel']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'compras', 'formato' => 'excel']) }}" 
                                    class="btn btn-sm btn-success">
                                     <i class="fas fa-file-excel mr-1"></i> Excel
                                 </a>
-                                <a href="{{ route('reportes.export', ['tipo' => 'compras', 'formato' => 'pdf']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'compras', 'formato' => 'pdf']) }}" 
                                    class="btn btn-sm btn-danger">
                                     <i class="fas fa-file-pdf mr-1"></i> PDF
                                 </a>
                             </div>
                         </div>
                         <div class="table-responsive">
+                            @php $compras = is_array($compras) ? $compras : []; @endphp
                             <table class="table table-hover table-striped modern-table">
                                 <thead>
                                     <tr>
@@ -308,7 +379,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($compras ?? [] as $fila)
+                                    @forelse($compras as $fila)
                                         <tr>
                                             @foreach($fila as $valor)
                                                 <td>{{ $valor }}</td>
@@ -333,17 +404,18 @@
                                 <i class="fas fa-procedures" style="color: #c9a876;"></i> Reporte de Tratamientos
                             </h4>
                             <div>
-                                <a href="{{ route('reportes.export', ['tipo' => 'tratamientos', 'formato' => 'excel']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'tratamientos', 'formato' => 'excel']) }}" 
                                    class="btn btn-sm btn-success">
                                     <i class="fas fa-file-excel mr-1"></i> Excel
                                 </a>
-                                <a href="{{ route('reportes.export', ['tipo' => 'tratamientos', 'formato' => 'pdf']) }}" 
+                                <a href="{{ route('reportes.exportar', ['tipo' => 'tratamientos', 'formato' => 'pdf']) }}" 
                                    class="btn btn-sm btn-danger">
                                     <i class="fas fa-file-pdf mr-1"></i> PDF
                                 </a>
                             </div>
                         </div>
                         <div class="table-responsive">
+                            @php $tratamientos = is_array($tratamientos) ? $tratamientos : []; @endphp
                             <table class="table table-hover table-striped modern-table">
                                 <thead>
                                     <tr>
@@ -353,7 +425,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($tratamientos ?? [] as $fila)
+                                    @forelse($tratamientos as $fila)
                                         <tr>
                                             @foreach($fila as $valor)
                                                 <td>{{ $valor }}</td>
@@ -713,7 +785,7 @@
         document.head.appendChild(style);
 
         // Confirmación antes de exportar
-        document.querySelectorAll('a[href*="export"]').forEach(link => {
+        document.querySelectorAll('a[href*="exportar"]').forEach(link => {
             link.addEventListener('click', function(e) {
                 showNotification('Generando reporte...', 'info');
             });
