@@ -19,7 +19,7 @@ class ReportesController extends Controller
         $financiero = [];
         $inventario = [];
         $compras = [];
-        $tratamientos = [];
+        //$tratamientos = [];
 
         $tipo = 'citas'; // Establece un tipo por defecto
         $fecha_inicio = now()->startOfMonth()->toDateString();
@@ -29,7 +29,7 @@ class ReportesController extends Controller
         $total_citas = 0;
         $ingresos_totales = 0;
         $productos_stock = 0;
-        $total_tratamientos = 0;
+        //$total_tratamientos = 0;
      
         // Para las tarjetas, haremos una consulta inicial para el periodo por defecto.
         // Consulta inicial al API para datos de las tarjetas (simplificado para el ejemplo)
@@ -40,13 +40,13 @@ class ReportesController extends Controller
             // Citas, Financiero y Tratamientos SÍ necesitan fechas
             $citas_data = Http::get("$this->apiBaseUrl/reporte/citas", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
             $financiero_data = Http::get("$this->apiBaseUrl/reporte/financiero", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
-            $tratamientos_data = Http::get("$this->apiBaseUrl/reporte/tratamientos", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
+            //$tratamientos_data = Http::get("$this->apiBaseUrl/reporte/tratamientos", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
          
             // Cálculo de estadísticas para las tarjetas (simplificado, asumiendo estructura de datos)
             $total_citas = count($citas_data);
             $ingresos_totales = array_sum(array_column($financiero_data, 'Total_Factura')); // Asumiendo que 'Total_Factura' es la columna
             $productos_stock = array_sum(array_column($inventario_data, 'Cantidad_En_Stock')); // Asumiendo que 'Cantidad_En_Stock' es la columna
-            $total_tratamientos = count($tratamientos_data);
+            //$total_tratamientos = count($tratamientos_data);
 
             // Por defecto, carga el reporte de citas al iniciar
             $citas = $citas_data;
@@ -55,16 +55,16 @@ class ReportesController extends Controller
             // En caso de error de conexión a la API
             $error = "Error al conectar con el servicio de reportes: " . $th->getMessage();
             return view('reportes', compact(
-                'citas', 'financiero', 'inventario', 'compras', 'tratamientos', 'tipo', 'fecha_inicio', 'fecha_fin',
-                'total_citas', 'ingresos_totales', 'productos_stock', 'total_tratamientos', 'error'
+                'citas', 'financiero', 'inventario', 'compras', 'tipo', 'fecha_inicio', 'fecha_fin',
+                'total_citas', 'ingresos_totales', 'productos_stock', 'error'
             ));
         }
 
         // Enviamos todo a la vista
         return view('reportes', compact(
-            'citas', 'financiero', 'inventario', 'compras', 'tratamientos',
+            'citas', 'financiero', 'inventario', 'compras',
             'tipo', 'fecha_inicio', 'fecha_fin',
-            'total_citas', 'ingresos_totales', 'productos_stock', 'total_tratamientos'
+            'total_citas', 'ingresos_totales', 'productos_stock'
         ));
     }
 
@@ -81,11 +81,11 @@ class ReportesController extends Controller
         $financiero = [];
         $inventario = [];
         $compras = [];
-        $tratamientos = [];
+        //$tratamientos = [];
         $data = []; // Almacena el reporte solicitado
     
         // El tipo debe ser válido para continuar
-        if (!in_array($tipo, ['citas', 'financiero', 'inventario', 'compras', 'tratamientos'])) {
+        if (!in_array($tipo, ['citas', 'financiero', 'inventario', 'compras'])) {
             return back()->with('error', "Tipo de reporte no válido");
         }
 
@@ -114,7 +114,7 @@ class ReportesController extends Controller
                 case 'financiero': $financiero = $data; break;
                 case 'inventario': $inventario = $data; break;
                 case 'compras': $compras = $data; break;
-                case 'tratamientos': $tratamientos = $data; break;
+                //case 'tratamientos': $tratamientos = $data; break;
             }
 
             // --- Recalcular estadísticas para las tarjetas (Mismo código que en index) ---
@@ -123,12 +123,12 @@ class ReportesController extends Controller
             $inventario_data = Http::get("$this->apiBaseUrl/reporte/inventario")->json('data') ?? [];
             $citas_data = Http::get("$this->apiBaseUrl/reporte/citas", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
             $financiero_data = Http::get("$this->apiBaseUrl/reporte/financiero", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
-            $tratamientos_data = Http::get("$this->apiBaseUrl/reporte/tratamientos", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
+            //$tratamientos_data = Http::get("$this->apiBaseUrl/reporte/tratamientos", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
         
             $total_citas = count($citas_data);
             $ingresos_totales = array_sum(array_column($financiero_data, 'Total_Factura'));
             $productos_stock = array_sum(array_column($inventario_data, 'Cantidad_En_Stock'));
-            $total_tratamientos = count($tratamientos_data);
+            //$total_tratamientos = count($tratamientos_data);
 
         } catch (\Throwable $th) {
             return back()->with('error', "Error al obtener el reporte: " . $th->getMessage());
@@ -136,9 +136,9 @@ class ReportesController extends Controller
     
         // Devolvemos los datos y las variables de estadísticas a la vista
         return view('reportes', compact(
-            'citas', 'financiero', 'inventario', 'compras', 'tratamientos',
+            'citas', 'financiero', 'inventario', 'compras',
             'tipo', 'fecha_inicio', 'fecha_fin',
-            'total_citas', 'ingresos_totales', 'productos_stock', 'total_tratamientos'
+            'total_citas', 'ingresos_totales', 'productos_stock'
         ));
     }
 
@@ -169,9 +169,9 @@ class ReportesController extends Controller
                 $data = Http::get("$this->apiBaseUrl/reporte/compras", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
                 break;
 
-            case 'tratamientos':
-                $data = Http::get("$this->apiBaseUrl/reporte/tratamientos", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
-                break;
+            //case 'tratamientos':
+                //$data = Http::get("$this->apiBaseUrl/reporte/tratamientos", compact('fecha_inicio', 'fecha_fin'))->json('data') ?? [];
+                //break;
 
             default:
                 return back()->with('error', "Tipo de reporte no válido");
