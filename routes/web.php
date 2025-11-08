@@ -78,19 +78,28 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // ========================================
     // MÓDULO DE FACTURACIÓN (Rutas Web)
     // ========================================
-    // Se mantiene Route::resource para las vistas web (index, create, show, edit, update, destroy)
-    Route::resource('factura', FacturaController::class)
-        ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
-    // NUEVA RUTA: Muestra el recibo de una factura específica.
-    // Esta debe ir antes del Route::resource si no está en la lista de 'only' o 'except'.
+    // 🟢 RUTAS DE EXPORTACIÓN Y RECIBO (DEBEN IR PRIMERO)
+    // 🟢 NUEVA RUTA CLAVE: Exportar Factura a PDF (PRIORIDAD ALTA)
+    Route::get('factura/{factura}/pdf', [FacturaController::class, 'exportPdf'])->name('factura.export_pdf');
+
+    // NUEVA RUTA: Muestra el recibo de una factura específica (PRIORIDAD ALTA)
     Route::get('factura/{factura}/recibo', [FacturaController::class, 'recibo'])->name('factura.recibo');
 
+    // NUEVA RUTA CLAVE: Muestra la factura recién creada. (RUTA ESPECÍFICA)
+    // Usamos 'showFactura' en el controlador para diferenciar de 'show' que devuelve JSON.
+    Route::get('factura/{factura}/show', [FacturaController::class, 'showFactura'])->name('factura.show');
+
+    // Se mantiene Route::resource para las vistas web (index, create, store, edit, update, destroy)
+    Route::resource('factura', FacturaController::class)
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+
+
     // El middleware 'can' se aplica a las rutas de facturación con el Route::resource
-    Route::get('/facturas', [FacturaController::class, 'index'])->name('factura.index') // Aunque esté cubierto por el resource, se mantiene si se usa este nombre de ruta específicamente.
+    Route::get('/facturas', [FacturaController::class, 'index'])->name('factura.index')
         ->middleware('can:viewAny,App\Models\Factura');
 
-    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create') // Mantenido para el nombre de ruta específico.
+    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('factura.create')
         ->middleware('can:create,App\Models\Factura');
 
 
@@ -99,7 +108,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // ========================================
     // Se mantiene la ruta comentada, si se descomenta se usará esta
     // Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index')
-    //      ->middleware('can:viewAny,App\Models\Cliente');
+    //     ->middleware('can:viewAny,App\Models\Cliente');
 
     // ========================================
     // MÓDULO DE CITAS
@@ -208,20 +217,22 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // API DE FACTURAS (Se unifican las rutas de cabecera)
         // ----------------------------------------
         Route::get('factura', [FacturaController::class, 'index'])->name('factura.index');
-        Route::post('factura', [FacturaController::class, 'storeCabecera'])->name('factura.store');
+        // Usamos 'store' en el controlador para la API, aunque la ruta web POST 'factura'
+        // usa el método 'store' del resource, el JS de 'create.blade.php' llama a esta ruta API.
+        Route::post('factura', [FacturaController::class, 'store'])->name('factura.store');
         Route::put('factura/{id}', [FacturaController::class, 'update'])->name('factura.update');
         Route::delete('factura/{id}', [FacturaController::class, 'destroy'])->name('factura.destroy');
 
         // API DE DETALLE DE FACTURA - TRATAMIENTO (Se unifican)
         Route::get('detalle_factura_tratamiento', [FacturaController::class, 'getDetalleTratamiento'])->name('factura.detalle_tratamiento');
         Route::post('detalle_factura_tratamiento', [FacturaController::class, 'storeDetalleTratamiento'])->name('detalle_tratamiento.store');
-        Route::put('detalle_factura_tratamiento/{id}', [FacturaController::class, 'updateDetalleTratamiento'])->name('detalle_tratamiento.update');
+        Route::patch('detalle_factura_tratamiento/{id}', [FacturaController::class, 'updateDetalleTratamiento'])->name('detalle_tratamiento.update');
         Route::delete('detalle_factura_tratamiento/{id}', [FacturaController::class, 'destroyDetalleTratamiento'])->name('detalle_tratamiento.destroy');
 
         // API DE DETALLE DE FACTURA - PRODUCTO (Se unifican)
         Route::get('detalle_factura_producto', [FacturaController::class, 'getDetalleProducto'])->name('factura.detalle_producto');
         Route::post('detalle_factura_producto', [FacturaController::class, 'storeDetalleProducto'])->name('detalle_producto.store');
-        Route::put('detalle_factura_producto/{id}', [FacturaController::class, 'updateDetalleProducto'])->name('detalle_producto.update');
+        Route::patch('detalle_factura_producto/{id}', [FacturaController::class, 'updateDetalleProducto'])->name('detalle_producto.update');
         Route::delete('detalle_factura_producto/{id}', [FacturaController::class, 'destroyDetalleProducto'])->name('detalle_producto.destroy');
 
         // ----------------------------------------
@@ -302,7 +313,4 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
 
 }); // FIN DE MIDDLEWARE AUTH + TWOFACTOR
 
-// ========================================
-// RUTAS DE AUTENTICACIÓN PREDETERMINADAS
-// ========================================
 require __DIR__ . '/auth.php';
