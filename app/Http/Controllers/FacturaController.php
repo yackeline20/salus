@@ -13,15 +13,14 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\RedirectResponse; // ⬅️ AGREGADA ESTA IMPORTACIÓN
-use Symfony\Component\HttpFoundation\Response; // Importado para usar constantes HTTP
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
+// 🟢 Importar la fachada de DomPDF
+use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
  * FacturaController actúa como un proxy/gateway que redirige
  * todas las peticiones CRUD de facturación a una API externa (Node.js).
- * La validación de entrada (Request) y la capa de seguridad (Policy)
- * se manejan en Laravel, pero la lógica de persistencia, cálculo
- * y stock se delega completamente a la API de Node.js.
  */
 class FacturaController extends Controller
 {
@@ -40,13 +39,16 @@ class FacturaController extends Controller
 
         // Autorización de recursos.
         $this->authorizeResource(Factura::class, 'factura', [
-            // Excluimos la autorización automática para los métodos de detalle y agregamos 'recibo'.
+            // Excluimos la autorización automática para los métodos de detalle y los de vista web
             'except' => [
                 'storeDetalleProducto', 'storeDetalleTratamiento',
                 'getDetalleTratamiento', 'getDetalleProducto',
                 'updateDetalleProducto', 'destroyDetalleProducto',
                 'updateDetalleTratamiento', 'destroyDetalleTratamiento',
-                'recibo', // Excluir para manejar la autorización de forma manual si es necesario
+                'recibo',
+                'showFactura', // ✅ Este es el método que usaremos para la vista web show.blade.php
+                // 🟢 AÑADIDO: Excluir el nuevo método de exportación a PDF
+                'exportPdf',
             ]
         ]);
     }
@@ -146,6 +148,29 @@ class FacturaController extends Controller
         }
     }
 
+    /**
+     * MÉTODO AUXILIAR: Busca los datos de Persona (Nombre, Apellido, DNI) de un cliente
+     * dentro de una lista de todos los clientes con su información.
+     * * @param int $codCliente El código de cliente a buscar.
+     * @param array $clientesInfo Lista de todos los clientes con info de persona.
+     * @return array|null Retorna los datos de persona del cliente o null si no lo encuentra.
+     */
+    private function getClientInfoByCode(int $codCliente, array $clientesInfo): ?array
+    {
+        foreach ($clientesInfo as $cliente) {
+            if (($cliente['Cod_Cliente'] ?? null) === $codCliente) {
+                // Retornar solo los campos relevantes de persona
+                return [
+                    'Nombre' => $cliente['Nombre'] ?? 'Desconocido',
+                    'Apellido' => $cliente['Apellido'] ?? '',
+                    'DNI' => $cliente['DNI'] ?? 'N/A',
+                ];
+            }
+        }
+        return null;
+    }
+
+
     // =========================================================================
     // MÉTODOS CRUD DE CABECERA (Header)
     // =========================================================================
@@ -179,6 +204,7 @@ class FacturaController extends Controller
     public function create(): View
     {
         // Llamadas secuenciales para precarga. Se usa returnViewData=true.
+        // Ojo: Para el create, necesitamos el listado general de clientes, productos y tratamientos.
         $clientes = $this->callExternalApi('GET', '/cliente', [], [], true);
         $productos = $this->callExternalApi('GET', '/producto', [], [], true);
         $tratamientos = $this->callExternalApi('GET', '/tratamiento', [], [], true);
@@ -215,9 +241,10 @@ class FacturaController extends Controller
      * @param FacturaStoreRequest $request
      * @return JsonResponse
      */
-    public function store(FacturaStoreRequest $request): JsonResponse
+    public function store(FacturaStoreRequest $request): JsonResponse // Nombre de método estándar para POST
     {
         // FacturaStoreRequest se encarga de la validación completa.
+        // Espera que la respuesta JSON de la API incluya el Cod_Factura.
         return $this->callExternalApi('POST', '/facturas', $request->validated());
     }
 
@@ -240,7 +267,6 @@ class FacturaController extends Controller
 
     /**
      * Muestra la vista de un recibo o factura para imprimir o ver.
-     * Este es el NUEVO método para mostrar la factura completa al usuario.
      * GET /factura/{factura}/recibo
      * @param Factura $factura
      * @return View
@@ -266,6 +292,14 @@ class FacturaController extends Controller
 
             // Combinamos los detalles para que la vista pueda iterar una sola lista.
             $detalles = array_merge($detallesProducto, $detallesTratamiento);
+
+            // ⚠️ Lógica adicional para el recibo: Unir datos de Persona.
+            if ($facturaData && isset($facturaData['Cod_Cliente'])) {
+                $clienteInfo = $this->fetchClientInfo($facturaData['Cod_Cliente']);
+                if ($clienteInfo) {
+                    $facturaData = array_merge($facturaData, $clienteInfo);
+                }
+            }
         }
 
         // Retorna la vista con los datos (factura, detalles) o solo el error.
@@ -275,6 +309,135 @@ class FacturaController extends Controller
             'apiError' => $apiError
         ]);
     }
+
+    /**
+     * 🟢 MÉTODO FINAL: Genera y **descarga** el PDF de una factura específica.
+     *
+     * @param Factura $factura
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function exportPdf(Factura $factura): Response
+    {
+        // 🚨 CORRECCIÓN 1: Aumentar el límite de memoria para DomPDF.
+        ini_set('memory_limit', '256M');
+
+        $facturaId = $factura->Cod_Factura;
+
+        // 1. Reutilizamos la lógica de obtención de datos del recibo, pero con returnViewData=true
+        $data = $this->callExternalApi('GET', "/facturas/{$facturaId}", [], [], true);
+
+        $apiError = null;
+        $facturaData = null;
+        $detalles = [];
+
+        if ($data === null || empty($data) || !isset($data['factura'])) {
+            // Si la llamada falla o retorna null, lanzamos una excepción o retornamos un error.
+            Log::error("Fallo crítico al obtener datos para PDF de Factura #{$facturaId}.");
+            return redirect()->route('factura.show', $facturaId)->with('error', 'Error al generar el PDF: No se pudieron obtener los datos de la factura.');
+        }
+
+        // Si la llamada fue exitosa, preparamos los datos.
+        $facturaData = $data['factura'] ?? null;
+        $detallesProducto = $data['detalles_producto'] ?? [];
+        $detallesTratamiento = $data['detalles_tratamiento'] ?? [];
+        $detalles = array_merge($detallesProducto, $detallesTratamiento);
+
+        // Unir datos de Persona (igual que en recibo)
+        if ($facturaData && isset($facturaData['Cod_Cliente'])) {
+            $clienteInfo = $this->fetchClientInfo($facturaData['Cod_Cliente']);
+            if ($clienteInfo) {
+                $facturaData = array_merge($facturaData, $clienteInfo);
+            }
+        }
+
+        // 2. Preparar los datos para la vista
+        $viewData = [
+            'factura' => $facturaData,
+            'detalles' => $detalles,
+            'apiError' => $apiError // Será null si no hubo error crítico
+        ];
+
+        // 3. Cargar la vista Blade sin layout.
+        $pdf = Pdf::loadView('factura.pdf_template', $viewData);
+
+        // 4. Salida del archivo: CAMBIO FINAL: Usamos download() para forzar la descarga del PDF.
+        $nombreArchivo = 'Factura_F-' . ($facturaData['Cod_Factura'] ?? $facturaId) . '.pdf';
+
+        // 🚨 CAMBIO CRÍTICO: FORZAMOS LA DESCARGA
+        return $pdf->download($nombreArchivo);
+    }
+
+    /**
+     * Lógica centralizada para obtener la info de Persona de un cliente.
+     * @param int $codCliente
+     * @return array|null
+     */
+    private function fetchClientInfo(int $codCliente): ?array
+    {
+        // 1. Llama al nuevo endpoint de la API para obtener todos los clientes con info de Persona
+        $clientesInfo = $this->callExternalApi('GET', '/clientes-persona-info', [], [], true);
+
+        if ($clientesInfo === null) {
+            Log::error("Fallo al obtener la lista de clientes con info de persona desde la API.");
+            return null;
+        }
+
+        // 2. Busca al cliente específico en la lista
+        return $this->getClientInfoByCode($codCliente, $clientesInfo);
+    }
+
+
+    /**
+     * ✅ MÉTODO PRINCIPAL CORREGIDO: Muestra la vista web (show.blade.php) de una factura específica.
+     * Este método solo debe mostrar los 6 campos guardados de la cabecera + el Nombre/Apellido/DNI.
+     * GET /factura/{factura}/show
+     * @param Factura $factura
+     * @return View
+     */
+    public function showFactura(Factura $factura): View
+    {
+        $facturaId = $factura->Cod_Factura;
+        $apiError = null;
+        $facturaData = null;
+
+        // 1. Obtener los 6 campos guardados de la CABECERA de la factura.
+        // Nota: Asumo que la ruta /facturas/{id} te devuelve al menos un array con esos 6 campos.
+        $apiResponse = $this->callExternalApi('GET', "/facturas/{$facturaId}", [], [], true);
+
+        if ($apiResponse === null || empty($apiResponse)) {
+             // Error de conexión o API, no se pudo obtener la factura
+             $apiError = 'Error: No se pudo obtener la factura #' . $facturaId . '. Verifique la conexión con el servidor de Node.js y la ruta `/facturas/{id}`.';
+             $facturaData = ['Cod_Factura' => $facturaId]; // Intentamos pasar el ID para la vista
+        } else {
+            // 2. Asumo que el campo principal de la factura está en 'factura' (estructura común en Node.js)
+            $facturaData = $apiResponse['factura'] ?? $apiResponse;
+            $codCliente = $facturaData['Cod_Cliente'] ?? null;
+
+            if ($codCliente) {
+                // 3. Obtener la información de la Persona asociada al Cod_Cliente
+                $clienteInfo = $this->fetchClientInfo((int)$codCliente);
+
+                if ($clienteInfo) {
+                    // 4. Unir los datos de Persona (Nombre, Apellido, DNI) a los datos de la Factura
+                    $facturaData = array_merge($facturaData, $clienteInfo);
+                } else {
+                    // 5. Manejar el caso donde no se encuentra la info del cliente/persona
+                    Log::warning("No se encontró información de Persona para Cod_Cliente: {$codCliente} de la Factura #{$facturaId}");
+                    // Los campos Nombre, Apellido y DNI quedarán como 'N/A' en la vista (show.blade.php)
+                }
+            }
+        }
+
+        // Retorna la vista factura.show
+        return view('factura.show', [
+            // Pasamos $facturaData que contiene los 6 campos de la DB y los 3 campos de Persona
+            'factura' => $facturaData,
+            'apiError' => $apiError,
+            // Detalle se pasa vacío porque la vista show.blade.php no lo necesita según el requerimiento.
+            'detalles' => [],
+        ]);
+    }
+
 
     /**
      * Muestra el detalle completo de una factura específica (JSON).
@@ -290,7 +453,6 @@ class FacturaController extends Controller
 
     /**
      * Actualiza la cabecera de una factura existente con el método PUT.
-     * **ESTE MÉTODO ES EL ACTUALIZADO** para manejar la sumisión del formulario de edición completa.
      *
      * @param Request $request
      * @param Factura $factura
@@ -307,7 +469,8 @@ class FacturaController extends Controller
                 'Fecha_Factura' => 'required|date',
                 'Total_Factura' => 'required|numeric|min:0',
                 'Metodo_Pago' => 'required|string|max:50',
-                'Estado_Pago' => 'required|string|in:Pagada,Pendiente,Cancelada', // Se ajusta a los valores de su select
+                // Se ajusta a los valores de su select
+                'Estado_Pago' => 'required|string|in:PAGADA,PENDIENTE,ANULADA', // Ajuste a mayúsculas para consistencia con el front
                 'Descuento_Aplicado' => 'required|numeric|min:0',
                 // El Cod_Factura se extrae del modelo, no del request body
             ]);
@@ -324,8 +487,8 @@ class FacturaController extends Controller
 
     /**
      * Elimina (Anula) una factura y revierte los cambios de stock de productos.
-     * * 🚨 **MÉTODO CORREGIDO PARA REDIRECCIÓN** 🚨
-     * * @param Factura $factura
+     *
+     * @param Factura $factura
      * @return RedirectResponse
      */
     public function destroy(Factura $factura): RedirectResponse
