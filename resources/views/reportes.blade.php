@@ -31,7 +31,7 @@
 
         <!-- Tarjetas de estadísticas -->
         <div class="row mt-4">
-            <div class="col-lg-3 col-md-6 mb-4">
+            <div class="col-lg-4 col-md-6 mb-4">
                 <div class="stat-card blue-border">
                     <div class="stat-header">
                         <span class="stat-icon blue-bg">
@@ -46,7 +46,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-3 col-md-6 mb-4">
+            <div class="col-lg-4 col-md-6 mb-4">
                 <div class="stat-card green-border">
                     <div class="stat-header">
                         <span class="stat-icon green-bg">
@@ -61,7 +61,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-3 col-md-6 mb-4">
+            <div class="col-lg-4 col-md-6 mb-4">
                 <div class="stat-card yellow-border">
                     <div class="stat-header">
                         <span class="stat-icon yellow-bg">
@@ -72,21 +72,6 @@
                     <div class="stat-value">{{ $productos_stock ?? 0 }}</div>
                     <div class="stat-change negative">
                         <span>En inventario</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="stat-card red-border">
-                    <div class="stat-header">
-                        <span class="stat-icon red-bg">
-                            <i class="fas fa-procedures"></i>
-                        </span>
-                        <span class="stat-label">TRATAMIENTOS</span>
-                    </div>
-                    <div class="stat-value">{{ $total_tratamientos ?? 0 }}</div>
-                    <div class="stat-change positive">
-                        <span>Realizados</span>
                     </div>
                 </div>
             </div>
@@ -138,7 +123,13 @@
         
             // 2. Asegúrate de que la pestaña activa sea la que se consultó
             // Esto es necesario para que al cargar los resultados, se muestre la pestaña correcta.
-            const tipoActual = '{{ $tipo ?? 'citas' }}';
+            let tipoActual = '{{ $tipo ?? 'citas' }}';
+    
+            // **APLICAR CORRECCIÓN:** Si el tipo actual es 'tratamientos', forzarlo a 'citas' (el primer reporte disponible).
+            if (tipoActual === 'tratamientos') {
+                tipoActual = 'citas';
+            }
+
             document.querySelectorAll('#reportTabs .nav-link').forEach(link => {
                 link.classList.remove('active');
                 if (link.getAttribute('href').replace('#', '') === tipoActual) {
@@ -152,6 +143,7 @@
             // 3. Confirmación antes de exportar
             document.querySelectorAll('a[href*="exportar"]').forEach(link => {
                 link.addEventListener('click', function(e) {
+                    e.preventDefault();
 
                     // 1. CAPTURAR el formato (excel o pdf) del enlace original
                     let href = this.getAttribute('href');
@@ -167,7 +159,11 @@
                     //let href = this.getAttribute('href');
                     // 3. Limpiar la URL y RECONSTRUIRLA con el formato capturado
                     href = href.split('?')[0]; // Limpiar cualquier query string anterior
-                this.setAttribute('href', `${href}?tipo=${tipo}&formato=${formato}&fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}`);
+                    const newUrl = `${href}?tipo=${tipo}&formato=${formato}&fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}`;
+                    
+                    // 4. Redireccionar con la nueva URL
+                    this.setAttribute('href', newUrl);
+                    window.location.href = newUrl;
 
                 showNotification('Generando reporte...', 'info');
             });
@@ -203,11 +199,6 @@
                     <li class="nav-item">
                         <a class="nav-link" data-toggle="tab" href="#compras" role="tab">
                             <i class="fas fa-shopping-cart mr-1"></i> Compras
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tratamientos" role="tab">
-                            <i class="fas fa-procedures mr-1"></i> Tratamientos
                         </a>
                     </li>
                 </ul>
@@ -388,52 +379,6 @@
                                     @empty
                                         <tr>
                                             <td colspan="{{ count(array_keys($compras[0] ?? [])) }}" class="text-center text-muted">
-                                                No hay datos disponibles
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Reporte de Tratamientos -->
-                    <div class="tab-pane fade" id="tratamientos" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="mb-0">
-                                <i class="fas fa-procedures" style="color: #c9a876;"></i> Reporte de Tratamientos
-                            </h4>
-                            <div>
-                                <a href="{{ route('reportes.exportar', ['tipo' => 'tratamientos', 'formato' => 'excel']) }}" 
-                                   class="btn btn-sm btn-success">
-                                    <i class="fas fa-file-excel mr-1"></i> Excel
-                                </a>
-                                <a href="{{ route('reportes.exportar', ['tipo' => 'tratamientos', 'formato' => 'pdf']) }}" 
-                                   class="btn btn-sm btn-danger">
-                                    <i class="fas fa-file-pdf mr-1"></i> PDF
-                                </a>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            @php $tratamientos = is_array($tratamientos) ? $tratamientos : []; @endphp
-                            <table class="table table-hover table-striped modern-table">
-                                <thead>
-                                    <tr>
-                                        @foreach(array_keys($tratamientos[0] ?? []) as $col)
-                                            <th>{{ ucfirst($col) }}</th>
-                                        @endforeach
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($tratamientos as $fila)
-                                        <tr>
-                                            @foreach($fila as $valor)
-                                                <td>{{ $valor }}</td>
-                                            @endforeach
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="{{ count(array_keys($tratamientos[0] ?? [])) }}" class="text-center text-muted">
                                                 No hay datos disponibles
                                             </td>
                                         </tr>

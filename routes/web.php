@@ -108,7 +108,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // ========================================
     // Se mantiene la ruta comentada, si se descomenta se usará esta
     // Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index')
-    //     ->middleware('can:viewAny,App\Models\Cliente');
+    //     ->middleware('can:viewAny,App\Models\Cliente');
 
     // ========================================
     // MÓDULO DE CITAS
@@ -119,8 +119,152 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     // ========================================
     // MÓDULO DE INVENTARIO
     // ========================================
-    Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-        ->middleware('can:viewAny,App\Models\Product');
+    // Vista principal del inventario - ESTA ES LA RUTA QUE FALTABA NOMBRAR
+    Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario');
+
+    // Rutas API del inventario
+    Route::prefix('api/inventario')->group(function () {
+        Route::get('/productos', [InventarioController::class, 'obtenerProductos']);
+        Route::get('/productos/{id}', [InventarioController::class, 'obtenerProducto']);
+        Route::post('/productos', [InventarioController::class, 'crearProducto']);
+        Route::put('/productos/{id}', [InventarioController::class, 'actualizarProducto']);
+        Route::delete('/productos/{id}', [InventarioController::class, 'eliminarProducto']);
+        
+        // Rutas para estadísticas y utilidades
+        Route::get('/estadisticas', [InventarioController::class, 'obtenerEstadisticas']);
+        Route::get('/proveedores', [InventarioController::class, 'obtenerProveedores']);
+        Route::get('/relaciones', [InventarioController::class, 'obtenerRelaciones']);
+    });
+
+    // ==================== RUTAS API PARA PROVEEDOR ====================
+    
+    // Insert Proveedor
+    Route::post('/api/proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Ins_Proveedor(?, ?, ?, ?, ?)', [
+                $rest['Nombre_Proveedor'] ?? null,
+                $rest['Contacto_Principal'] ?? null,
+                $rest['Telefono'] ?? null,
+                $rest['Email'] ?? null,
+                $rest['Direccion'] ?? null
+            ]);
+            
+            return response("Proveedor ingresado correctamente!", 200);
+        } catch (\Exception $e) {
+            return response("Error al insertar proveedor: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Select Proveedor
+    Route::get('/api/proveedor', function () {
+        try {
+            $result = DB::select('CALL Sel_Proveedor(NULL)');
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener proveedores: ' . $e->getMessage()], 500);
+        }
+    });
+
+    // Update Proveedor
+    Route::put('/api/proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Upd_Proveedor(?, ?, ?, ?, ?, ?)', [
+                $rest['Cod_Proveedor'] ?? null,
+                $rest['Nombre_Proveedor'] ?? null,
+                $rest['Contacto_Principal'] ?? null,
+                $rest['Telefono'] ?? null,
+                $rest['Email'] ?? null,
+                $rest['Direccion'] ?? null
+            ]);
+            
+            return response("Proveedor actualizado exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al actualizar proveedor: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Delete Proveedor
+    Route::delete('/api/proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Del_Proveedor(?)', [
+                $rest['Cod_Proveedor'] ?? null
+            ]);
+            
+            return response("Proveedor eliminado exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al eliminar proveedor: " . $e->getMessage(), 500);
+        }
+    });
+
+    // ==================== RUTAS API PARA PRODUCTO-PROVEEDOR ====================
+    
+    // Insert Producto-Proveedor
+    Route::post('/api/producto_proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Ins_Producto_Proveedor(?, ?, ?, ?)', [
+                $rest['Cod_Producto'] ?? null,
+                $rest['Cod_Proveedor'] ?? null,
+                $rest['Precio_Ultima_Compra'] ?? null,
+                $rest['Fecha_Ultima_Compra'] ?? null
+            ]);
+            
+            return response("Relación producto-proveedor ingresada correctamente!", 200);
+        } catch (\Exception $e) {
+            return response("Error al insertar relación: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Select Producto-Proveedor
+    Route::get('/api/producto_proveedor', function () {
+        try {
+            $result = DB::select('CALL Sel_Producto_Proveedor(NULL)');
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener relaciones: ' . $e->getMessage()], 500);
+        }
+    });
+
+    // Update Producto-Proveedor
+    Route::put('/api/producto_proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Upd_Producto_Proveedor(?, ?, ?, ?, ?)', [
+                $rest['Cod_Prod_Prov'] ?? null,
+                $rest['Cod_Producto'] ?? null,
+                $rest['Cod_Proveedor'] ?? null,
+                $rest['Precio_Ultima_Compra'] ?? null,
+                $rest['Fecha_Ultima_Compra'] ?? null
+            ]);
+            
+            return response("Relación producto-proveedor actualizada exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al actualizar relación: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Delete Producto-Proveedor
+    Route::delete('/api/producto_proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Del_Producto_Proveedor(?)', [
+                $rest['Cod_Prod_Prov'] ?? null
+            ]);
+            
+            return response("Relación producto-proveedor eliminada exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al eliminar relación: " . $e->getMessage(), 500);
+        }
+    });
 
     // ========================================
     // MÓDULO DE SERVICIOS (TRATAMIENTOS)
@@ -253,23 +397,7 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
             ->name('clientes.listado')
             ->middleware('can:viewAny,App\Models\Cita');
 
-        // ----------------------------------------
-        // API DE INVENTARIO (PRODUCTOS) (Se unifican)
-        // ----------------------------------------
-        Route::get('productos', [InventarioController::class, 'getProducts'])->name('productos.index');
-        Route::post('productos', [InventarioController::class, 'storeProduct'])->name('productos.store');
-        Route::put('productos/{id}', [InventarioController::class, 'updateProduct'])->name('productos.update');
-        Route::delete('productos/{id}', [InventarioController::class, 'destroyProduct'])->name('productos.destroy');
-
-        // 🟢 RUTAS AGREGADAS DE WEB 1.PHP (Datos adicionales de inventario)
-        Route::get('inventario/proveedores', [InventarioController::class, 'getProveedores'])
-             ->name('inventario.proveedores');
-        Route::get('inventario/categorias', [InventarioController::class, 'getCategorias'])
-             ->name('inventario.categorias');
-        Route::get('inventario/estadisticas', [InventarioController::class, 'getEstadisticas'])
-             ->name('inventario.estadisticas')
-             ->middleware('can:viewAny,App\Models\Product');
-
+        
         // ----------------------------------------
         // API DE SERVICIOS (TRATAMIENTOS) (Se mantiene la unificación con rutas alias)
         // ----------------------------------------
