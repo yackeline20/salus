@@ -21,11 +21,11 @@ var mysqlConnection = mysql.createConnection({
     multipleStatements: true
 });
 //Test de conexion a base de datos
-mysqlConnection.connect((err)=>{
+mysqlConnection.connect((err) => {
     if (!err) {
         console.log('Conexion Exitosa');
     } else {
-        console.log('Error al conectar a la DB',err);
+        console.log('Error al conectar a la DB', err);
     }
 });
 //Ejecutar el server en un puerto especifico.
@@ -40,7 +40,7 @@ app.listen(3000, () => console.log('Server Running puerto: 3000'));
 // API: POST para insertar persona
 app.post('/persona', (req, res) => {
     let rest = req.body;
-    
+
     // Validar que vengan todos los campos
     if (!rest.Nombre || !rest.Apellido || !rest.DNI || !rest.Fecha_Nacimiento || !rest.Genero) {
         return res.status(400).json({
@@ -48,9 +48,9 @@ app.post('/persona', (req, res) => {
             campos: ["Nombre", "Apellido", "DNI", "Fecha_Nacimiento", "Genero"]
         });
     }
-    
+
     var sqlquery = 'CALL Ins_Persona(?, ?, ?, ?, ?);';
-    
+
     mysqlConnection.query(sqlquery, [
         rest.Nombre,
         rest.Apellido,
@@ -61,7 +61,7 @@ app.post('/persona', (req, res) => {
         if (!err) {
             // El procedimiento ahora devuelve el Cod_Persona
             const codPersona = rows[0][0].Cod_Persona;
-            
+
             res.status(201).json({
                 message: "Persona ingresada correctamente",
                 Cod_Persona: codPersona,
@@ -82,7 +82,7 @@ app.post('/persona', (req, res) => {
 app.get('/persona', (req, res) => {
     const codPersona = req.query.cod || null;
     var sqlquery = 'CALL Sel_Persona(?);';
-    
+
     mysqlConnection.query(sqlquery, [codPersona], (err, rows, fields) => {
         if (!err) {
             res.status(200).json(rows[0]);
@@ -100,7 +100,7 @@ app.get('/persona', (req, res) => {
 app.put('/persona', (req, res) => {
     let rest = req.body;
     var sqlquery = 'CALL Upd_Persona(?, ?, ?, ?, ?, ?);';
-    
+
     mysqlConnection.query(sqlquery, [
         rest.Cod_Persona,
         rest.Nombre,
@@ -127,15 +127,15 @@ app.put('/persona', (req, res) => {
 // API: DELETE para eliminar persona
 app.delete('/persona', (req, res) => {
     const codPersona = req.query.cod || req.body.Cod_Persona;
-    
+
     if (!codPersona) {
         return res.status(400).json({
             error: "Debe proporcionar el código de la persona a eliminar"
         });
     }
-    
+
     var sqlquery = 'CALL Del_Persona(?);';
-    
+
     mysqlConnection.query(sqlquery, [codPersona], (err, rows, fields) => {
         if (!err) {
             const resultado = rows[0][0]?.Resultado || "Persona eliminada exitosamente";
@@ -895,55 +895,47 @@ app.delete('/detalle_cita_tratamiento/:Cod_Detalle_Cita_Trat', (req, res) => {
 
 // API: POST para insertar detalle_factura_producto
 app.post('/detalle_factura_producto', (req, res) => {
-    console.log('POST /detalle_factura_producto - Body recibido:', req.body);
+    const { Cod_Factura, Cod_Producto, Cantidad } = req.body;
+    var sqlquery = 'CALL Ins_Detalle_Factura_Producto(?, ?, ?);';
 
-    let rest = req.body;
-    var sqlquery = 'CALL Ins_Detalle_Factura_Producto(?, ?, ?, ?, ?);';
-
-    mysqlConnection.query(sqlquery, [
-        rest.Cod_Factura,
-        rest.Cod_Producto,
-        rest.Cantidad_Vendida,
-        rest.Precio_Unitario_Venta,
-        rest.Subtotal
-    ], (err, rows, fields) => {
+    mysqlConnection.query(sqlquery, [Cod_Factura, Cod_Producto, Cantidad], (err, rows, fields) => {
         if (!err) {
-            res.status(201).json({
-                message: "Detalle de factura-producto ingresado correctamente!",
-                data: rows
-            });
+            res.status(201).json({ Cod_Factura, Cod_Producto, Cantidad, message: "Detalle de producto agregado." });
         } else {
-            console.log("Error al insertar Detalle de Factura-Producto:", err);
-            res.status(500).json({
-                error: "Error al insertar los datos.",
-                details: err.message
-            });
+            console.log("Error en Ins_DetalleFacturaProducto:", err);
+            if (err.code === 'ER_SIGNAL_EXCEPTION') {
+                // Error personalizado (ej. Stock Insuficiente)
+                return res.status(400).json({ error: "Error de validación: " + err.sqlMessage });
+            }
+            res.status(500).json({ error: "Error interno del servidor al añadir detalle de producto." });
         }
     });
 });
 
-// API: GET para obtener detalle_factura_producto
+// --------------------------------------------------
+// 7. GET - OBTENER DETALLES DE PRODUCTOS
+// Endpoint: GET /detalle_factura_producto?Cod_Factura=...
+// SP ASUMIDO: Sel_DetalleFacturaProducto(Cod_Factura)
+// --------------------------------------------------
+
+/**
+ * @route GET /detalle_factura_producto
+ * @description Obtiene todos los detalles de productos para una factura dada (por query param Cod_Factura).
+ */
 app.get('/detalle_factura_producto', (req, res) => {
-    const codDetalleFp = req.query.Cod_Detalle_Fp || null;
+    const codFactura = req.query.Cod_Factura;
+    if (!codFactura) {
+        return res.status(400).json({ error: "Falta el parámetro 'Cod_Factura' para listar detalles de producto." });
+    }
+
     var sqlquery = 'CALL Sel_Detalle_Factura_Producto(?);';
 
-    mysqlConnection.query(sqlquery, [codDetalleFp], (err, rows, fields) => {
+    mysqlConnection.query(sqlquery, [codFactura], (err, rows, fields) => {
         if (!err) {
-            const data = rows[0];
-
-            if (data && data.length > 0) {
-                res.status(200).json(data);
-            } else if (codDetalleFp !== null && data && data.length === 0) {
-                res.status(404).json({ message: "No se encontró el Detalle de Factura-Producto con el código proporcionado." });
-            } else {
-                res.status(200).json([]);
-            }
+            res.status(200).json(rows[0] || []);
         } else {
-            console.error('Error al obtener datos de detalle_factura_producto:', err);
-            res.status(500).json({
-                error: "Error al obtener datos.",
-                details: err.message
-            });
+            console.log("Error en Sel_Detalle_Factura_Producto:", err);
+            res.status(500).json({ error: "Error interno del servidor al obtener detalles de productos." });
         }
     });
 });
@@ -1447,106 +1439,146 @@ app.delete('/empleado/:Cod_Empleado', (req, res) => {
     });
 });
 
-// ==========================================================
-// RUTAS DE /FACTURA
-// ==========================================================
+app.post('/facturas', (req, res) => {
+    const data = req.body;
+    // Serializar el objeto JS a cadena JSON para pasarlo al SP
+    const jsonFactura = JSON.stringify(data);
 
-// API: POST para insertar factura
-app.post('/factura', (req, res) => {
-    let rest = req.body;
-    var sqlquery = 'CALL Ins_Factura(?, ?, ?, ?, ?, ?);';
+    // Este SP debe manejar toda la lógica compleja en la BD (cabecera, detalles, comisiones, stock)
+    var sqlquery = 'CALL Ins_Factura(?);';
 
-    mysqlConnection.query(sqlquery, [
-        rest.Cod_Cliente,
-        rest.Fecha_Factura,
-        rest.Total_Factura,
-        rest.Metodo_Pago,
-        rest.Estado_Pago,
-        rest.Descuento_Aplicado
-    ], (err, rows, fields) => {
+    mysqlConnection.query(sqlquery, [jsonFactura], (err, rows, fields) => {
         if (!err) {
-            res.send("Factura ingresada correctamente!");
+            // Se asume que el SP retorna el ID de la factura o un mensaje.
+            const result = rows[0] ? rows[0] : rows;
+            res.status(201).json(result);
         } else {
-            console.log("Error al insertar factura:", err);
-            res.status(500).send("Error al insertar los datos de factura. Consulte los logs del servidor.");
+            console.log("Error en Ins_Factura:", err);
+            // Manejo de errores personalizados desde la BD (ej. ER_SIGNAL_EXCEPTION)
+            if (err.code === 'ER_SIGNAL_EXCEPTION') {
+                return res.status(400).json({ error: "Error de lógica de negocio o validación en BD.", details: err.sqlMessage });
+            }
+            res.status(500).json({ error: "Error interno del servidor al crear factura." });
         }
     });
 });
 
-// API: GET para obtener factura (con o sin filtro por Cod_Factura)
-app.get('/factura', (req, res) => {
-    const queryParams = req.query;
-    let codFactura = null;
+// --------------------------------------------------
+// 2. GET - LISTAR FACTURAS (o buscar por ID)
+// Endpoint: GET /facturas
+// SP USADO: Sel_Factura_Buscar(p_Cod_Factura)
+// --------------------------------------------------
 
-    if (queryParams.Cod_Factura !== undefined) {
-        codFactura = queryParams.Cod_Factura;
-    }
+/**
+ * @route GET /facturas
+ * @description Obtiene una lista de todas las facturas. Llama al SP con NULL para traer todas.
+ */
+app.get('/facturas', (req, res) => {
+    // Usamos el SP Sel_Factura_Buscar pasándole NULL para obtener todos los registros.
+    const sqlquery = 'CALL Sel_Factura(NULL);';
 
-    var sqlQuery = 'CALL Sel_Factura(?);';
-    var queryValue = [codFactura];
-
-    mysqlConnection.query(sqlQuery, queryValue, (err, rows, fields) => {
+    mysqlConnection.query(sqlquery, (err, rows, fields) => {
         if (!err) {
-            const data = rows[0];
+            // Su SP de selección debe devolver un solo conjunto de resultados
+            res.status(200).json(rows[0] || []);
+        } else {
+            console.log("Error en Sel_Factura (Listar):", err);
+            res.status(500).json({ error: "Error interno del servidor al obtener lista de facturas." });
+        }
+    });
+});
 
-            if (data && data.length > 0) {
-                res.status(200).json(data);
-            } else if (codFactura !== null && data && data.length === 0) {
-                res.status(404).json({ message: "No se encontró la factura con el código proporcionado." });
-            } else if (data && data.length === 0) {
-                res.status(200).json([]);
+
+// --------------------------------------------------
+// 3. GET - MOSTRAR DETALLE DE FACTURA POR ID
+// Endpoint: GET /facturas/:id
+// SP USADO: Sel_Factura_Buscar(p_Cod_Factura)
+// --------------------------------------------------
+
+/**
+ * @route GET /facturas/:id
+ * @description Obtiene la cabecera de una factura específica.
+ */
+app.get('/facturas/:id', (req, res) => {
+    const facturaId = req.params.id;
+    // Llamamos al SP de búsqueda pasando el ID de la factura
+    var sqlquery = 'CALL Sel_Factura(?);';
+
+    mysqlConnection.query(sqlquery, [facturaId], (err, rows, fields) => {
+        if (!err) {
+            // El SP devuelve la cabecera en el primer conjunto de resultados.
+            if (rows[0] && rows[0].length > 0) {
+                // Devolvemos el primer (y único) registro encontrado para la cabecera.
+                res.status(200).json(rows[0][0]);
             } else {
-                res.status(500).send("Respuesta de base de datos inesperada.");
+                res.status(404).json({ message: "Factura no encontrada." });
             }
         } else {
-            console.error('Error al ejecutar la consulta SQL:', err);
-            res.status(500).send("Error al obtener datos de factura.");
+            console.log("Error en Sel_Factura_Buscar (Detalle):", err);
+            res.status(500).json({ error: "Error interno del servidor al obtener detalle de factura." });
         }
     });
 });
 
-// API: PUT para actualizar factura
-app.put('/factura', (req, res) => {
-    let rest = req.body;
+
+// --------------------------------------------------
+// 4. PUT - ACTUALIZAR FACTURA (Cabecera)
+// Endpoint: PUT /facturas/:id
+// SP USADO: Upd_Factura_Cabecera(Cod_Factura, Cod_Cliente, Fecha_Factura, Total_Factura, Metodo_Pago, Estado_Pago, Descuento_Aplicado)
+// --------------------------------------------------
+
+/**
+ * @route PUT /facturas/:id
+ * @description Actualiza la cabecera de la factura usando su SP con los 6 parámetros de entrada.
+ */
+app.put('/facturas/:id', (req, res) => {
+    const facturaId = req.params.id;
+    // Parámetros requeridos por su SP de actualización.
+    const { Cod_Cliente, Fecha_Factura, Total_Factura, Metodo_Pago, Estado_Pago, Descuento_Aplicado } = req.body;
+
+    // Su SP espera 7 parámetros (ID + 6 campos).
     var sqlquery = 'CALL Upd_Factura(?, ?, ?, ?, ?, ?, ?);';
 
-    mysqlConnection.query(sqlquery, [
-        rest.Cod_Factura,
-        rest.Cod_Cliente,
-        rest.Fecha_Factura,
-        rest.Total_Factura,
-        rest.Metodo_Pago,
-        rest.Estado_Pago,
-        rest.Descuento_Aplicado
-    ], (err, rows, fields) => {
-        if (!err) {
-            const resultado = rows && rows[0] && rows[0][0] ? rows[0][0].Resultado : "Datos actualizados correctamente";
-            res.send(resultado);
-        } else {
-            console.log("Error al actualizar la factura:", err);
-            res.status(500).send("Error al actualizar los datos de factura. Consulte los logs del servidor.");
-        }
-    });
+    mysqlConnection.query(sqlquery,
+        [facturaId, Cod_Cliente, Fecha_Factura, Total_Factura, Metodo_Pago, Estado_Pago, Descuento_Aplicado],
+        (err, rows, fields) => {
+            if (!err) {
+                // Se asume que el SP devuelve un mensaje de éxito
+                res.status(200).json({ message: rows[0] && rows[0][0] && rows[0][0].Resultado ? rows[0][0].Resultado : "Factura actualizada correctamente." });
+            } else {
+                console.log("Error en Upd_Factura:", err);
+                res.status(500).json({ error: "Error interno del servidor al actualizar factura." });
+            }
+        });
 });
 
-// API: DELETE para eliminar factura
-app.delete('/factura/:Cod_Factura', (req, res) => {
-    const codFactura = req.params.Cod_Factura;
+
+// --------------------------------------------------
+// 5. DELETE - ELIMINAR/ANULAR FACTURA
+// Endpoint: DELETE /facturas/:id
+// SP USADO: Del_Factura_Completa(Cod_Factura) - Eliminación física en cascada.
+// --------------------------------------------------
+
+/**
+ * @route DELETE /facturas/:id
+ * @description Realiza una eliminación física de la factura y todos sus detalles asociados (El SP debe manejar la cascada).
+ */
+app.delete('/facturas/:id', (req, res) => {
+    const facturaId = req.params.id;
+    // Llamando a su SP de eliminación física que elimina en cascada (dependencias y cabecera)
     var sqlquery = 'CALL Del_Factura(?);';
 
-    mysqlConnection.query(sqlquery, [codFactura], (err, rows, fields) => {
+    mysqlConnection.query(sqlquery, [facturaId], (err, rows, fields) => {
         if (!err) {
-            const resultado = rows && rows[0] && rows[0][0] ? rows[0][0].Resultado : "Registro y dependencias eliminados correctamente";
-
-            if (resultado.includes("eliminados correctamente") || resultado.includes("eliminado correctamente")) {
-                res.status(200).send(resultado);
+            // Se asume que el SP devuelve un mensaje de éxito
+            if (rows[0] && rows[0][0].Resultado) {
+                res.status(200).json({ message: rows[0][0].Resultado });
             } else {
-                res.status(200).send(resultado);
+                res.status(200).json({ message: "Factura y dependencias eliminadas correctamente." });
             }
-
         } else {
-            console.log("Error al eliminar la factura:", err);
-            res.status(500).send("Error al eliminar los datos de factura. Consulte los logs del servidor.");
+            console.log("Error en Del_Factura:", err);
+            res.status(500).json({ error: "Error interno del servidor al eliminar factura." });
         }
     });
 });
@@ -1675,19 +1707,33 @@ app.post('/producto', (req, res) => {
 });
 
 
-//Select <-> Get producto con Procedimiento almacenado.
+//Select <-> Get producto con Procedimiento almacenado. (VERSION DEPURADA Y CORREGIDA)
 app.get('/producto', (req, res) => {
-    var sqlquery = 'CALL Sel_Producto();';
+    var sqlquery = 'CALL Sel_Producto(NULL);'; // Añadimos NULL si el SP espera un parámetro
+    // Si tu SP (Sel_Producto) NO espera el parámetro p_Cod_Producto, usa: 'CALL Sel_Producto();'
+
     mysqlConnection.query(sqlquery, (err, rows, fields) => {
         if (!err) {
-            res.status(200).json(rows[0]);
+            // **CORRECCIÓN CLAVE:** Asegurar que se responde solo con el array de datos
+            // El resultado de un SP en Node.js a menudo está en rows[0]
+            if (rows && rows[0]) {
+                res.status(200).json(rows[0]);
+            } else {
+                // Maneja el caso de resultados vacíos correctamente
+                res.status(200).json([]);
+            }
         } else {
-            console.log(err);
-            res.status(500).send("Error al obtener productos.");
+            // **DEPURACIÓN FORZOSA:** Imprimir todo el objeto de error para ver la causa real
+            console.error("=============================================");
+            console.error("¡ERROR CRÍTICO AL OBTENER PRODUCTOS!");
+            console.error(err); // Muestra el error SQL o de conexión completo
+            console.error("=============================================");
+
+            // Envía un error 500 con un mensaje genérico
+            res.status(500).send("Error interno del servidor al obtener productos. Revise la consola de Node.js.");
         }
     });
 });
-
 
 
 //Update <-> Put producto con Procedimiento almacenado.
@@ -2046,13 +2092,13 @@ app.post('/acceso', (req, res) => {
         rest.Permiso_Eliminar,
         rest.Usuario_Registro,
         rest.Fecha_Registro], (err, rows) => {
-        if (!err) {
-            res.send("Acceso ingresado correctamente!");
-        } else {
-            console.error(err);
-            res.status(500).send("Error al insertar el acceso.");
-        }
-    });
+            if (!err) {
+                res.send("Acceso ingresado correctamente!");
+            } else {
+                console.error(err);
+                res.status(500).send("Error al insertar el acceso.");
+            }
+        });
 });
 
 // Select <-> GET acceso con procedimiento almacenado.
@@ -2084,13 +2130,13 @@ app.put('/acceso', (req, res) => {
         rest.Permiso_Eliminar,
         rest.Usuario_Registro,
         rest.Fecha_Registro], (err, rows) => {
-        if (!err) {
-            res.send("Acceso actualizado correctamente!");
-        } else {
-            console.error(err);
-            res.status(500).send("Error al actualizar el acceso.");
-        }
-    });
+            if (!err) {
+                res.send("Acceso actualizado correctamente!");
+            } else {
+                console.error(err);
+                res.status(500).send("Error al actualizar el acceso.");
+            }
+        });
 });
 
 // Delete <-> DELETE acceso con procedimiento almacenado.
@@ -2192,13 +2238,13 @@ app.post('/rol', (req, res) => {
         rest.Indicador_Rol_Activo,
         rest.Usuario_Registro,
         rest.Fecha_Registro], (err, rows, fields) => {
-        if (!err) {
-            res.send("Rol ingresado correctamente!");
-        } else {
-            console.log(err);
-            res.status(500).send("Error al insertar el rol.");
-        }
-    });
+            if (!err) {
+                res.send("Rol ingresado correctamente!");
+            } else {
+                console.log(err);
+                res.status(500).send("Error al insertar el rol.");
+            }
+        });
 });
 
 // Select <-> GET rol con procedimiento almacenado.
@@ -2226,13 +2272,13 @@ app.put('/rol', (req, res) => {
         rest.Indicador_Rol_Activo,
         rest.Usuario_Registro,
         rest.Fecha_Registro], (err, rows, fields) => {
-        if (!err) {
-            res.send("Rol actualizado exitosamente!");
-        } else {
-            console.log(err);
-            res.status(500).send("Error al actualizar el rol.");
-        }
-    });
+            if (!err) {
+                res.send("Rol actualizado exitosamente!");
+            } else {
+                console.log(err);
+                res.status(500).send("Error al actualizar el rol.");
+            }
+        });
 });
 
 // Delete <-> DELETE rol con procedimiento almacenado.
@@ -2265,13 +2311,13 @@ app.post('/usuario', (req, res) => {
         rest.Indicador_Insertado,
         rest.Usuario_Registro,
         rest.Fecha_Registro], (err, rows, fields) => {
-        if (!err) {
-            res.send("Usuario ingresado correctamente!");
-        } else {
-            console.log(err);
-            res.status(500).send("Error al insertar el usuario.");
-        }
-    });
+            if (!err) {
+                res.send("Usuario ingresado correctamente!");
+            } else {
+                console.log(err);
+                res.status(500).send("Error al insertar el usuario.");
+            }
+        });
 });
 
 // Select <-> GET usuario con procedimiento almacenado.
@@ -2302,13 +2348,13 @@ app.put('/usuario', (req, res) => {
         rest.Indicador_Insertado,
         rest.Usuario_Registro,
         rest.Fecha_Registro], (err, rows, fields) => {
-        if (!err) {
-            res.send("Usuario actualizado exitosamente!");
-        } else {
-            console.log(err);
-            res.status(500).send("Error al actualizar el usuario.");
-        }
-    });
+            if (!err) {
+                res.send("Usuario actualizado exitosamente!");
+            } else {
+                console.log(err);
+                res.status(500).send("Error al actualizar el usuario.");
+            }
+        });
 });
 
 // Delete <-> DELETE usuario con procedimiento almacenado.
@@ -2322,6 +2368,699 @@ app.delete('/usuario', (req, res) => {
             console.log(err);
             res.status(500).send("Error al eliminar el usuario.");
         }
+    });
+});
+
+// ========================================
+// POST - Insertar Bitácora
+// ========================================
+app.post('/bitacora', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Ins_Bitacora(?, ?, ?, ?, ?, ?);';
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Usuario,
+        rest.Nombre_Usuario,
+        rest.Accion,
+        rest.Observaciones,
+        rest.Modulo,
+        rest.IP_Address || req.ip
+    ], (err, rows, fields) => {
+        if (!err) {
+            res.send("Registro de bitácora ingresado correctamente!");
+        } else {
+            console.log(err);
+            res.status(500).send("Error al insertar el registro.");
+        }
+    });
+});
+
+// ========================================
+// GET - Seleccionar Bitácora (todos o por código específico)
+// ========================================
+app.get('/bitacora', (req, res) => {
+    let cod = req.query.cod;
+    // Si no se proporciona código, pasar NULL al procedimiento para obtener todos
+    var sqlquery = 'CALL Sel_Bitacora(?);';
+    mysqlConnection.query(sqlquery, [cod || null], (err, rows, fields) => {
+        if (!err) {
+            res.status(200).json(rows[0]);
+        } else {
+            console.log(err);
+            res.status(500).send("Error al obtener datos.");
+        }
+    });
+});
+
+// ========================================
+// PUT - Actualizar Bitácora
+// ========================================
+app.put('/bitacora', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Upd_Bitacora(?, ?, ?, ?, ?, ?, ?);';
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Bitacora,
+        rest.Cod_Usuario,
+        rest.Nombre_Usuario,
+        rest.Accion,
+        rest.Observaciones,
+        rest.Modulo,
+        rest.IP_Address || req.ip
+    ], (err, rows, fields) => {
+        if (!err) {
+            res.send("Actualizado Exitosamente");
+        } else {
+            console.log(err);
+            res.status(500).send("Error al actualizar los datos.");
+        }
+    });
+});
+
+// ========================================
+// DELETE - Eliminar Bitácora
+// ========================================
+app.delete('/bitacora', (req, res) => {
+    let cod = req.query.cod;
+    if (!cod) {
+        return res.status(400).send("Debe proporcionar el código de bitácora a eliminar.");
+    }
+    var sqlquery = 'CALL Del_Bitacora(?);';
+    mysqlConnection.query(sqlquery, [cod], (err, rows, fields) => {
+        if (!err) {
+            res.status(200).json({
+                message: "Eliminado Exitosamente",
+                resultado: rows[0]
+            });
+        } else {
+            console.log(err);
+            res.status(500).send("Error al eliminar los datos.");
+        }
+    });
+});
+
+
+// API POST para /telefono
+// Llama al procedimiento almacenado Ins_Telefono
+
+// Asegúrate de tener mysqlConnection configurado
+// const mysqlConnection = require('../database'); 
+// const app = require('express')();
+
+/**
+ * @route POST /telefono
+ * @description Crea un nuevo registro de teléfono para una persona.
+ * @body {
+ * "Cod_Persona": 1,
+ * "Numero": "9876-5432",
+ * "Cod_Pais": "504",
+ * "Tipo": "Movil", // Debe ser 'Fijo' o 'Movil'
+ * "Descripcion": "Personal"
+ * }
+ */
+app.post('/telefono', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Ins_Telefono(?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP no devuelve los datos, solo un COMMIT.
+            // Devolvemos 201 (Created) con un mensaje.
+            res.status(201).json({ message: "Teléfono ingresado correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ error: "Error: Ya existe un teléfono con ese número para esta persona." });
+            }
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al insertar los datos." });
+        }
+    });
+});
+
+
+// API POST para /telefono
+// Llama al procedimiento almacenado Ins_Telefono
+
+// Asegúrate de tener mysqlConnection configurado
+// const mysqlConnection = require('../database'); 
+// const app = require('express')();
+
+/**
+ * @route POST /telefono
+ * @description Crea un nuevo registro de teléfono para una persona.
+ * @body {
+ * "Cod_Persona": 1,
+ * "Numero": "9876-5432",
+ * "Cod_Pais": "504",
+ * "Tipo": "Movil", // Debe ser 'Fijo' o 'Movil'
+ * "Descripcion": "Personal"
+ * }
+ */
+app.post('/telefono', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Ins_Telefono(?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP no devuelve los datos, solo un COMMIT.
+            // Devolvemos 201 (Created) con un mensaje.
+            res.status(201).json({ message: "Teléfono ingresado correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ error: "Error: Ya existe un teléfono con ese número para esta persona." });
+            }
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al insertar los datos." });
+        }
+    });
+});
+
+app.post('/telefonos', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Ins_Telefono(?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP no devuelve los datos, solo un COMMIT.
+            // Devolvemos 201 (Created) con un mensaje.
+            res.status(201).json({ message: "Teléfono ingresado correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ error: "Error: Ya existe un teléfono con ese número para esta persona." });
+            }
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al insertar los datos." });
+        }
+    });
+});
+
+// --------------------------------------------------
+// ENDPOINT GET CORREGIDO
+// --------------------------------------------------
+
+/**
+ * @route GET /telefonos
+ * @description Obtiene todos los teléfonos o uno por su Cod_Telefono.
+ * @query {
+ * "cod": 1 (Opcional: ID del teléfono a buscar)
+ * }
+ */
+app.get('/telefonos', (req, res) => {
+    // Usamos 'cod' como en el SP Sel_Persona
+    const codTelefono = req.query.cod || null;
+    var sqlquery = 'CALL Sel_Telefono(?);';
+
+    mysqlConnection.query(sqlquery, [codTelefono], (err, rows, fields) => {
+        if (!err) {
+            // El procedimiento Sel_Telefono devuelve los resultados en el primer índice (rows[0])
+            res.status(200).json(rows[0]);
+        } else {
+            console.log("Error en Sel_Telefono:", err); // Log de error mejorado
+            res.status(500).json({
+                error: "Error al obtener datos.",
+                details: err.message // Añadir detalles del error
+            });
+        }
+    });
+});
+
+
+
+
+
+
+// API POST para /telefonos
+// Llama al procedimiento almacenado Ins_Telefono
+
+// Asegúrate de tener mysqlConnection configurado
+// const mysqlConnection = require('../database'); 
+// const app = require('express')();
+
+/**
+ * @route POST /telefonos
+ * @description Crea un nuevo registro de teléfono para una persona.
+ * @body {
+ * "Cod_Persona": 1,
+ * "Numero": "9876-5432",
+ * "Cod_Pais": "504",
+ * "Tipo": "Movil", // Debe ser 'Fijo' o 'Movil'
+ * "Descripcion": "Personal"
+ * }
+ */
+app.post('/telefonos', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Ins_Telefono(?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP no devuelve los datos, solo un COMMIT.
+            // Devolvemos 201 (Created) con un mensaje.
+            res.status(201).json({ message: "Teléfono ingresado correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ error: "Error: Ya existe un teléfono con ese número para esta persona." });
+            }
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al insertar los datos." });
+        }
+    });
+});
+
+// --------------------------------------------------
+// ENDPOINT GET
+// --------------------------------------------------
+
+/**
+ * @route GET /telefonos
+ * @description Obtiene todos los teléfonos o uno por su Cod_Telefono.
+ * @query {
+ * "cod": 1 (Opcional: ID del teléfono a buscar)
+ * }
+ */
+app.get('/telefonos', (req, res) => {
+    // Usamos 'cod' como en el SP Sel_Persona
+    const codTelefono = req.query.cod || null;
+    var sqlquery = 'CALL Sel_Telefono(?);';
+
+    mysqlConnection.query(sqlquery, [codTelefono], (err, rows, fields) => {
+        if (!err) {
+            // El procedimiento Sel_Telefono devuelve los resultados en el primer índice (rows[0])
+            res.status(200).json(rows[0]);
+        } else {
+            console.log("Error en Sel_Telefono:", err); // Log de error mejorado
+            res.status(500).json({
+                error: "Error al obtener datos.",
+                details: err.message // Añadir detalles del error
+            });
+        }
+    });
+});
+
+
+
+// --------------------------------------------------
+// NUEVO ENDPOINT PUT
+// --------------------------------------------------
+
+/**
+ * @route PUT /telefonos
+ * @description Actualiza un registro de teléfono existente.
+ * @body {
+ * "Cod_Telefono": 1,
+ * "Cod_Persona": 1,
+ * "Numero": "9876-5432",
+ * "Cod_Pais": "504",
+ * "Tipo": "Movil", // Debe ser 'Fijo' o 'Movil'
+ * "Descripcion": "Personal"
+ * }
+ */
+app.put('/telefonos', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Upd_Telefono(?, ?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Telefono || !rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Telefono, Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Telefono,
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP devuelve un mensaje de éxito en rows[0][0].Resultado
+            res.status(200).json({ message: rows[0][0].Resultado || "Datos actualizados correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al actualizar los datos." });
+        }
+    });
+});
+
+
+// API POST para /telefonos
+// Llama al procedimiento almacenado Ins_Telefono
+
+// Asegúrate de tener mysqlConnection configurado
+// const mysqlConnection = require('../database'); 
+// const app = require('express')();
+
+/**
+ * @route POST /telefonos
+ * @description Crea un nuevo registro de teléfono para una persona.
+ * @body {
+ * "Cod_Persona": 1,
+ * "Numero": "9876-5432",
+ * "Cod_Pais": "504",
+ * "Tipo": "Movil", // Debe ser 'Fijo' o 'Movil'
+ * "Descripcion": "Personal"
+ * }
+ */
+app.post('/telefonos', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Ins_Telefono(?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP no devuelve los datos, solo un COMMIT.
+            // Devolvemos 201 (Created) con un mensaje.
+            res.status(201).json({ message: "Teléfono ingresado correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ error: "Error: Ya existe un teléfono con ese número para esta persona." });
+            }
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al insertar los datos." });
+        }
+    });
+});
+
+// --------------------------------------------------
+// ENDPOINT GET
+// --------------------------------------------------
+
+/**
+ * @route GET /telefonos
+ * @description Obtiene todos los teléfonos o uno por su Cod_Telefono.
+ * @query {
+ * "cod": 1 (Opcional: ID del teléfono a buscar)
+ * }
+ */
+app.get('/telefonos', (req, res) => {
+    // Usamos 'cod' como en el SP Sel_Persona
+    const codTelefono = req.query.cod || null;
+    var sqlquery = 'CALL Sel_Telefono(?);';
+
+    mysqlConnection.query(sqlquery, [codTelefono], (err, rows, fields) => {
+        if (!err) {
+            // El procedimiento Sel_Telefono devuelve los resultados en el primer índice (rows[0])
+            res.status(200).json(rows[0]);
+        } else {
+            console.log("Error en Sel_Telefono:", err); // Log de error mejorado
+            res.status(500).json({
+                error: "Error al obtener datos.",
+                details: err.message // Añadir detalles del error
+            });
+        }
+    });
+});
+
+// --------------------------------------------------
+// ENDPOINT PUT
+// --------------------------------------------------
+
+/**
+ * @route PUT /telefonos
+ * @description Actualiza un registro de teléfono existente.
+ * @body {
+ * "Cod_Telefono": 1,
+ * "Cod_Persona": 1,
+ * "Numero": "9876-5432",
+ * "Cod_Pais": "504",
+ * "Tipo": "Movil", // Debe ser 'Fijo' o 'Movil'
+ * "Descripcion": "Personal"
+ * }
+ */
+app.put('/telefonos', (req, res) => {
+    let rest = req.body;
+    var sqlquery = 'CALL Upd_Telefono(?, ?, ?, ?, ?, ?);';
+
+    // Validar que los campos requeridos estén presentes
+    if (!rest.Cod_Telefono || !rest.Cod_Persona || !rest.Numero || !rest.Cod_Pais || !rest.Tipo) {
+        return res.status(400).send("Faltan campos obligatorios (Cod_Telefono, Cod_Persona, Numero, Cod_Pais, Tipo).");
+    }
+
+    mysqlConnection.query(sqlquery, [
+        rest.Cod_Telefono,
+        rest.Cod_Persona,
+        rest.Numero,
+        rest.Cod_Pais,
+        rest.Tipo,
+        rest.Descripcion
+    ], (err, rows, fields) => {
+        if (!err) {
+            // El SP devuelve un mensaje de éxito en rows[0][0].Resultado
+            res.status(200).json({ message: rows[0][0].Resultado || "Datos actualizados correctamente" });
+        } else {
+            console.log(err); // Loguear el error completo en la consola del servidor
+
+            // Manejar errores comunes de MySQL
+            if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ error: "Error: No se encontró la persona (Cod_Persona no existe)." });
+            }
+            if (err.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || err.code === 'WARN_DATA_TRUNCATED') {
+                return res.status(400).json({ error: "Error: El valor 'Tipo' es incorrecto. Debe ser 'Fijo' o 'Movil'." });
+            }
+
+            res.status(500).json({ error: "Error al actualizar los datos." });
+        }
+    });
+});
+
+
+
+
+// --------------------------------------------------
+// NUEVO ENDPOINT DELETE
+// --------------------------------------------------
+
+/**
+ * @route DELETE /telefonos
+ * @description Elimina un registro de teléfono por su Cod_Telefono.
+ * @query {
+ * "cod": 1 (Requerido: ID del teléfono a eliminar)
+ * }
+ */
+app.delete('/telefonos', (req, res) => {
+    const codTelefono = req.query.cod;
+    var sqlquery = 'CALL Del_Telefono(?);';
+
+    // Validar que el Cod_Telefono (cod) esté presente
+    if (!codTelefono) {
+        return res.status(400).json({ error: "Falta el parámetro 'cod' para eliminar el teléfono." });
+    }
+
+    mysqlConnection.query(sqlquery, [codTelefono], (err, rows, fields) => {
+        if (!err) {
+            // El SP devuelve un mensaje de éxito en rows[0][0].Resultado
+            res.status(200).json({ message: rows[0][0].Resultado || "Teléfono eliminado correctamente" });
+        } else {
+            console.log("Error en Del_Telefono:", err);
+
+            // Manejar errores comunes de MySQL
+            // (Por ejemplo, si el teléfono está siendo usado en otra tabla)
+            if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+                return res.status(409).json({ error: "Error: Este teléfono no se puede eliminar porque está siendo referenciado en otra parte." });
+            }
+
+            res.status(500).json({
+                error: "Error al eliminar el teléfono.",
+                details: err.message
+            });
+        }
+    });
+});
+
+// ===============================
+//   MÓDULO DE REPORTES
+// ===============================
+
+// Reporte de Citas (ahora incluye cliente, empleado y tratamiento)
+app.get('/reporte/citas', (req, res) => {
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    if (!fecha_inicio || !fecha_fin) {
+        return res.status(400).json({ error: 'Debe especificar fecha_inicio y fecha_fin' });
+    }
+
+    const sqlquery = 'CALL SP_Reporte_Citas(?, ?);';
+    mysqlConnection.query(sqlquery, [fecha_inicio, fecha_fin], (err, rows) => {
+        if (err) {
+            console.error('Error en SP_Reporte_Citas:', err);
+            return res.status(500).json({ error: 'Error al generar reporte de citas', detalle: err });
+        }
+        res.status(200).json({ data: rows[0] });
+    });
+});
+
+
+// Reporte Financiero
+app.get('/reporte/financiero', (req, res) => {
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    if (!fecha_inicio || !fecha_fin) {
+        return res.status(400).json({ error: 'Debe especificar fecha_inicio y fecha_fin' });
+    }
+
+    const sqlquery = 'CALL SP_Reporte_Financiero(?, ?);';
+    mysqlConnection.query(sqlquery, [fecha_inicio, fecha_fin], (err, rows) => {
+        if (err) {
+            console.error('Error en SP_Reporte_Financiero:', err);
+            return res.status(500).json({ error: 'Error al generar reporte financiero', detalle: err });
+        }
+        res.status(200).json({ data: rows[0] });
+    });
+});
+
+
+// Reporte de Inventario (nuevo campo Valor_Total_Stock)
+app.get('/reporte/inventario', (req, res) => {
+    const sqlquery = 'CALL SP_Reporte_Inventario();';
+    mysqlConnection.query(sqlquery, (err, rows) => {
+        if (err) {
+            console.error('Error en SP_Reporte_Inventario:', err);
+            return res.status(500).json({ error: 'Error al generar reporte de inventario', detalle: err });
+        }
+        res.status(200).json({ data: rows[0] });
+    });
+});
+
+
+// Reporte de Compras
+app.get('/reporte/compras', (req, res) => {
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    if (!fecha_inicio || !fecha_fin) {
+        return res.status(400).json({ error: 'Debe especificar fecha_inicio y fecha_fin' });
+    }
+
+    const sqlquery = 'CALL SP_Reporte_Compras(?, ?);';
+    mysqlConnection.query(sqlquery, [fecha_inicio, fecha_fin], (err, rows) => {
+        if (err) {
+            console.error('Error en SP_Reporte_Compras:', err);
+            return res.status(500).json({ error: 'Error al generar reporte de compras', detalle: err });
+        }
+        res.status(200).json({ data: rows[0] });
+    });
+});
+
+
+// Reporte de Tratamientos (ahora incluye empleado)
+app.get('/reporte/tratamientos', (req, res) => {
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    if (!fecha_inicio || !fecha_fin) {
+        return res.status(400).json({ error: 'Debe especificar fecha_inicio y fecha_fin' });
+    }
+
+    const sqlquery = 'CALL SP_Reporte_Tratamiento(?, ?);';
+    mysqlConnection.query(sqlquery, [fecha_inicio, fecha_fin], (err, rows) => {
+        if (err) {
+            console.error('Error en SP_Reporte_Tratamiento:', err);
+            return res.status(500).json({ error: 'Error al generar reporte de tratamientos', detalle: err });
+        }
+        res.status(200).json({ data: rows[0] });
     });
 });
 
