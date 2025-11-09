@@ -15,6 +15,7 @@ use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\FacturaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\ServicioController;
 
@@ -38,7 +39,6 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('l
 // Logout (Debe ser POST)
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-
 // ========================================
 // REGISTRO DE USUARIOS Y PERSONAS
 // ========================================
@@ -46,7 +46,6 @@ Route::get('/register-usuario', [RegisteredUsuarioController::class, 'create'])-
 Route::post('/register-usuario', [RegisteredUsuarioController::class, 'store']);
 Route::get('/register-persona', [RegisteredPersonaController::class, 'create'])->name('register.persona');
 Route::post('/register-persona', [RegisteredPersonaController::class, 'store']);
-
 
 // ========================================
 // RUTAS DE 2FA (SIN VERIFICACIÓN 2FA)
@@ -57,7 +56,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
 });
-
 
 // ========================================
 // RUTAS PROTEGIDAS (REQUIEREN AUTENTICACIÓN + VERIFICACIÓN 2FA + POLICIES)
@@ -74,7 +72,6 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
-
 
     // ----------------------------------------
     // B. MÓDULOS PROTEGIDOS POR POLICIES (Route::resource)
@@ -119,47 +116,154 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         ->middleware('can:delete,App\Models\Cita');
 
     // ========================================
-    // 🟢 MÓDULO DE INVENTARIO - COMPLETO
+    // 🟢 MÓDULO DE INVENTARIO - COMPLETO Y CORREGIDO
     // ========================================
     
-    // Vista principal del inventario
-    Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario')
-         ->middleware('can:viewAny,App\Models\Product');
+    // Vista principal del inventario - ESTA ES LA RUTA QUE FALTABA NOMBRAR
+    Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario');
 
-    // 🆕 RUTAS API DE INVENTARIO
+    // Rutas API del inventario
     Route::prefix('api/inventario')->group(function () {
-        // Obtener todos los productos
-        Route::get('/productos', [InventarioController::class, 'getProductos'])
-             ->name('api.inventario.productos')
-             ->middleware('can:viewAny,App\Models\Product');
+        Route::get('/productos', [InventarioController::class, 'obtenerProductos']);
+        Route::get('/productos/{id}', [InventarioController::class, 'obtenerProducto']);
+        Route::post('/productos', [InventarioController::class, 'crearProducto']);
+        Route::put('/productos/{id}', [InventarioController::class, 'actualizarProducto']);
+        Route::delete('/productos/{id}', [InventarioController::class, 'eliminarProducto']);
         
-        // Crear nuevo producto
-        Route::post('/productos', [InventarioController::class, 'store'])
-             ->name('api.inventario.store')
-             ->middleware('can:create,App\Models\Product');
+        // Rutas para estadísticas y utilidades
+        Route::get('/estadisticas', [InventarioController::class, 'obtenerEstadisticas']);
+        Route::get('/proveedores', [InventarioController::class, 'obtenerProveedores']);
+        Route::get('/relaciones', [InventarioController::class, 'obtenerRelaciones']);
+    });
+
+    // ==================== RUTAS API PARA PROVEEDOR ====================
+    
+    // Insert Proveedor
+    Route::post('/api/proveedor', function () {
+        $rest = request()->all();
         
-        // Actualizar producto existente
-        Route::put('/productos/{id}', [InventarioController::class, 'update'])
-             ->name('api.inventario.update')
-             ->middleware('can:update,App\Models\Product');
+        try {
+            DB::statement('CALL Ins_Proveedor(?, ?, ?, ?, ?)', [
+                $rest['Nombre_Proveedor'] ?? null,
+                $rest['Contacto_Principal'] ?? null,
+                $rest['Telefono'] ?? null,
+                $rest['Email'] ?? null,
+                $rest['Direccion'] ?? null
+            ]);
+            
+            return response("Proveedor ingresado correctamente!", 200);
+        } catch (\Exception $e) {
+            return response("Error al insertar proveedor: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Select Proveedor
+    Route::get('/api/proveedor', function () {
+        try {
+            $result = DB::select('CALL Sel_Proveedor(NULL)');
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener proveedores: ' . $e->getMessage()], 500);
+        }
+    });
+
+    // Update Proveedor
+    Route::put('/api/proveedor', function () {
+        $rest = request()->all();
         
-        // Eliminar producto
-        Route::delete('/productos/{id}', [InventarioController::class, 'destroy'])
-             ->name('api.inventario.destroy')
-             ->middleware('can:delete,App\Models\Product');
+        try {
+            DB::statement('CALL Upd_Proveedor(?, ?, ?, ?, ?, ?)', [
+                $rest['Cod_Proveedor'] ?? null,
+                $rest['Nombre_Proveedor'] ?? null,
+                $rest['Contacto_Principal'] ?? null,
+                $rest['Telefono'] ?? null,
+                $rest['Email'] ?? null,
+                $rest['Direccion'] ?? null
+            ]);
+            
+            return response("Proveedor actualizado exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al actualizar proveedor: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Delete Proveedor
+    Route::delete('/api/proveedor', function () {
+        $rest = request()->all();
         
-        // Obtener proveedores (datos estáticos por ahora)
-        Route::get('/proveedores', [InventarioController::class, 'getProveedores'])
-             ->name('api.inventario.proveedores');
+        try {
+            DB::statement('CALL Del_Proveedor(?)', [
+                $rest['Cod_Proveedor'] ?? null
+            ]);
+            
+            return response("Proveedor eliminado exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al eliminar proveedor: " . $e->getMessage(), 500);
+        }
+    });
+
+    // ==================== RUTAS API PARA PRODUCTO-PROVEEDOR ====================
+    
+    // Insert Producto-Proveedor
+    Route::post('/api/producto_proveedor', function () {
+        $rest = request()->all();
         
-        // Obtener categorías (datos estáticos por ahora)
-        Route::get('/categorias', [InventarioController::class, 'getCategorias'])
-             ->name('api.inventario.categorias');
+        try {
+            DB::statement('CALL Ins_Producto_Proveedor(?, ?, ?, ?)', [
+                $rest['Cod_Producto'] ?? null,
+                $rest['Cod_Proveedor'] ?? null,
+                $rest['Precio_Ultima_Compra'] ?? null,
+                $rest['Fecha_Ultima_Compra'] ?? null
+            ]);
+            
+            return response("Relación producto-proveedor ingresada correctamente!", 200);
+        } catch (\Exception $e) {
+            return response("Error al insertar relación: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Select Producto-Proveedor
+    Route::get('/api/producto_proveedor', function () {
+        try {
+            $result = DB::select('CALL Sel_Producto_Proveedor(NULL)');
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener relaciones: ' . $e->getMessage()], 500);
+        }
+    });
+
+    // Update Producto-Proveedor
+    Route::put('/api/producto_proveedor', function () {
+        $rest = request()->all();
         
-        // Obtener estadísticas del inventario
-        Route::get('/estadisticas', [InventarioController::class, 'getEstadisticas'])
-             ->name('api.inventario.estadisticas')
-             ->middleware('can:viewAny,App\Models\Product');
+        try {
+            DB::statement('CALL Upd_Producto_Proveedor(?, ?, ?, ?, ?)', [
+                $rest['Cod_Prod_Prov'] ?? null,
+                $rest['Cod_Producto'] ?? null,
+                $rest['Cod_Proveedor'] ?? null,
+                $rest['Precio_Ultima_Compra'] ?? null,
+                $rest['Fecha_Ultima_Compra'] ?? null
+            ]);
+            
+            return response("Relación producto-proveedor actualizada exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al actualizar relación: " . $e->getMessage(), 500);
+        }
+    });
+
+    // Delete Producto-Proveedor
+    Route::delete('/api/producto_proveedor', function () {
+        $rest = request()->all();
+        
+        try {
+            DB::statement('CALL Del_Producto_Proveedor(?)', [
+                $rest['Cod_Prod_Prov'] ?? null
+            ]);
+            
+            return response("Relación producto-proveedor eliminada exitosamente", 200);
+        } catch (\Exception $e) {
+            return response("Error al eliminar relación: " . $e->getMessage(), 500);
+        }
     });
 
     // ========================================
@@ -180,6 +284,76 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
             ->middleware('can:update,App\Models\Tratamiento');
         Route::delete('/{id}', [ServicioController::class, 'destroy'])->name('destroy')
             ->middleware('can:delete,App\Models\Tratamiento');
+    });
+
+    // ========================================
+    // 🟢 MÓDULO DE GESTIÓN DE PERSONAL
+    // ========================================
+    
+    // Vista principal de gestión de personal
+    Route::get('/gestion-personal', [GestionPersonalController::class, 'index'])->name('gestion-personal.index')
+         ->middleware('can:viewAny,App\Models\Usuario');
+
+    // Rutas API de gestión de personal
+    Route::prefix('api/gestion-personal')->name('api.gestion-personal.')->group(function () {
+        // Obtener todo el personal
+        Route::get('/', [GestionPersonalController::class, 'getPersonal'])->name('get')
+            ->middleware('can:viewAny,App\Models\Usuario');
+        
+        // Crear nuevo personal
+        Route::post('/', [GestionPersonalController::class, 'store'])->name('store')
+            ->middleware('can:create,App\Models\Usuario');
+        
+        // Obtener un personal específico
+        Route::get('/{id}', [GestionPersonalController::class, 'show'])->name('show')
+            ->middleware('can:view,App\Models\Usuario');
+        
+        // Actualizar personal
+        Route::put('/{id}', [GestionPersonalController::class, 'update'])->name('update')
+            ->middleware('can:update,App\Models\Usuario');
+        
+        // Eliminar personal
+        Route::delete('/{id}', [GestionPersonalController::class, 'destroy'])->name('destroy')
+            ->middleware('can:delete,App\Models\Usuario');
+        
+        // Obtener estadísticas del personal
+        Route::get('/estadisticas/general', [GestionPersonalController::class, 'getEstadisticas'])->name('estadisticas')
+            ->middleware('can:viewAny,App\Models\Usuario');
+    });
+
+    // ========================================
+    // 🟢 MÓDULO DE REPORTES
+    // ========================================
+    
+    // Vista principal de reportes
+    Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes')
+         ->middleware('can:viewAny,App\Models\Cliente');
+
+    // Rutas API de reportes
+    Route::prefix('api/reportes')->name('api.reportes.')->group(function () {
+        // Obtener reportes generales
+        Route::get('/general', [ReportesController::class, 'getReporteGeneral'])->name('general')
+            ->middleware('can:viewAny,App\Models\Cliente');
+        
+        // Obtener reporte de ventas
+        Route::get('/ventas', [ReportesController::class, 'getReporteVentas'])->name('ventas')
+            ->middleware('can:viewAny,App\Models\Factura');
+        
+        // Obtener reporte de citas
+        Route::get('/citas', [ReportesController::class, 'getReporteCitas'])->name('citas')
+            ->middleware('can:viewAny,App\Models\Cita');
+        
+        // Obtener reporte de inventario
+        Route::get('/inventario', [ReportesController::class, 'getReporteInventario'])->name('inventario')
+            ->middleware('can:viewAny,App\Models\Product');
+        
+        // Exportar reporte a PDF
+        Route::post('/export/pdf', [ReportesController::class, 'exportPdf'])->name('export.pdf')
+            ->middleware('can:viewAny,App\Models\Cliente');
+        
+        // Exportar reporte a Excel
+        Route::post('/export/excel', [ReportesController::class, 'exportExcel'])->name('export.excel')
+            ->middleware('can:viewAny,App\Models\Cliente');
     });
 
     // ========================================
@@ -207,29 +381,22 @@ Route::middleware(['auth', 'twofactor'])->group(function () {
         // ========================================
 
         // Agrupa las rutas de bitácora bajo el prefijo '/bitacora' y el nombre 'bitacora.'
-        // Asume que este bloque está dentro del middleware de autenticación que uses.
         Route::prefix('bitacora')->name('bitacora.')->group(function () {
             
             // 1. Mostrar la tabla de la Bitácora (URL: /bitacora)
-            // Nombre: bitacora.index
             Route::get('/', [BitacoraController::class, 'index'])->name('index');
 
-            // 2. Exportar los datos actuales (filtrados) a PDF (URL: /bitacora/export/pdf)
-            // Nombre: bitacora.export.pdf (preferible sobre bitacora.pdf)
+            // 2. Exportar los datos actuales (filtrados) a PDF
             Route::get('/export/pdf', [BitacoraController::class, 'exportPdf'])->name('export.pdf');
 
-            // 3. Mostrar los detalles de un registro (para la función actualizarRegistro en JS)
-            // Nombre: bitacora.show (URL: /bitacora/{id})
+            // 3. Mostrar los detalles de un registro
             Route::get('/{id}', [BitacoraController::class, 'show'])->name('show');
             
-            // 4. Elimina un registro de la bitácora (Eliminación física del log)
-            // Nombre: bitacora.destroy (URL: /bitacora/{id})
+            // 4. Elimina un registro de la bitácora
             Route::delete('/{id}', [BitacoraController::class, 'destroy'])->name('destroy');
 
-            // 5. Procesa la restauración de un registro previamente eliminado
-            // Nombre: bitacora.restaurar (URL: /bitacora/restaurar/{id})
+            // 5. Procesa la restauración de un registro
             Route::post('/restaurar/{id}', [BitacoraController::class, 'restaurar'])->name('restaurar');
-
         });
 
     }); // CIERRE DEL PREFIX 'administracion'
