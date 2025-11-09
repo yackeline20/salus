@@ -1,9 +1,11 @@
-// resources/views/factura/recibo.blade.php
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Recibo de Factura #F-{{ str_pad($factura['Cod_Factura'], 4, '0', STR_PAD_LEFT) }}</title>
+    <title>Recibo de Factura #F-{{ str_pad($factura['Cod_Factura'] ?? 'N/A', 4, '0', STR_PAD_LEFT) }}</title>
+
+    {{-- 🚨 NOTA IMPORTANTE: Si estás usando este archivo como la vista web dentro de tu layout principal (AdminLTE),
+         debes quitar todas las etiquetas <head> y <body> y usar @extends('tu.layout.principal') --}}
+
     <style>
         /* Estilos básicos para el PDF */
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; margin: 0; padding: 0; }
@@ -21,6 +23,22 @@
         .paid { background-color: #28a745; }
         .pending { background-color: #ffc107; }
         .cancelled { background-color: #dc3545; }
+
+        /* Estilo para el botón PDF (solo para la vista web) */
+        .btn-pdf {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #dc3545;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            float: right;
+            margin-top: 10px;
+        }
+        .btn-pdf:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -29,42 +47,71 @@
     <div class="header">
         <h1>RECIBO DE VENTA</h1>
         <p>Clínica Estética | Su Dirección Aquí</p>
+
+        {{-- 🟢 AQUÍ ESTÁ EL BOTÓN AGREGADO 🟢 --}}
+        {{-- Se asegura que $factura y Cod_Factura existan antes de generar el enlace --}}
+        @if (!empty($factura['Cod_Factura']))
+            <a href="{{ route('factura.export_pdf', $factura['Cod_Factura']) }}" class="btn-pdf" target="_blank" title="Generar PDF">
+                Generar PDF
+            </a>
+        @endif
+
     </div>
 
     {{-- Información de Factura --}}
     <div style="clear: both;">
         <div class="info-box">
-            <strong>Factura No:</strong> #F-{{ str_pad($factura['Cod_Factura'], 4, '0', STR_PAD_LEFT) }}<br>
+            <strong>Factura No:</strong> #F-{{ str_pad($factura['Cod_Factura'] ?? 'N/A', 4, '0', STR_PAD_LEFT) }}<br>
             <strong>Fecha de Emisión:</strong> {{ date('d/m/Y', strtotime($factura['Fecha_Factura'] ?? now())) }}<br>
             <strong>Método de Pago:</strong> {{ $factura['Metodo_Pago'] ?? 'N/A' }}
         </div>
         <div class="info-box right">
-            <strong>Cliente:</strong> {{ $factura['Cod_Cliente'] ?? 'Cliente No. ' . $factura['Cod_Cliente'] }}<br>
-            {{-- Aquí podrías añadir Nombre del Cliente si tu API lo provee --}}
+            {{-- Usamos los campos de Persona (Nombre, Apellido, DNI) obtenidos por fetchClientInfo --}}
+            <strong>Cliente:</strong> {{ $factura['Nombre'] ?? 'N/A' }} {{ $factura['Apellido'] ?? '' }}<br>
+            <strong>DNI:</strong> {{ $factura['DNI'] ?? 'N/A' }}<br>
             <strong>Vendedor:</strong> {{ $factura['Vendedor'] ?? 'N/A' }}
         </div>
     </div>
     <div style="clear: both;"></div>
 
     {{-- Detalles de los Productos/Servicios (Usaremos los detalles de la factura si están disponibles) --}}
-    @if (!empty($factura['Detalles_Factura']))
+    @if (!empty($detalles))
         <h3>Detalles del Consumo</h3>
         <table class="table">
             <thead>
                 <tr>
+                    <th style="width: 10%">Tipo</th>
                     <th>Descripción</th>
-                    <th style="width: 10%">Cant.</th>
-                    <th style="width: 15%">Precio Unit.</th>
-                    <th style="width: 15%">Total</th>
+                    <th style="width: 10%; text-align: center;">Cant.</th>
+                    <th style="width: 15%; text-align: right;">Precio Unit.</th>
+                    <th style="width: 15%; text-align: right;">Total</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($factura['Detalles_Factura'] as $detalle)
+                @foreach ($detalles as $detalle)
+                    @php
+                        $isProduct = isset($detalle['Cod_Producto']);
+                        $type = $isProduct ? 'Producto' : 'Tratamiento';
+
+                        if ($isProduct) {
+                            $description = $detalle['Nombre_Producto'] ?? 'Producto Desconocido';
+                            $quantity = $detalle['Cantidad'] ?? 1;
+                            $unitPrice = $detalle['Precio_Unitario'] ?? 0;
+                            $totalDetalle = $unitPrice * $quantity;
+                        } else {
+                            $description = ($detalle['Nombre_Tratamiento'] ?? 'Tratamiento Desconocido') .
+                                ($detalle['Descripcion'] ? ' (' . $detalle['Descripcion'] . ')' : '');
+                            $quantity = 1;
+                            $unitPrice = $detalle['Costo'] ?? 0;
+                            $totalDetalle = $unitPrice;
+                        }
+                    @endphp
                 <tr>
-                    <td>{{ $detalle['Nombre_Servicio'] ?? $detalle['Nombre_Producto'] ?? 'Item sin descripción' }}</td>
-                    <td>{{ $detalle['Cantidad'] ?? 1 }}</td>
-                    <td>${{ number_format($detalle['Precio_Unitario'] ?? 0, 2) }}</td>
-                    <td>${{ number_format(($detalle['Total_Detalle'] ?? 0), 2) }}</td>
+                    <td>{{ $type }}</td>
+                    <td>{{ $description }}</td>
+                    <td style="text-align: center;">{{ $quantity }}</td>
+                    <td style="text-align: right;">L. {{ number_format($unitPrice, 2) }}</td>
+                    <td style="text-align: right;">L. {{ number_format($totalDetalle, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -77,20 +124,20 @@
     <div class="totals">
         <table style="width: 100%;">
             <tr>
-                <td>**Subtotal:**</td>
-                <td style="text-align: right;">${{ number_format($factura['Subtotal'] ?? 0, 2) }}</td>
+                <td><strong>Subtotal:</strong></td>
+                <td style="text-align: right;">L. {{ number_format($factura['Subtotal'] ?? 0, 2) }}</td>
             </tr>
             <tr>
-                <td>**Descuento aplicado:**</td>
-                <td style="text-align: right; color: #dc3545;">(${{ number_format($factura['Descuento_Aplicado'] ?? 0, 2) }})</td>
+                <td><strong>Descuento aplicado:</strong></td>
+                <td style="text-align: right; color: #dc3545;">(L. {{ number_format($factura['Descuento_Aplicado'] ?? 0, 2) }})</td>
             </tr>
             <tr>
-                <td>**Impuestos (IVA/ITBMS):**</td>
-                <td style="text-align: right;">${{ number_format($factura['Impuesto_Total'] ?? 0, 2) }}</td>
+                <td><strong>Impuestos (IVA/ITBMS):</strong></td>
+                <td style="text-align: right;">L. {{ number_format($factura['Impuesto_Total'] ?? 0, 2) }}</td>
             </tr>
             <tr style="border-top: 2px solid #333;">
                 <td><strong style="font-size: 14px;">TOTAL A PAGAR:</strong></td>
-                <td style="text-align: right;"><strong style="font-size: 14px; color: #28a745;">${{ number_format($factura['Total_Factura'] ?? 0, 2) }}</strong></td>
+                <td style="text-align: right;"><strong style="font-size: 14px; color: #28a745;">L. {{ number_format($factura['Total_Factura'] ?? 0, 2) }}</strong></td>
             </tr>
             <tr>
                 <td colspan="2" style="text-align: right;">
