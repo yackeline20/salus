@@ -7,7 +7,23 @@
 @stop
 
 @section('content')
-    <div class="container-fluid p-0">
+    {{-- IMPORTANTE: Definir la función ANTES de usarla --}}
+    @php
+    if (!function_exists('obtenerComisionesEmpleado')) {
+        function obtenerComisionesEmpleado($codEmpleado) {
+            try {
+                $apiService = new \App\Services\ApiService();
+                $comisiones = $apiService->getComisiones();
+                return collect($comisiones)->where('Cod_Empleado', $codEmpleado)->take(3)->all();
+            } catch (\Exception $e) {
+                \Log::error('Error al obtener comisiones: ' . $e->getMessage());
+                return [];
+            }
+        }
+    }
+    @endphp
+
+    <div class="container-fluid">
         <!-- Header Welcome -->
         <div class="welcome-header">
             <div class="welcome-content">
@@ -22,7 +38,7 @@
 
         <!-- Alertas de éxito/error -->
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" style="border-radius: 15px; border-left: 5px solid #10b981;">
+            <div class="alert alert-success alert-dismissible fade show custom-alert">
                 <i class="fas fa-check-circle mr-2"></i>
                 {{ session('success') }}
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -30,7 +46,7 @@
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" style="border-radius: 15px; border-left: 5px solid #ef4444;">
+            <div class="alert alert-danger alert-dismissible fade show custom-alert">
                 <i class="fas fa-exclamation-triangle mr-2"></i>
                 {{ session('error') }}
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -38,252 +54,362 @@
         @endif
 
         <!-- Formulario de Nuevo Empleado -->
-        <div class="appointment-card mb-4">
-            <div class="appointment-header">
-                <i class="fas fa-user-plus" style="color: #c9a876; font-size: 24px;"></i>
-                <h2>Agregar Nuevo Empleado</h2>
-            </div>
-
-            <form action="{{ route('gestion-personal.store') }}" method="POST" id="empleadoForm">
-                @csrf
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Nombre</label>
-                            <input type="text" class="form-control custom-input" name="nombre" placeholder="Nombre" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Apellido</label>
-                            <input type="text" class="form-control custom-input" name="apellido" placeholder="Apellido" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>DNI</label>
-                            <input type="text" class="form-control custom-input" name="dni" placeholder="Número de identificación" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Fecha de Nacimiento</label>
-                            <input type="date" class="form-control custom-input" name="fecha_nacimiento" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Género</label>
-                            <select class="form-control custom-input" name="genero" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="masculino">Masculino</option>
-                                <option value="femenino">Femenino</option>
-                                <option value="otro">Otro</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Correo Electrónico</label>
-                            <input type="email" class="form-control custom-input" name="email" placeholder="correo@salus.com" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Departamento / Cargo</label>
-                            <select class="form-control custom-input" name="rol" required>
-                                <option value="">Seleccionar departamento...</option>
-                                <option value="Administración">Administración</option>
-                                <option value="Enfermería">Enfermería</option>
-                                <option value="Recepción">Recepción</option>
-                                <option value="Limpieza">Limpieza</option>
-                                <option value="Médico">Médico</option>
-                                <option value="Esteticista">Esteticista</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Fecha de Contratación</label>
-                            <input type="date" class="form-control custom-input" name="fecha_contratacion" required>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Salario Base ($)</label>
-                            <input type="number" step="0.01" class="form-control custom-input" name="salario" placeholder="Ej: 2500.00" required>
-                        </div>
-                    </div>
+        <div class="card appointment-card mb-4">
+            <div class="card-body">
+                <div class="appointment-header">
+                    <i class="fas fa-user-plus" style="color: #c9a876; font-size: 24px;"></i>
+                    <h2>Agregar Nuevo Empleado</h2>
                 </div>
 
-                <button type="submit" class="btn btn-salus">
-                    <i class="fas fa-user-check mr-2"></i>
-                    Registrar Empleado
-                </button>
-            </form>
+                <form action="{{ route('gestion-personal.store') }}" method="POST" id="empleadoForm">
+                    @csrf
+                    <div class="row">
+                        <!-- NOMBRE -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nombre <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control custom-input @error('nombre') is-invalid @enderror" 
+                                       name="nombre" 
+                                       placeholder="Ingrese el nombre" 
+                                       value="{{ old('nombre') }}" 
+                                       required>
+                                @error('nombre')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- APELLIDO -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Apellido <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control custom-input @error('apellido') is-invalid @enderror" 
+                                       name="apellido" 
+                                       placeholder="Ingrese el apellido" 
+                                       value="{{ old('apellido') }}" 
+                                       required>
+                                @error('apellido')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- DNI -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>DNI <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control custom-input @error('dni') is-invalid @enderror" 
+                                       name="dni" 
+                                       placeholder="0000-0000-00000"
+                                       maxlength="15"
+                                       value="{{ old('dni') }}" 
+                                       required>
+                                <small class="form-text text-muted">13 dígitos, sin guiones</small>
+                                @error('dni')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- TELÉFONO -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Teléfono <span class="text-danger">*</span></label>
+                                <input type="tel" 
+                                       class="form-control custom-input @error('telefono') is-invalid @enderror" 
+                                       name="telefono" 
+                                       placeholder="9999-9999"
+                                       maxlength="9"
+                                       value="{{ old('telefono') }}" 
+                                       required>
+                                <small class="form-text text-muted">8 dígitos, sin guiones</small>
+                                @error('telefono')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- FECHA DE NACIMIENTO -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Fecha de Nacimiento <span class="text-danger">*</span></label>
+                                <input type="date" 
+                                       class="form-control custom-input @error('fecha_nacimiento') is-invalid @enderror" 
+                                       name="fecha_nacimiento" 
+                                       max="{{ date('Y-m-d', strtotime('-18 years')) }}"
+                                       value="{{ old('fecha_nacimiento') }}" 
+                                       required>
+                                <small class="form-text text-muted">Debe ser mayor de 18 años</small>
+                                @error('fecha_nacimiento')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- GÉNERO -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Género <span class="text-danger">*</span></label>
+                                <select class="form-control custom-input @error('genero') is-invalid @enderror" 
+                                        name="genero" 
+                                        required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Masculino" {{ old('genero') == 'Masculino' ? 'selected' : '' }}>Masculino</option>
+                                    <option value="Femenino" {{ old('genero') == 'Femenino' ? 'selected' : '' }}>Femenino</option>
+                                    <option value="Otro" {{ old('genero') == 'Otro' ? 'selected' : '' }}>Otro</option>
+                                </select>
+                                @error('genero')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- CORREO ELECTRÓNICO -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Correo Electrónico <span class="text-danger">*</span></label>
+                                <input type="email" 
+                                       class="form-control custom-input @error('email') is-invalid @enderror" 
+                                       name="email" 
+                                       placeholder="correo@ejemplo.com" 
+                                       value="{{ old('email') }}" 
+                                       required>
+                                @error('email')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- DEPARTAMENTO / CARGO -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Departamento / Cargo <span class="text-danger">*</span></label>
+                                <select class="form-control custom-input @error('rol') is-invalid @enderror" 
+                                        name="rol" 
+                                        required>
+                                    <option value="">Seleccionar departamento...</option>
+                                    <option value="Administración" {{ old('rol') == 'Administración' ? 'selected' : '' }}>Administración</option>
+                                    <option value="Enfermería" {{ old('rol') == 'Enfermería' ? 'selected' : '' }}>Enfermería</option>
+                                    <option value="Recepción" {{ old('rol') == 'Recepción' ? 'selected' : '' }}>Recepción</option>
+                                    <option value="Limpieza" {{ old('rol') == 'Limpieza' ? 'selected' : '' }}>Limpieza</option>
+                                    <option value="Médico" {{ old('rol') == 'Médico' ? 'selected' : '' }}>Médico</option>
+                                    <option value="Esteticista" {{ old('rol') == 'Esteticista' ? 'selected' : '' }}>Esteticista</option>
+                                </select>
+                                @error('rol')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- FECHA DE CONTRATACIÓN -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Fecha de Contratación <span class="text-danger">*</span></label>
+                                <input type="date" 
+                                       class="form-control custom-input @error('fecha_contratacion') is-invalid @enderror" 
+                                       name="fecha_contratacion" 
+                                       max="{{ date('Y-m-d') }}"
+                                       value="{{ old('fecha_contratacion', date('Y-m-d')) }}" 
+                                       required>
+                                @error('fecha_contratacion')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- SALARIO BASE -->
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label>Salario Base ($) <span class="text-danger">*</span></label>
+                                <input type="number" 
+                                       step="0.01" 
+                                       min="0"
+                                       class="form-control custom-input @error('salario') is-invalid @enderror" 
+                                       name="salario" 
+                                       placeholder="Ejemplo: 30000.00" 
+                                       value="{{ old('salario') }}" 
+                                       required>
+                                <small class="form-text text-muted">Ingrese el salario mensual base</small>
+                                @error('salario')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-salus">
+                        <i class="fas fa-user-check mr-2"></i>
+                        Registrar Empleado
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Sección de Comisiones Rápidas -->
-        <div class="appointment-card mb-4">
-            <div class="appointment-header">
-                <i class="fas fa-money-bill-wave" style="color: #c9a876; font-size: 24px;"></i>
-                <h2>Registrar Comisión Rápida</h2>
-            </div>
-
-            <form action="{{ route('gestion-personal.comision.store') }}" method="POST" id="comisionForm">
-                @csrf
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label>Empleado</label>
-                            <select class="form-control custom-input" name="cod_empleado" id="selectEmpleado" required>
-                                <option value="">Cargando empleados...</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label>Monto ($)</label>
-                            <input type="number" step="0.01" class="form-control custom-input" name="monto_comision" placeholder="Ej: 500.00" required>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label>Fecha de Comisión</label>
-                            <input type="date" class="form-control custom-input" name="fecha_comision" required>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Descripción</label>
-                            <textarea class="form-control custom-input" name="concepto_comision" rows="3" placeholder="Ej: Comisión por venta de tratamiento de botox..." required></textarea>
-                        </div>
-                    </div>
+        <div class="card appointment-card mb-4">
+            <div class="card-body">
+                <div class="appointment-header">
+                    <i class="fas fa-money-bill-wave" style="color: #c9a876; font-size: 24px;"></i>
+                    <h2>Registrar Comisión Rápida</h2>
                 </div>
 
-                <button type="submit" class="btn btn-salus">
-                    <i class="fas fa-plus-circle mr-2"></i>
-                    Registrar Comisión
-                </button>
-            </form>
+                <form action="{{ route('gestion-personal.comision.store') }}" method="POST" id="comisionForm">
+                    @csrf
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Empleado</label>
+                                <select class="form-control custom-input" name="cod_empleado" id="selectEmpleado" required>
+                                    <option value="">Cargando empleados...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Monto ($)</label>
+                                <input type="number" step="0.01" class="form-control custom-input" name="monto_comision" placeholder="Ej: 500.00" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Fecha de Comisión</label>
+                                <input type="date" class="form-control custom-input" name="fecha_comision" max="{{ date('Y-m-d') }}" required>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label>Descripción</label>
+                                <textarea class="form-control custom-input" name="concepto_comision" rows="3" placeholder="Ej: Comisión por venta de tratamiento de botox..." required></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-salus">
+                        <i class="fas fa-plus-circle mr-2"></i>
+                        Registrar Comisión
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Lista de Empleados -->
-        <div class="appointments-list">
-            <div class="list-header">
-                <h2>Personal Activo</h2>
-                <div class="filter-tabs">
-                    <button class="filter-tab active" data-filter="todos">Todos</button>
-                    <button class="filter-tab" data-filter="Administración">Administración</button>
-                    <button class="filter-tab" data-filter="Enfermería">Enfermería</button>
-                    <button class="filter-tab" data-filter="Recepción">Recepción</button>
-                    <button class="filter-tab" data-filter="Limpieza">Limpieza</button>
-                    <button class="filter-tab" data-filter="Médico">Médico</button>
-                    <button class="filter-tab" data-filter="Esteticista">Esteticista</button>
+        <div class="card appointments-list">
+            <div class="card-body">
+                <div class="list-header">
+                    <h2>Personal Activo</h2>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="todos">Todos</button>
+                        <button class="filter-tab" data-filter="Administración">Administración</button>
+                        <button class="filter-tab" data-filter="Enfermería">Enfermería</button>
+                        <button class="filter-tab" data-filter="Recepción">Recepción</button>
+                        <button class="filter-tab" data-filter="Limpieza">Limpieza</button>
+                        <button class="filter-tab" data-filter="Médico">Médico</button>
+                        <button class="filter-tab" data-filter="Esteticista">Esteticista</button>
+                    </div>
                 </div>
-            </div>
 
-            <div id="empleadosTableBody">
-                @if(isset($empleados) && count($empleados) > 0)
-                    @foreach($empleados as $empleado)
-                        @php
-                            $rol = $empleado['Rol'] ?? 'N/A';
-                            $initials = '';
-                            $nombre = ($empleado['Nombre'] ?? '') . ' ' . ($empleado['Apellido'] ?? '');
-                            $words = explode(' ', trim($nombre));
-                            foreach($words as $word) {
-                                if (!empty($word)) {
-                                    $initials .= strtoupper(substr($word, 0, 1));
-                                }
-                            }
-                            
-                            // Obtener comisiones del empleado
-                            $comisiones = obtenerComisionesEmpleado($empleado['Cod_Empleado'] ?? 0);
-                            $totalComisiones = collect($comisiones)->sum('Monto_Comision');
-                            $salarioTotal = ($empleado['Salario'] ?? 0) + $totalComisiones;
-                        @endphp
-                        <div class="employee-item" data-department="{{ $rol }}">
-                            <div class="employee-info">
-                                <div class="employee-avatar">{{ $initials }}</div>
-                                <div class="employee-details">
-                                    <h4>{{ $nombre }}</h4>
-                                    <p><i class="fas fa-envelope mr-1"></i> {{ $empleado['Correo'] ?? 'N/A' }}</p>
-                                    <p><i class="fas fa-building mr-1"></i> {{ $rol }}</p>
-                                    <p><i class="fas fa-calendar mr-1"></i> Desde {{ $empleado['Fecha_Contratacion'] ?? 'N/A' }}</p>
-                                    
-                                    <!-- Comisiones del empleado -->
-                                    @if(count($comisiones) > 0)
-                                        <div class="comisiones-list mt-2">
-                                            <small class="text-muted">
-                                                <i class="fas fa-money-bill-wave mr-1"></i>
-                                                <strong>Comisiones:</strong> 
-                                                @foreach($comisiones as $comision)
-                                                    <span class="badge badge-light mr-1">
-                                                        ${{ number_format($comision['Monto_Comision'], 2) }} 
-                                                        ({{ \Carbon\Carbon::parse($comision['Fecha_Comision'])->format('d/m/Y') }})
-                                                    </span>
-                                                @endforeach
-                                            </small>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="employee-controls">
-                                @php
-                                    $estado = $empleado['Disponibilidad'] ?? 'Activo';
-                                    $statusClass = $estado === 'Activo' ? 'status-active' : 'status-inactive';
-                                @endphp
-                                <span class="status-badge {{ $statusClass }}">{{ $estado }}</span>
+                <div id="empleadosTableBody">
+                    @if(isset($empleados) && count($empleados) > 0)
+                        @foreach($empleados as $empleado)
+                            @php
+                                $rol = $empleado['Rol'] ?? 'N/A';
+                                $initials = '';
+                                $nombre = trim(($empleado['Nombre'] ?? '') . ' ' . ($empleado['Apellido'] ?? ''));
                                 
-                                <!-- Información de Salario y Comisiones -->
-                                <div class="employee-financial-info">
-                                    <div class="employee-salary">
-                                        <div class="salary-amount">${{ number_format($empleado['Salario'] ?? 0, 2) }}</div>
-                                        <div class="salary-label">Salario Base</div>
+                                if (empty($nombre) || $nombre === 'N/A N/A') {
+                                    $nombre = 'Sin Nombre';
+                                }
+                                
+                                $words = explode(' ', $nombre);
+                                foreach($words as $word) {
+                                    if (!empty($word) && $word !== 'N/A') {
+                                        $initials .= strtoupper(substr($word, 0, 1));
+                                    }
+                                }
+                                
+                                if (empty($initials)) {
+                                    $initials = '??';
+                                }
+                                
+                                $comisiones = obtenerComisionesEmpleado($empleado['Cod_Empleado'] ?? 0);
+                                $totalComisiones = collect($comisiones)->sum('Monto_Comision');
+                                $salarioTotal = ($empleado['Salario'] ?? 0) + $totalComisiones;
+                            @endphp
+                            <div class="employee-item" data-department="{{ $rol }}">
+                                <div class="employee-info">
+                                    <div class="employee-avatar">{{ $initials }}</div>
+                                    <div class="employee-details">
+                                        <h4>{{ $nombre }}</h4>
+                                        <p><i class="fas fa-envelope mr-1"></i> {{ $empleado['Correo'] ?? 'N/A' }}</p>
+                                        <p><i class="fas fa-phone mr-1"></i> {{ $empleado['Telefono'] ?? 'N/A' }}</p>
+                                        <p><i class="fas fa-building mr-1"></i> {{ $rol }}</p>
+                                        <p><i class="fas fa-calendar mr-1"></i> Desde {{ $empleado['Fecha_Contratacion'] ?? 'N/A' }}</p>
+                                        
+                                        @if(count($comisiones) > 0)
+                                            <div class="comisiones-list mt-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-money-bill-wave mr-1"></i>
+                                                    <strong>Comisiones:</strong> 
+                                                    @foreach($comisiones as $comision)
+                                                        <span class="badge badge-light mr-1">
+                                                            ${{ number_format($comision['Monto_Comision'], 2) }} 
+                                                            ({{ \Carbon\Carbon::parse($comision['Fecha_Comision'])->format('d/m/Y') }})
+                                                        </span>
+                                                    @endforeach
+                                                </small>
+                                            </div>
+                                        @endif
                                     </div>
+                                </div>
+                                <div class="employee-controls">
+                                    @php
+                                        $estado = $empleado['Disponibilidad'] ?? 'Activo';
+                                        $statusClass = $estado === 'Activo' ? 'status-active' : 'status-inactive';
+                                    @endphp
+                                    <span class="status-badge {{ $statusClass }}">{{ $estado }}</span>
                                     
-                                    @if($totalComisiones > 0)
-                                        <div class="employee-comisiones">
-                                            <div class="comision-amount text-success">+${{ number_format($totalComisiones, 2) }}</div>
-                                            <div class="comision-label">Comisiones</div>
+                                    <div class="employee-financial-info">
+                                        <div class="employee-salary">
+                                            <div class="salary-amount">${{ number_format($empleado['Salario'] ?? 0, 2) }}</div>
+                                            <div class="salary-label">Salario Base</div>
                                         </div>
                                         
-                                        <div class="employee-total">
-                                            <div class="total-amount text-primary">${{ number_format($salarioTotal, 2) }}</div>
-                                            <div class="total-label">Total</div>
-                                        </div>
-                                    @endif
+                                        @if($totalComisiones > 0)
+                                            <div class="employee-comisiones">
+                                                <div class="comision-amount text-success">+${{ number_format($totalComisiones, 2) }}</div>
+                                                <div class="comision-label">Comisiones</div>
+                                            </div>
+                                            
+                                            <div class="employee-total">
+                                                <div class="total-amount text-primary">${{ number_format($salarioTotal, 2) }}</div>
+                                                <div class="total-label">Total</div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    <button class="action-btn view-comisiones-btn" onclick="verComisiones({{ $empleado['Cod_Empleado'] ?? 0 }}, '{{ $nombre }}')" title="Ver Comisiones">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                    {{-- Botón de editar eliminado --}}
+                                    <button class="action-btn delete-btn" onclick="eliminarEmpleado({{ $empleado['Cod_Empleado'] ?? 0 }})" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
-                                
-                                <button class="action-btn view-comisiones-btn" onclick="verComisiones({{ $empleado['Cod_Empleado'] ?? 0 }}, '{{ $nombre }}')" title="Ver Comisiones">
-                                    <i class="fas fa-chart-bar"></i>
-                                </button>
-                                <button class="action-btn edit-btn" onclick="editarEmpleado({{ $empleado['Cod_Empleado'] ?? 0 }})" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="action-btn delete-btn" onclick="eliminarEmpleado({{ $empleado['Cod_Empleado'] ?? 0 }})" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
                             </div>
+                        @endforeach
+                    @else
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>No hay empleados registrados o error al cargar datos</p>
                         </div>
-                    @endforeach
-                @else
-                    <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>No hay empleados registrados o error al cargar datos</p>
-                    </div>
-                @endif
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -291,16 +417,43 @@
 
 @section('css')
     <style>
-        .content-wrapper { background: #f8f9fa !important; }
-        .content { padding-bottom: 20px !important; }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* RESET Y AJUSTES BASE */
+        .content-wrapper {
+            background: #f8f9fa !important;
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
+        .content {
+            padding: 20px !important;
+        }
+
+        /* Ajustar alertas */
+        .custom-alert {
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            border-left: 5px solid #10b981;
+        }
+
+        .alert-danger {
+            border-left: 5px solid #ef4444;
+        }
+        
+        .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+
+        /* ANIMACIONES */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -320,6 +473,7 @@
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
+        /* HEADER DE BIENVENIDA */
         .welcome-header {
             background: linear-gradient(135deg, #c9a876 0%, #d4b896 100%);
             border-radius: 20px;
@@ -364,11 +518,12 @@
             margin-top: 5px;
         }
 
-        .appointment-card {
-            background: white;
+        /* CARDS */
+        .appointment-card,
+        .appointments-list {
             border-radius: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            padding: 30px;
+            border: none !important;
         }
 
         .appointment-header {
@@ -387,6 +542,7 @@
             margin: 0;
         }
 
+        /* INPUTS */
         .custom-input {
             border-radius: 10px;
             border: 1px solid #e0e0e0;
@@ -400,6 +556,7 @@
             outline: none;
         }
 
+        /* BOTONES */
         .btn-salus {
             background: linear-gradient(135deg, #c9a876, #d4b896);
             color: white;
@@ -416,13 +573,7 @@
             box-shadow: 0 4px 12px rgba(201, 168, 118, 0.3);
         }
 
-        .appointments-list {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            padding: 30px;
-        }
-
+        /* LISTA DE EMPLEADOS */
         .list-header {
             display: flex;
             justify-content: space-between;
@@ -467,6 +618,7 @@
             background: #e5e7eb;
         }
 
+        /* ITEMS DE EMPLEADO */
         .employee-item {
             display: flex;
             justify-content: space-between;
@@ -505,8 +657,8 @@
             flex-shrink: 0;
         }
 
-        .employee-details { 
-            flex: 1; 
+        .employee-details {
+            flex: 1;
             min-width: 0;
         }
 
@@ -523,23 +675,12 @@
             margin: 2px 0;
         }
 
-        .comisiones-list {
-            border-top: 1px solid #e5e7eb;
-            padding-top: 8px;
-            margin-top: 8px;
-        }
-
-        .comisiones-list .badge {
-            font-size: 11px;
-            padding: 4px 8px;
-            margin-bottom: 2px;
-        }
-
         .employee-controls {
             display: flex;
             gap: 8px;
             align-items: center;
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
 
         .employee-financial-info {
@@ -548,7 +689,9 @@
             align-items: center;
         }
 
-        .employee-salary, .employee-comisiones, .employee-total {
+        .employee-salary,
+        .employee-comisiones,
+        .employee-total {
             text-align: center;
             padding: 8px 12px;
             background: white;
@@ -578,7 +721,6 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
-            cursor: default;
             min-width: 80px;
             text-align: center;
         }
@@ -601,7 +743,6 @@
             cursor: pointer;
             color: #6b7280;
             transition: all 0.3s;
-            flex-shrink: 0;
         }
 
         .action-btn:hover {
@@ -616,15 +757,6 @@
 
         .action-btn.view-comisiones-btn:hover {
             background: #ede9fe;
-        }
-
-        .action-btn.edit-btn {
-            color: #3b82f6;
-            border-color: #3b82f6;
-        }
-
-        .action-btn.edit-btn:hover {
-            background: #dbeafe;
         }
 
         .action-btn.delete-btn {
@@ -648,63 +780,7 @@
             margin-bottom: 20px;
         }
 
-        /* Modal de Comisiones */
-        .comisiones-modal {
-            max-width: 600px !important;
-        }
-
-        .comision-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background: #f8f9fa;
-        }
-
-        .comision-info {
-            flex: 1;
-        }
-
-        .comision-concepto {
-            font-weight: 500;
-            color: #2C3E50;
-            margin-bottom: 4px;
-        }
-
-        .comision-fecha {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .comision-monto {
-            font-weight: 700;
-            color: #059669;
-            font-size: 16px;
-        }
-
-        .comision-total {
-            background: linear-gradient(135deg, #c9a876, #d4b896);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        .comision-total-amount {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .comision-total-label {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
+        /* MODALES */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -794,6 +870,7 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
+        /* NOTIFICACIONES */
         .notification-toast {
             position: fixed;
             top: 50%;
@@ -843,6 +920,7 @@
             font-size: 14px;
         }
 
+        /* RESPONSIVE */
         @media (max-width: 768px) {
             .welcome-header {
                 flex-direction: column;
@@ -856,12 +934,9 @@
 
             .employee-info {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
             }
 
             .employee-controls {
-                flex-wrap: wrap;
                 width: 100%;
                 justify-content: flex-start;
                 margin-top: 15px;
@@ -870,11 +945,6 @@
             .employee-financial-info {
                 flex-wrap: wrap;
                 gap: 5px;
-            }
-
-            .employee-salary, .employee-comisiones, .employee-total {
-                min-width: 80px;
-                padding: 6px 8px;
             }
 
             .filter-tabs {
@@ -888,27 +958,21 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // ========== ACTUALIZAR FECHA Y HORA ==========
     const updateDateTime = () => {
         const now = new Date();
         const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        
         let dateString = now.toLocaleDateString('es-HN', optionsDate);
         dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
-        
         let hours = now.getHours();
         const minutes = now.getMinutes().toString().padStart(2, '0');
         const timeString = `${hours.toString().padStart(2, '0')}:${minutes}`;
-        
         document.getElementById('currentDate').textContent = dateString;
         document.getElementById('currentTime').textContent = timeString;
     };
 
-    // ========== NOTIFICACIONES ==========
     const showNotification = (title, message, type = 'success') => {
         const existing = document.querySelector('.notification-toast');
         if (existing) existing.remove();
-        
         const notification = document.createElement('div');
         notification.className = 'notification-toast';
         notification.innerHTML = `
@@ -920,7 +984,6 @@
                 <div class="notification-message">${message}</div>
             </div>
         `;
-        
         document.body.appendChild(notification);
         setTimeout(() => {
             notification.style.animation = 'notificationPop 0.4s ease-out reverse';
@@ -928,107 +991,64 @@
         }, 3000);
     };
 
-    // ========== CARGAR EMPLEADOS EN SELECT DE COMISIONES ==========
     function cargarEmpleadosParaComision() {
         const select = document.getElementById('selectEmpleado');
-        
-        fetch('{{ route("empleados.activos") }}')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
-                }
-                return response.json();
-            })
+        fetch('{{ route("gestion-personal.empleados.activos") }}')
+            .then(response => response.json())
             .then(empleados => {
                 if (empleados.error || empleados.length === 0) {
                     select.innerHTML = '<option value="">No hay empleados disponibles</option>';
                     return;
                 }
-
                 let html = '<option value="">Seleccionar empleado...</option>';
                 empleados.forEach(empleado => {
                     html += `<option value="${empleado.Cod_Empleado}">${empleado.Nombre_Completo} - ${empleado.Departamento}</option>`;
                 });
-
                 select.innerHTML = html;
             })
             .catch(error => {
                 console.error('Error al cargar empleados:', error);
                 select.innerHTML = '<option value="">Error al cargar empleados</option>';
-                cargarSelectEmpleadosFallback();
             });
     }
 
-    // Función de respaldo usando la ruta antigua
-    function cargarSelectEmpleadosFallback() {
-        const select = document.getElementById('selectEmpleado');
-        
-        fetch('{{ route("gestion-personal.empleados.ajax") }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error || data.length === 0) {
-                    select.innerHTML = '<option value="">No hay empleados disponibles</option>';
-                    return;
-                }
-
-                let html = '<option value="">Seleccionar empleado...</option>';
-                data.forEach(empleado => {
-                    if (empleado.Disponibilidad === 'Activo') {
-                        html += `<option value="${empleado.Cod_Empleado}">${empleado.Nombre} ${empleado.Apellido} - ${empleado.Rol}</option>`;
-                    }
-                });
-
-                select.innerHTML = html;
-            })
-            .catch(error => {
-                select.innerHTML = '<option value="">Error al cargar empleados</option>';
-                console.error('Error en fallback:', error);
-            });
-    }
-
-    // ========== VER COMISIONES DEL EMPLEADO ==========
     function verComisiones(codEmpleado, nombreEmpleado) {
         fetch(`/api/comisiones/${codEmpleado}`)
             .then(response => response.json())
             .then(comisiones => {
                 let comisionesHTML = '';
                 let totalComisiones = 0;
-
                 if (comisiones.length > 0) {
                     comisiones.forEach(comision => {
                         totalComisiones += parseFloat(comision.Monto_Comision);
                         const fecha = new Date(comision.Fecha_Comision).toLocaleDateString('es-HN');
                         comisionesHTML += `
-                            <div class="comision-item">
-                                <div class="comision-info">
-                                    <div class="comision-concepto">${comision.Concepto_Comision}</div>
-                                    <div class="comision-fecha">${fecha}</div>
+                            <div class="comision-item" style="display:flex;justify-content:space-between;padding:12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;background:#f8f9fa;">
+                                <div>
+                                    <div style="font-weight:500;color:#2C3E50;">${comision.Concepto_Comision}</div>
+                                    <div style="font-size:12px;color:#6b7280;">${fecha}</div>
                                 </div>
-                                <div class="comision-monto">$${parseFloat(comision.Monto_Comision).toFixed(2)}</div>
+                                <div style="font-weight:700;color:#059669;font-size:16px;">$${parseFloat(comision.Monto_Comision).toFixed(2)}</div>
                             </div>
                         `;
                     });
                 } else {
                     comisionesHTML = '<p class="text-center text-muted py-3">No hay comisiones registradas</p>';
                 }
-
                 Swal.fire({
                     title: `Comisiones de ${nombreEmpleado}`,
                     html: `
-                        <div class="comisiones-list">
+                        <div>
                             ${comisionesHTML}
                             ${comisiones.length > 0 ? `
-                                <div class="comision-total">
-                                    <div class="comision-total-amount">$${totalComisiones.toFixed(2)}</div>
-                                    <div class="comision-total-label">Total en Comisiones</div>
+                                <div style="background:linear-gradient(135deg,#c9a876,#d4b896);color:white;padding:15px;border-radius:10px;text-align:center;margin-top:15px;">
+                                    <div style="font-size:24px;font-weight:700;">$${totalComisiones.toFixed(2)}</div>
+                                    <div style="font-size:14px;">Total en Comisiones</div>
                                 </div>
                             ` : ''}
                         </div>
                     `,
                     width: 600,
-                    customClass: {
-                        popup: 'comisiones-modal'
-                    },
                     showCloseButton: true,
                     showConfirmButton: false
                 });
@@ -1039,54 +1059,31 @@
             });
     }
 
-    // ========== INICIALIZACIÓN ==========
     document.addEventListener('DOMContentLoaded', function() {
         updateDateTime();
         setInterval(updateDateTime, 60000);
-        
         cargarEmpleadosParaComision();
-
-        // Filtros de departamento
+        
         document.querySelectorAll('.filter-tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
-                
                 const filter = this.dataset.filter;
                 const items = document.querySelectorAll('.employee-item');
-                
                 items.forEach(item => {
                     if (filter === 'todos') {
                         item.style.display = '';
                     } else {
-                        const department = item.dataset.department;
-                        item.style.display = department === filter ? '' : 'none';
+                        item.style.display = item.dataset.department === filter ? '' : 'none';
                     }
                 });
             });
         });
     });
 
-    function cargarEmpleados() {
-        location.reload();
-    }
-
-    // ========== EDITAR EMPLEADO ==========
-    function editarEmpleado(codEmpleado) {
-        Swal.fire({
-            title: 'Editar Empleado',
-            text: 'Funcionalidad en desarrollo',
-            icon: 'info',
-            confirmButtonText: 'Entendido',
-            confirmButtonColor: '#c9a876'
-        });
-    }
-
-    // ========== ELIMINAR EMPLEADO ==========
     function eliminarEmpleado(codEmpleado) {
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay';
-        
         modalOverlay.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -1102,13 +1099,8 @@
                 </div>
             </div>
         `;
-        
         document.body.appendChild(modalOverlay);
-        
-        modalOverlay.querySelector('.modal-btn-cancel').addEventListener('click', () => {
-            modalOverlay.remove();
-        });
-        
+        modalOverlay.querySelector('.modal-btn-cancel').addEventListener('click', () => modalOverlay.remove());
         modalOverlay.querySelector('.modal-btn-confirm').addEventListener('click', () => {
             fetch(`/gestion-personal/empleados/${codEmpleado}`, {
                 method: 'DELETE',
@@ -1131,20 +1123,24 @@
             .catch(error => {
                 modalOverlay.remove();
                 showNotification('Error', 'Ocurrió un error al eliminar el empleado', 'error');
-                console.error('Error:', error);
             });
         });
-        
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) modalOverlay.remove();
         });
     }
 
-    // ========== VALIDACIÓN DE FORMULARIOS ==========
     document.getElementById('empleadoForm').addEventListener('submit', function(e) {
         const fechaNacimiento = new Date(this.fecha_nacimiento.value);
         const fechaContratacion = new Date(this.fecha_contratacion.value);
         const hoy = new Date();
+        const telefono = this.telefono.value.replace(/\D/g, '');
+        
+        if (telefono.length !== 8) {
+            e.preventDefault();
+            showNotification('Error', 'El teléfono debe tener exactamente 8 dígitos', 'error');
+            return;
+        }
         
         if (fechaNacimiento >= fechaContratacion) {
             e.preventDefault();
@@ -1162,12 +1158,10 @@
     document.getElementById('comisionForm').addEventListener('submit', function(e) {
         const fechaComision = new Date(this.fecha_comision.value);
         const hoy = new Date();
-        
         if (fechaComision > hoy) {
             e.preventDefault();
             showNotification('Error', 'La fecha de comisión no puede ser futura', 'error');
         }
-        
         const empleadoSelect = document.getElementById('selectEmpleado');
         if (!empleadoSelect.value) {
             e.preventDefault();
@@ -1177,16 +1171,3 @@
     });
 </script>
 @stop
-
-@php
-function obtenerComisionesEmpleado($codEmpleado) {
-    try {
-        $apiService = new \App\Services\ApiService();
-        $comisiones = $apiService->getComisiones();
-        
-        return collect($comisiones)->where('Cod_Empleado', $codEmpleado)->take(3)->all();
-    } catch (\Exception $e) {
-        return [];
-    }
-}
-@endphp

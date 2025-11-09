@@ -42,6 +42,7 @@ class AuthServiceProvider extends ServiceProvider
         Tratamiento::class      => TratamientoPolicy::class,
         Empleado::class         => PersonalPolicy::class,
         Reporte::class          => ReportePolicy::class,
+         Servicio::class => ServicioPolicy::class,
     ];
 
     /**
