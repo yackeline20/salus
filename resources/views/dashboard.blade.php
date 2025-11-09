@@ -8,7 +8,6 @@
 
 @section('content')
 <div class="container-fluid p-0">
-    <!-- Header Welcome -->
     <div class="welcome-header">
         <div class="welcome-content">
             <h1 class="text-xl">¡Hola, {{ $persona->nombre_completo }}!</h1>
@@ -19,119 +18,127 @@
         </div>
     </div>
 
-    <!-- Stats Cards -->
     <div class="row mt-4">
-        <!-- Citas Hoy -->
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-6 col-md-12 mb-4"> {{-- Ocupa la mitad del ancho (lg-6) --}}
             <div class="stat-card blue-border">
                 <div class="stat-header">
-                    <span class="stat-icon blue-bg">
-                        <i class="fas fa-calendar-alt"></i>
+                    {{-- Fondo para Visión --}}
+                    <span class="stat-icon blue-bg" style="background: linear-gradient(135deg, #1ABC9C, #16A085);">
+                        <i class="fas fa-bullseye"></i> {{-- Ícono de objetivo/visión --}}
                     </span>
-                    <span class="stat-label">CITAS HOY</span>
+                    <span class="stat-label">NUESTRA VISIÓN ✨</span>
                 </div>
-                <div class="stat-value">12</div>
-                <div class="stat-change positive">
-                    <span>+2 más que ayer</span>
+                {{-- Título de la tarjeta --}}
+                <div class="stat-value" style="font-size: 20px; font-weight: 600; color: #34495e; margin-bottom: 5px;">
+                    ¿Qué queremos lograr?
+                </div>
+                {{-- Contenido de la Visión --}}
+                <div class="stat-change" style="background: none; padding: 0; display: block;">
+                    <p style="font-size: 15px; color: #555; line-height: 1.6; margin-top: 10px;">{{ $vision }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- Pacientes Activos -->
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-6 col-md-12 mb-4"> {{-- Ocupa la otra mitad del ancho (lg-6) --}}
             <div class="stat-card green-border">
                 <div class="stat-header">
-                    <span class="stat-icon green-bg">
-                        <i class="fas fa-users"></i>
+                    {{-- Fondo para Misión --}}
+                    <span class="stat-icon green-bg" style="background: linear-gradient(135deg, #9B59B6, #8E44AD);">
+                        <i class="fas fa-hand-holding-heart"></i> {{-- Ícono de corazón/misión --}}
                     </span>
-                    <span class="stat-label">PACIENTES ACTIVOS</span>
+                    <span class="stat-label">NUESTRA MISIÓN 🌿</span>
                 </div>
-                <div class="stat-value">247</div>
-                <div class="stat-change positive">
-                    <span>+15 este mes</span>
+                {{-- Título de la tarjeta --}}
+                <div class="stat-value" style="font-size: 20px; font-weight: 600; color: #34495e; margin-bottom: 5px;">
+                    ¿Cuál es nuestro propósito?
                 </div>
-            </div>
-        </div>
-
-        <!-- Ingresos Mensuales -->
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="stat-card yellow-border">
-                <div class="stat-header">
-                    <span class="stat-icon yellow-bg">
-                        <i class="fas fa-dollar-sign"></i>
-                    </span>
-                    <span class="stat-label">INGRESOS MENSUALES</span>
-                </div>
-                <div class="stat-value">$45,280</div>
-                <div class="stat-change positive">
-                    <span>+8.5% vs mes anterior</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tratamientos -->
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="stat-card red-border">
-                <div class="stat-header">
-                    <span class="stat-icon red-bg">
-                        <i class="fas fa-syringe"></i>
-                    </span>
-                    <span class="stat-label">TRATAMIENTOS</span>
-                </div>
-                <div class="stat-value">89</div>
-                <div class="stat-change positive">
-                    <span>+12 esta semana</span>
+                {{-- Contenido de la Misión --}}
+                <div class="stat-change" style="background: none; padding: 0; display: block;">
+                    <p style="font-size: 15px; color: #555; line-height: 1.6; margin-top: 10px;">{{ $mision }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gráficos y tablas adicionales -->
+    
     <div class="row mt-4">
         <div class="col-lg-8">
-            <div class="card modern-card">
+            <div class="card modern-card" style="min-height: 500px;">
                 <div class="card-header">
-                    <h3 class="card-title">Resumen Semanal</h3>
+                    <h3 class="card-title"><i class="fas fa-calendar-check"></i> Calendario de Citas</h3>
                 </div>
                 <div class="card-body">
-                    <canvas id="chartWeekly" style="height:300px;"></canvas>
+                    {{-- Aquí se inicializará FullCalendar --}}
+                    <div id="fullCalendar"></div> 
                 </div>
             </div>
         </div>
+
         <div class="col-lg-4">
-            <!-- Próximas Citas -->
             <div class="card modern-card mb-4">
                 <div class="card-header">
-                    <h3 class="card-title">Próximas Citas</h3>
+                    <h3 class="card-title">Citas Próximas y Hoy</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                     <div class="appointment-list">
-                        <div class="appointment-item">
-                            <div class="appointment-time">15:00</div>
-                            <div class="appointment-info">
-                                <div class="patient-name">María González</div>
-                                <div class="treatment-type">Botox</div>
-                            </div>
-                        </div>
-                        <div class="appointment-item">
-                            <div class="appointment-time">16:30</div>
-                            <div class="appointment-info">
-                                <div class="patient-name">Ana Rodríguez</div>
-                                <div class="treatment-type">Rellenos faciales</div>
-                            </div>
-                        </div>
-                        <div class="appointment-item">
-                            <div class="appointment-time">17:00</div>
-                            <div class="appointment-info">
-                                <div class="patient-name">Laura Martínez</div>
-                                <div class="treatment-type">Consulta inicial</div>
-                            </div>
-                        </div>
+
+                        {{-- Verificar si hay citas y iterar sobre ellas --}}
+                        @if (count($citasProximas) > 0)
+                            @foreach ($citasProximas as $cita)
+                                
+                                {{-- 
+                                    MODIFICACIÓN: 
+                                    Extraemos los datos de 'Notas_Internas' y 'Hora_Inicio' 
+                                    para que coincida con la lógica de la vista de Citas (citas.blade.php).
+                                --}}
+                                @php
+                                    // 1. Parsear Notas_Internas (como en el JS de citas.blade.php)
+                                    $notasPartes = explode(' - ', $cita['Notas_Internas'] ?? '');
+                                    
+                                    // 2. Obtener Paciente
+                                    // str_replace para quitar el prefijo, trim para espacios, ?: para el valor por defecto
+                                    $nombrePaciente = trim(str_replace('Paciente:', '', $notasPartes[0] ?? '')) ?: 'Paciente Desconocido';
+                                    
+                                    // 3. Obtener Servicio
+                                    // Usamos $notasPartes[1] si existe, si no, 'Servicio no especificado'
+                                    $tratamiento = trim(str_replace('Servicio:', '', $notasPartes[1] ?? '')) ?: 'Servicio no especificado';
+                                    
+                                    // 4. Obtener Hora (del campo Hora_Inicio, como en el JS)
+                                    $horaCita = '00:00';
+                                    if (!empty($cita['Hora_Inicio'])) {
+                                        // Convertir 'HH:MM:SS' a un objeto DateTime para formatear
+                                        $horaObj = \DateTime::createFromFormat('H:i:s', $cita['Hora_Inicio']);
+                                        if ($horaObj) {
+                                            $horaCita = $horaObj->format('H:i'); // e.g., "06:00" o "11:00"
+                                        }
+                                    }
+                                    
+                                    // 5. Obtener Fecha (del campo Fecha_Cita)
+                                    $fechaObj = new \DateTime($cita['Fecha_Cita'] ?? 'now');
+                                    $fechaMuestra = $fechaObj->format('d/M'); // e.g., "20/Nov"
+                                @endphp
+
+                                <div class="appointment-item">
+                                    {{-- Usar las variables corregidas --}}
+                                    <div class="appointment-time">{{ $horaCita }}</div>
+                                    <div class="appointment-info">
+                                        <div class="patient-name">{{ $nombrePaciente }}</div>
+                                        <div class="treatment-type">{{ $tratamiento }}</div>
+                                    </div>
+                                    <span class="appointment-date">{{ $fechaMuestra }}</span>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="text-center text-muted p-3">
+                                <i class="fas fa-check-circle" style="color: #2ECC71;"></i>
+                                ¡No hay citas programadas próximas!
+                            </p>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            <!-- ✅ SECCIÓN DE SEGURIDAD 2FA - AGREGAR AQUÍ -->
+
             <div class="card modern-card security-card">
                 <div class="card-header">
                     <h3 class="card-title">
@@ -171,6 +178,8 @@
 @stop
 
 @section('css')
+{{-- Estilos para FullCalendar --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
 <style>
     /* Reset de algunos estilos de AdminLTE */
     .content-wrapper {
@@ -237,19 +246,11 @@
     }
 
     .stat-card.blue-border {
-        border-left-color: #5DADE2;
+        border-left-color: #1ABC9C;
     }
 
     .stat-card.green-border {
-        border-left-color: #52C41A;
-    }
-
-    .stat-card.yellow-border {
-        border-left-color: #FFA500;
-    }
-
-    .stat-card.red-border {
-        border-left-color: #FF6B6B;
+        border-left-color: #9B59B6;
     }
 
     .stat-header {
@@ -271,19 +272,11 @@
     }
 
     .stat-icon.blue-bg {
-        background: linear-gradient(135deg, #5DADE2, #3498DB);
+        background: linear-gradient(135deg, #1ABC9C, #16A085);
     }
 
     .stat-icon.green-bg {
-        background: linear-gradient(135deg, #52C41A, #73D13D);
-    }
-
-    .stat-icon.yellow-bg {
-        background: linear-gradient(135deg, #FFA500, #FFB732);
-    }
-
-    .stat-icon.red-bg {
-        background: linear-gradient(135deg, #FF6B6B, #FF8787);
+        background: linear-gradient(135deg, #9B59B6, #8E44AD);
     }
 
     .stat-label {
@@ -365,9 +358,13 @@
     .appointment-time {
         font-size: 16px;
         font-weight: 600;
-        color: #5DADE2;
+        color: #5DADE2; /* Color azul para la hora */
         margin-right: 20px;
         min-width: 50px;
+    }
+    
+    .appointment-info {
+        flex-grow: 1; /* Ocupa el espacio disponible */
     }
 
     .patient-name {
@@ -379,6 +376,13 @@
     .treatment-type {
         font-size: 13px;
         color: #8C8C8C;
+    }
+
+    .appointment-date {
+        font-size: 14px;
+        font-weight: 500;
+        color: #8C8C8C;
+        margin-left: 10px; /* Pequeño espacio a la derecha */
     }
 
     /* ✅ ESTILOS PARA LA TARJETA DE SEGURIDAD */
@@ -458,70 +462,40 @@
 @stop
 
 @section('js')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- Scripts para FullCalendar --}}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js"></script>
+
 <script>
-    // Gráfico mejorado
-    const ctx = document.getElementById('chartWeekly');
-    if (ctx) {
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-                datasets: [{
-                    label: 'Pacientes',
-                    backgroundColor: 'rgba(93, 173, 226, 0.1)',
-                    borderColor: '#5DADE2',
-                    borderWidth: 3,
-                    data: [12, 19, 15, 25, 22, 30, 28],
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#5DADE2',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        cornerRadius: 8,
-                        titleFont: {
-                            size: 14
-                        },
-                        bodyFont: {
-                            size: 13
-                        }
-                    }
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('fullCalendar');
+        if (calendarEl) {
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            color: '#8C8C8C'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            color: '#8C8C8C'
-                        }
-                    }
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    list: 'Lista'
+                },
+                events: '/api/citas-calendario', // ⬅️ Asegúrate de que esta ruta API exista y devuelva las citas
+                eventTimeFormat: { // Formato de hora en 12h
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    meridiem: 'short'
                 }
-            }
-        });
-    }
+            });
+            calendar.render();
+        }
+
+        // ❌ Se eliminó el script del gráfico (Chart.js)
+        // Estaba causando un error porque no existía el 'chartWeekly'
+    });
 </script>
 @stop
